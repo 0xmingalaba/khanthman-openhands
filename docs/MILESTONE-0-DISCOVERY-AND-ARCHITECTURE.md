@@ -36,8 +36,8 @@ delivery message that accompanies this revision.
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence on this branch (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → **this revision's commit** |
-| Commits ahead of `main` | **5** — i.e. the five Milestone-0 documentation commits above; the final HEAD is this revision's commit |
+| Commit sequence on this branch (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → **final revision-4 commit** |
+| Commits ahead of `main` | One documentation commit per Milestone-0 revision plus small follow-up commits; the exact final count and the exact final HEAD hash are reported in the delivery message that accompanies this revision (so this table cannot drift out of date) |
 | Commits behind `main` | 0 |
 | Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) |
