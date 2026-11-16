@@ -1,13 +1,13 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 10) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 9 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 10)
+**Status:** DRAFT (Revision 11) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 10 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 11)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
-**Revision 10 is a documentation-only correction** addressing the final Milestone 0 independent
-review (defines C2/S1, clarifies E6/F28, adds F30/F31 and a coverage matrix). **No financial policy was
-changed and no alternative was selected.**
+**Revision 11 corrects the C2 verification-model defect (Part 4a) and the trading-milestone reference
+(Part 11); it resolves the S1 discrepancy by derivation.** **No financial policy, account, journal, or
+decision was changed and no alternative was selected.**
 
 ### Verification labels
 
@@ -31,7 +31,7 @@ changed and no alternative was selected.**
 
 ---
 
-## Part 0 — Change history (Revision 9 and Revision 10)
+## Part 0 — Change history (Revision 9, Revision 10 and Revision 11)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -77,7 +77,7 @@ Revision 9 corrects all three.
 
 - **C2 and S1 are now defined** (Part 4a), with scope, sign convention, and a **reported discrepancy** in
   the scratch model's `C2()` (sign-inverted; never exercised at non-zero share balances). **The model was
-  not modified.**
+  not modified** in Revision 10. *(Superseded by Revision 11, which corrected the model — see below.)*
 - **E6 clarity:** the E6 table row and the 6.4 block now state that the allocation split `(a, b)` is the
   **F28** owner decision; **loss-first and receivable-first remain distinct and neither is selected.**
 - **F30** (correction/entitlement identifier model) and **F31** (whole-Kyat unit divisibility) added as
@@ -88,6 +88,21 @@ Revision 9 corrects all three.
 - **Appendix numbering corrected** ("Appendix V" → **Appendix A**) with all cross-references updated.
 - **Register reference corrected:** "F1–F29" replaced by the IDs that exist (**F14, F16–F29**); F1–F13 and
   F15 are documented as **undefined**.
+
+### Revision 11 — C2 verification correction and consistency (documentation + verification only)
+
+- **C2 verification-model defect corrected** (Part 4a): `rev9.mjs` now computes
+  `C2() = amt(YES) === amt(NO)` instead of the sign-inverted `bal[YES] === -bal[NO]`. **Verification
+  script only** — no financial rule, account, journal, or decision changed.
+- **S1 independently re-derived** (Part 4a) from the split/merge/escrow/release/retire journals and
+  confirmed correct; restated via `amt(...)`. **S1 unchanged in substance.**
+- **New share-ledger tests** (rev9.mjs **Section 4**, S4-01…S4-09) exercise C2/S1 at **zero and
+  non-zero** outstanding balances, with a **regression guard** for the old formula. Scratch totals:
+  **136 test cases, 253 invariant assertions** (was 105/220).
+- **Trading milestone reference corrected** (Part 11): "Milestone 4" → **Milestone 7+ (gated)**,
+  labelled **PROPOSED** and subject to owner approval.
+- **F30/F31 surfaced in the outstanding lists:** the architecture report now lists **F14, F16–F31** in
+  its stop condition (§13) and adds open questions **T28–T30** (§11). **Both remain NOT APPROVED.**
 
 ---
 
@@ -179,20 +194,50 @@ outcome `{o} ∈ {YES, NO}`**, checked at **every commit boundary** together wit
 > and no holder exists without a corresponding outstanding share.
 
 **Note on sign convention.** `SharesOutstanding` is **credit-normal**, so its magnitude is
-`amt('SharesOutstanding:{m}:{o}') = −balance`. The natural statements above are in **magnitudes
+`amt('SharesOutstanding:{m}:{o}') = −balance`. The statements above are in **magnitudes
 (normal-balance / `amt`)**, i.e. `amt(YES) = amt(NO)` for C2 and
-`Σ_u (SharesFree + SharesEscrowed) = amt(SharesOutstanding)` for S1.
+`Σ_u (SharesFree + SharesEscrowed) = amt(SharesOutstanding)` for S1. This is the convention the
+corrected model uses.
 
-**DISCREPANCY (reported, not fixed).** The committed scratch model
-(`docs/verification/rev9/rev9.mjs` lines 43–44) implements C2 on **raw balances** as
-`bal['SharesOutstanding:M:YES'] === -bal['SharesOutstanding:M:NO']`, whereas the natural definition is
-`bal[YES] === bal[NO]` (both credit-normal) — i.e. the model's `C2()` is **sign-inverted** relative to
-this definition. S1 in the model (`Σ amt(SharesFree)+amt(SharesEscrowed) === -bal(SharesOutstanding)`)
-is **consistent** with the definition above. In addition, **C2 is only ever evaluated at zero share
-balances** in the committed run (shares are split and fully retired inside `settledWrong()` before every
-`report(...)`), so the sign error is **not detected** by the current evidence. This is a
-**verification-model defect**, not an approved financial rule; it is **reported here and left unchanged**
-(no financial logic was modified). It must be corrected in the model before C2 is relied upon.
+**S1 — independent derivation (Revision 11).** S1 is a **conservation law over share holders**, derived
+from the two journals that create and destroy shares, and from escrow/release which only move a share
+between two holder accounts:
+
+- **Split** (create a complete set): `SharesFree:{u}:{o} D n / SharesOutstanding:{m}:{o} C n`. This
+  raises the holder side (`SharesFree`) by `n` and the outstanding magnitude (`amt`) by `n`. The two
+  sides stay equal.
+- **Merge** (destroy a complete set): `SharesOutstanding:{m}:{o} D n / SharesFree:{u}:{o} C n`. The
+  exact inverse of split; equality preserved.
+- **Escrow / release**: `SharesEscrowed D / SharesFree C` (or the reverse), **same outcome**. This
+  moves `n` from one debit-normal holder account to another; the sum `SharesFree + SharesEscrowed` is
+  unchanged, and `SharesOutstanding` is untouched. Equality preserved.
+- **Retire**: `SharesOutstanding:{m}:{o} D n / SharesFree:{u}:{o} C n`. Removes a held share and the
+  matching outstanding share together; equality preserved.
+
+Because every journal either (a) changes both sides by the same amount, or (b) moves value between the
+two holder accounts, the identity `Σ_u (SharesFree:{u}:{o} + SharesEscrowed:{u}:{o}) =
+amt(SharesOutstanding:{m}:{o})` holds at **every** commit boundary. **Conclusion: S1 as stated is
+correct, and the model's S1 is consistent with it.** The model was previously written as
+`Σ amt(SharesFree)+amt(SharesEscrowed) === -bal(SharesOutstanding)`; the `−bal(...)` and `amt(...)`
+forms are equal for a credit-normal account, so S1 was already correct — Revision 11 restates it via
+`amt(...)` for clarity and consistency with C2. **S1 is unchanged in substance.**
+
+**C2 — defect corrected (Revision 11).** Revision 10 **reported** that the scratch model's `C2()` was
+sign-inverted: it computed `bal[YES] === -bal[NO]`. Because both `SharesOutstanding` accounts are
+**credit-normal**, a split records both raw balances as **negative** (e.g. `-2` and `-2`), so
+`bal[YES] === -bal[NO]` compared `-2` against `+2` and returned **`false`** whenever shares were
+outstanding. The defect was invisible because `C2()` was only ever evaluated at **zero** balances
+(shares were always fully retired before each `report(...)`), where `0 === -0` is `true`.
+
+**The model has now been corrected** to `C2() = amt('SharesOutstanding:M:YES') === amt('SharesOutstanding:M:NO')`,
+i.e. equality of **YES and NO outstanding-share magnitudes**. This is a **verification-model fix only**
+— it changes no financial rule, account, journal, or decision. New tests (**rev9.mjs Section 4**,
+S4-01…S4-09) exercise C2 at **non-zero** outstanding balances (single split, multiple splits, merge,
+escrow/release, retirement, intermediate states, and correction-lifecycle boundaries), and include a
+**regression guard** (`S4-02e`/`S4-02f`) proving the old formula returns `false` where the corrected
+formula returns `true`. `S4-09` confirms `C2=true` with **8 shares outstanding** at three consecutive
+commit boundaries. **C2/S1 verification corrections do not constitute financial-specification
+approval.**
 
 ---
 
@@ -530,7 +575,7 @@ and payout → funding is preserved and payout resumes; during retry → idempot
 
 ---
 
-## Part 10 — Financial decision register (Revision 10)
+## Part 10 — Financial decision register (Revision 11)
 
 All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
 **F1–F13 and F15 are not defined in this document** (see the note after the table).
@@ -602,7 +647,10 @@ correction/trading implementation** (Milestone 6/7+). They do **not** block Mile
 ## Part 11 — Approval
 
 **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.** Approving this document is required
-before any executable trading is implemented in Milestone 4. **Nothing here is implemented.**
+before any executable trading is implemented. Per the architecture report's **proposed** roadmap
+(§3.3), executable trading is assigned to **Milestone 7+ (gated)** — **not** Milestone 4, which is
+read-only discovery and detail. That milestone assignment is **PROPOSED and subject to owner
+approval**; it is not a delivery commitment. **Nothing here is implemented.**
 
 - ☐ **Approved as written**
 - ☐ **Approved with changes:** ______________________________
@@ -657,15 +705,16 @@ versions, and expected output); the originals were run from a scratch directory 
 **All three verification levels are distinct: scratch (single-process), PGlite (single-connection),
 and real PostgreSQL multi-session (not performed).**
 
-### A.1 Revision 9 scratch model — VERIFIED (scratch)
+### A.1 Revision 9 scratch model (with Revision 11 share tests) — VERIFIED (scratch)
 
 - **Command:** `node docs/verification/rev9/rev9.mjs` (reproducible; see `docs/verification/rev9/README.md`)
 - **Structure:** Section 1 = **45 Revision 8 tests (preserved)**; Section 2 = **30 Revision 9 tests**;
-  Section 3 = **30 review-prep tests** (F28 cancel-order, both alternatives, Option A).
-- **Counting method:** **105 test cases** (each a scenario with an explicit expected/actual outcome)
-  plus **220 invariant assertions** (11 invariants × 20 commit boundaries). A test passes when the
+  Section 3 = **30 review-prep tests** (F28 cancel-order, both alternatives, Option A);
+  Section 4 = **31 Revision 11 share-ledger tests** (C2/S1 lifecycle, non-zero outstanding, regression guard).
+- **Counting method:** **136 test cases** (each a scenario with an explicit expected/actual outcome)
+  plus **253 invariant assertions** (11 invariants × 23 commit boundaries). A test passes when the
   observed outcome equals the expected outcome, **including expected rejections/rollbacks**.
-- **Result:** **105 / 105 test cases PASS, 0 FAIL; 220 invariant assertions, 0 FAIL**; ending
+- **Result:** **136 / 136 test cases PASS, 0 FAIL; 253 invariant assertions, 0 FAIL**; ending
   `>>> ALL CHECKS PASSED (scratch)`. Captured output: `docs/verification/rev9/rev9.expected.out`.
 - **Selected actual output:**
 
@@ -683,8 +732,14 @@ PASS R9-23 no double-count: pending+corr == 200 (never 400) | expected=true actu
 PASS R9-30b recv-first residual: recv 0, loss 100 (loss stays outstanding) | expected=true actual=true
 PASS R9-31b loss-first residual: loss 0, recv 100 (receivable stays outstanding) | expected=true actual=true
 PASS R9-32pre collected+written-off before issuance: recv 0, loss 100, pending 100, corr 100, units 1 | expected=true actual=true
-test cases: 105 (105 passed, 0 failed)
-invariant assertions at commit boundaries: 220
+PASS S4-02 C2 holds with 3 YES and 3 NO outstanding (NON-ZERO) | expected=true actual=true
+PASS S4-02e old sign-inverted formula returns FALSE at non-zero outstanding (defect regression) | expected=false actual=false
+PASS S4-02f corrected C2 TRUE where the old formula is FALSE | expected=true actual=true
+PASS S4-06b C2 FAILS after an unbalanced YES-only retire (0 YES, 2 NO) | expected=false actual=false
+PASS S4-06e unbalanced retire is rolled back by the commit-boundary guard | expected=rolled-back actual=rolled-back
+PASS S4-09 boundary 3 (paid, 4 shares outstanding)  MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+test cases: 136 (136 passed, 0 failed)
+invariant assertions at commit boundaries: 253
 >>> ALL CHECKS PASSED (scratch)
 ```
 
@@ -764,7 +819,7 @@ required · **D** = deferred to a later milestone.
 | 4 | Account catalogue, normal balances | S | Part 2 |
 | 5 | M1 reconciliation | S | Part 3 (conservation only) |
 | 6 | C1 collateralization + C1b | S | Part 4 |
-| 7 | C2 / S1 share invariants | S (newly defined here) | Part 4a; model discrepancy noted |
+| 7 | C2 / S1 share invariants | S (newly defined here) | Part 4a; C2 model defect **corrected in Rev 11** |
 | 8 | Settlement lifecycle | P | Part 5 ("twelve steps" not enumerated) |
 | 9 | Correction events E1–E9 | P | Part 6.1; E1/E9 pre/post/idempotency thin |
 | 10 | Receivable recognition/collection/realization | S | Parts 6.2–6.3 |

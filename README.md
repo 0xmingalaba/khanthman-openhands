@@ -38,7 +38,9 @@ original Khant Hman branding.
   any trading code is written**. It is **substantially specified for the accounting model** but
   **materially incomplete for pricing, trading mechanics, and multi-user correction handling**; see its
   **Appendix B coverage matrix** for topic-by-topic status. It is **not** a complete financial
-  specification and **no approval has been granted**.
+  specification and **no approval has been granted**. (Revision 11 corrected the C2 verification-model
+  defect and the C2/S1 share-ledger tests; see the spec Part 4a and
+  [`docs/verification/rev9/`](docs/verification/rev9/).)
 
 ---
 

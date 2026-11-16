@@ -15,14 +15,16 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 10** delivered in `docs/`. Awaiting owner review.
-  Revision 10 is a **documentation-only** correction of the final independent review (D1–D11); **no
-  financial policy, architecture direction, or owner decision changed.**
+- Milestone 0 (Discovery & Architecture) **Revision 11** delivered in `docs/`. Awaiting owner review.
+  Revision 11 corrects the **C2 verification-model defect** and resolves four documentation
+  inconsistencies (D12–D15); **no financial policy, account, journal, architecture direction, or
+  owner decision changed.** The only code change is the scratch verification script
+  `docs/verification/rev9/rev9.mjs` (C2 sign fix + Section 4 share tests).
 - **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
 - **Reproducible verification** lives in `docs/verification/rev9/` (scripts + README + captured
   output). It is **verification, not application code**; do not import it. Run:
-  `node docs/verification/rev9/rev9.mjs` (no deps; **105 tests, 220 assertions**) and
+  `node docs/verification/rev9/rev9.mjs` (no deps; **136 tests, 253 assertions**; Section 4 covers C2/S1) and
   `node docs/verification/rev9/rev9-pglite.mjs` (needs `@electric-sql/pglite@0.5.16`).
   Three levels: scratch (single-process) / PGlite (single-connection) / real PostgreSQL multi-session
   (**NOT PERFORMED**). None is application-level financial validation.
@@ -71,7 +73,7 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - To push, the owner must grant write (`contents: write`) to the app/integration or provide a PAT with
   `repo` scope. Do **not** push to `main`; use a feature branch and open a PR.
 
-### Dependency status (Revision 10 — do not overstate)
+### Dependency status (Revision 11 — do not overstate)
 - **Declared in `package.json`:** `next`, `react`, `react-dom` (deps); `@tailwindcss/turbopack`,
   `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`,
   `typescript` (devDeps). **Nothing else.**

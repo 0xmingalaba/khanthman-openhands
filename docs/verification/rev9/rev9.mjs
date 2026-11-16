@@ -40,8 +40,14 @@ function domainBal(d) { let D = 0, C = 0; for (const a in bal) { if (dom[a] !== 
 const payExtra = () => PAYABLE === 'A' ? amt('CorrectionPayableMarket:M') : 0;
 function C1() { return (amt('CollateralBucket:M') + amt('SettlementPayable:M') + amt('SettlementCorrection:M') + payExtra()) === P * amt('ClaimUnitsRemaining:M'); }
 function C1b() { return bal['ClaimUnitsRemaining:M'] === -bal['UnitsControl:M']; }
-function C2() { return bal['SharesOutstanding:M:YES'] === -bal['SharesOutstanding:M:NO']; }
-function S1() { let ok = true; for (const o of ['YES', 'NO']) { let s = 0; for (const u of USERS) s += amt('SharesFree:' + u + ':' + o) + amt('SharesEscrowed:' + u + ':' + o); if (s !== -bal['SharesOutstanding:M:' + o]) ok = false; } return ok; }
+// C2: complementary outstanding shares — YES and NO outstanding must have equal magnitude.
+// Both SharesOutstanding accounts are credit-normal, so their normal-side magnitude is amt().
+// (Revision 11 correction: the previous formula `bal[YES] === -bal[NO]` was sign-inverted and
+// returned false whenever shares were outstanding; it was only ever evaluated at zero balances.)
+function C2() { return amt('SharesOutstanding:M:YES') === amt('SharesOutstanding:M:NO'); }
+// S1: per-outcome share conservation — every outstanding share is held (free or escrowed).
+// Stated in normal-side magnitudes so the credit-normal SharesOutstanding sign is handled once.
+function S1() { let ok = true; for (const o of ['YES', 'NO']) { let s = 0; for (const u of USERS) s += amt('SharesFree:' + u + ':' + o) + amt('SharesEscrowed:' + u + ':' + o); if (s !== amt('SharesOutstanding:M:' + o)) ok = false; } return ok; }
 const subSum = () => Object.values(sub).reduce((t, v) => t + v, 0);
 function M1() { let D = 0, C = 0; for (const a in bal) { if (norm[a] === 'D') D += amt(a); else C += amt(a); } return D === C; }
 function nonNeg() { for (const a in bal) if (amt(a) < 0) return false; return true; }
@@ -384,6 +390,127 @@ test('R9-37', 'Option A subledger ties to market control at every step', true, s
 report('R9-37 Option A reconciliation');
 test('R9-38', 'Option A: double recognition rejected (corr already 0)', 'rolled-back', tx('R9-38', () => { jRecognizeA(200); }, { expectRollback: true }));
 PAYABLE = 'B'; ISSUANCE_APPROVED = false;
+
+// ================= SECTION 4 — SHARE-LEDGER INVARIANTS C2 / S1 (REVISION 11, NEW) =================
+// Corrects and independently exercises the C2 sign defect from Revision 10.
+// Conventions: SharesFree/SharesEscrowed are debit-normal (raw bal positive);
+// SharesOutstanding is credit-normal (raw bal negative; magnitude = amt() = -bal).
+// tx() rolls back on any invariant failure, so invariant-BREAKING states are forced with
+// postJournal directly (then restored) to prove C2 actually detects asymmetry.
+console.log('\n############ SECTION 4 — Share-ledger invariants C2 / S1 (Revision 11) ############');
+
+const raw = n => bal[n];
+const freeAmt = (u, o) => amt('SharesFree:' + u + ':' + o);
+const escAmt = (u, o) => amt('SharesEscrowed:' + u + ':' + o);
+const outAmt = o => amt('SharesOutstanding:M:' + o);
+const outstandingAmt = () => outAmt('YES') + outAmt('NO');
+
+// --- Journal helpers for the share lifecycle (single-domain SHARE journals). ---
+function jSplit(u, n) { for (const o of ['YES', 'NO']) postJournal('split-sh', [['SharesFree:' + u + ':' + o, 'D', n], ['SharesOutstanding:M:' + o, 'C', n]]); }
+function jMerge(u, n) { for (const o of ['YES', 'NO']) postJournal('merge-sh', [['SharesOutstanding:M:' + o, 'D', n], ['SharesFree:' + u + ':' + o, 'C', n]]); }
+function jEscrow(u, o, n) { postJournal('escrow-sh', [['SharesEscrowed:' + u + ':' + o, 'D', n], ['SharesFree:' + u + ':' + o, 'C', n]]); }
+function jRelease(u, o, n) { postJournal('release-sh', [['SharesFree:' + u + ':' + o, 'D', n], ['SharesEscrowed:' + u + ':' + o, 'C', n]]); }
+function jRetire(u, o, n) { postJournal('retire-sh', [['SharesOutstanding:M:' + o, 'D', n], ['SharesFree:' + u + ':' + o, 'C', n]]); }
+function jTransfer(from, to, o, n) { postJournal('transfer-sh', [['SharesFree:' + to + ':' + o, 'D', n], ['SharesFree:' + from + ':' + o, 'C', n]]); }
+function freshShares() { PAYABLE = 'B'; ISSUANCE_APPROVED = false; WRITEOFF_APPROVED = false; settledWrong(); }
+const C2_OLD = () => bal['SharesOutstanding:M:YES'] === -bal['SharesOutstanding:M:NO'];
+
+console.log('--- S4-01: C2/S1 at zero outstanding shares ---');
+freshShares();
+test('S4-01', 'C2 holds at zero outstanding (both sides 0)', true, C2());
+test('S4-01b', 'S1 holds at zero outstanding', true, S1());
+test('S4-01c', 'outstanding magnitudes are 0', true, outstandingAmt() === 0);
+
+console.log('--- S4-02: C2 evaluated at NON-ZERO outstanding after one split ---');
+freshShares();
+tx('S4-02-split', () => { jSplit('Alice', 3); });
+test('S4-02', 'C2 holds with 3 YES and 3 NO outstanding (NON-ZERO)', true, C2());
+test('S4-02b', 'outstanding magnitudes are YES 3 and NO 3', true, outAmt('YES') === 3 && outAmt('NO') === 3);
+test('S4-02c', 'raw balances are both negative (credit-normal): -3 and -3', true, raw('SharesOutstanding:M:YES') === -3 && raw('SharesOutstanding:M:NO') === -3);
+test('S4-02d', 'S1 holds: Alice free 3 = outstanding 3 per outcome', true, S1() && freeAmt('Alice', 'YES') === 3 && freeAmt('Alice', 'NO') === 3);
+// Regression guard: the Revision-10 formula must now be FALSE here, proving C2 is genuinely
+// exercised at non-zero balances (not merely true-because-zero).
+test('S4-02e', 'old sign-inverted formula returns FALSE at non-zero outstanding (defect regression)', false, C2_OLD());
+test('S4-02f', 'corrected C2 TRUE where the old formula is FALSE', true, C2() === true && C2_OLD() === false);
+
+console.log('--- S4-03: multiple complete-set splits ---');
+freshShares();
+tx('S4-03-splitA', () => { jSplit('Alice', 2); });
+tx('S4-03-splitB', () => { jSplit('Bob', 5); });
+test('S4-03', 'C2 holds after two splits (7 YES, 7 NO)', true, C2() && outAmt('YES') === 7 && outAmt('NO') === 7);
+test('S4-03b', 'S1 holds: Alice free 2, Bob free 5 per outcome', true, S1() && freeAmt('Alice', 'YES') === 2 && freeAmt('Bob', 'NO') === 5);
+
+console.log('--- S4-04: merge of complete sets ---');
+freshShares();
+tx('S4-04-split', () => { jSplit('Alice', 6); });
+tx('S4-04-merge', () => { jMerge('Alice', 2); });
+test('S4-04', 'C2 holds after merge (4 YES, 4 NO outstanding)', true, C2() && outAmt('YES') === 4 && outAmt('NO') === 4);
+test('S4-04b', 'S1 holds after merge (Alice free 4 per outcome)', true, S1() && freeAmt('Alice', 'YES') === 4);
+
+console.log('--- S4-05: escrow and release (no outstanding change) ---');
+freshShares();
+tx('S4-05-split', () => { jSplit('Alice', 5); });
+tx('S4-05-escrow', () => { jEscrow('Alice', 'YES', 3); });
+test('S4-05', 'C2 holds while 3 YES escrowed (outstanding unchanged at 5)', true, C2() && outAmt('YES') === 5 && outAmt('NO') === 5);
+test('S4-05b', 'S1 holds: free 2 + escrowed 3 = outstanding 5 (YES)', true, S1() && freeAmt('Alice', 'YES') === 2 && escAmt('Alice', 'YES') === 3);
+tx('S4-05-release', () => { jRelease('Alice', 'YES', 3); });
+test('S4-05c', 'C2/S1 hold after release (free 5, escrowed 0)', true, C2() && S1() && freeAmt('Alice', 'YES') === 5 && escAmt('Alice', 'YES') === 0);
+
+console.log('--- S4-06: retirement of shares ---');
+freshShares();
+tx('S4-06-split', () => { jSplit('Alice', 4); });
+tx('S4-06-retire2', () => { for (const o of ['YES', 'NO']) jRetire('Alice', o, 2); });
+test('S4-06', 'C2 holds after retiring a complete set (2 YES, 2 NO outstanding)', true, C2() && outAmt('YES') === 2 && outAmt('NO') === 2);
+// Prove C2 detects asymmetry: force an unbalanced retire with postJournal (bypassing the tx guard),
+// then restore. This shows C2 is meaningful at non-zero balances, not true-by-zero.
+const s6 = snapshot();
+postJournal('S4-06-asym', [['SharesOutstanding:M:YES', 'D', 2], ['SharesFree:Alice:YES', 'C', 2]]);
+test('S4-06b', 'C2 FAILS after an unbalanced YES-only retire (0 YES, 2 NO)', false, C2());
+test('S4-06c', 'C2 asymmetry is exactly YES 0 vs NO 2; S1 still holds per outcome', true, outAmt('YES') === 0 && outAmt('NO') === 2 && S1());
+restore(s6);
+test('S4-06d', 'C2/S1 hold again after restoring the balanced state', true, C2() && S1() && outAmt('YES') === 2);
+// And the tx() guard rejects an unbalanced retire at a commit boundary:
+test('S4-06e', 'unbalanced retire is rolled back by the commit-boundary guard', 'rolled-back', tx('S4-06-guard', () => { jRetire('Alice', 'YES', 2); }, { expectRollback: true }));
+
+console.log('--- S4-07: intermediate states before full retirement ---');
+freshShares();
+tx('S4-07-split', () => { jSplit('Alice', 10); });
+tx('S4-07-merge', () => { jMerge('Alice', 3); });
+test('S4-07', 'intermediate (after merge 3 of 10): C2 holds, 7 outstanding', true, C2() && outAmt('YES') === 7);
+tx('S4-07-xfer', () => { jTransfer('Alice', 'Bob', 'YES', 3); });
+test('S4-07b', 'transfer keeps totals: Alice 4, Bob 3 YES; C2/S1 hold', true, C2() && S1() && freeAmt('Alice', 'YES') === 4 && freeAmt('Bob', 'YES') === 3);
+const s7 = snapshot();
+postJournal('S4-07-asym', [['SharesOutstanding:M:YES', 'D', 3], ['SharesFree:Bob:YES', 'C', 3]]);
+postJournal('S4-07-asym2', [['SharesOutstanding:M:YES', 'D', 4], ['SharesFree:Alice:YES', 'C', 4]]);
+test('S4-07c', 'C2 detects asymmetry mid-lifecycle (0 YES, 7 NO outstanding)', false, C2());
+restore(s7);
+test('S4-07d', 'C2/S1 restored (7 YES, 7 NO)', true, C2() && S1() && outAmt('YES') === 7);
+
+console.log('--- S4-08: C2/S1 across correction-lifecycle boundaries (shares + correction) ---');
+ISSUANCE_APPROVED = true; settledWrong();
+tx('S4-08-split', () => { jSplit('Carol', 2); });
+test('S4-08a', 'C2/S1 hold at correction start with 2 shares outstanding', true, C2() && S1() && outAmt('YES') === 2);
+tx('S4-08-recognize', () => { jRecognize(200); });
+test('S4-08b', 'C2/S1 hold after recognition (shares unaffected)', true, C2() && S1() && outAmt('YES') === 2);
+tx('S4-08-issue', () => { issueGroup(200); });
+test('S4-08c', 'C2/S1 hold after issuance+reopen (shares unaffected, units 2)', true, C2() && S1() && outAmt('YES') === 2 && amt('ClaimUnitsRemaining:M') === 2);
+test('S4-08d', 'C1, C2 and S1 all hold together at the funded boundary', true, C1() && C2() && S1());
+tx('S4-08-pay', () => { jPayB(200); jClose(2); });
+test('S4-08e', 'C2/S1 hold after payout+close (correction complete)', true, C2() && S1() && amt('ClaimUnitsRemaining:M') === 0);
+ISSUANCE_APPROVED = false;
+
+console.log('--- S4-09: C2 evaluated with NON-ZERO outstanding at every commit boundary ---');
+ISSUANCE_APPROVED = true; settledWrong();
+tx('S4-09-split', () => { jSplit('Alice', 4); });
+tx('S4-09-recognize', () => { jRecognize(200); });
+let c2NonZero = 0;
+report('S4-09 boundary 1 (recognized, 4 shares outstanding)'); if (outstandingAmt() > 0 && C2()) c2NonZero++;
+tx('S4-09-collect', () => { collectGroup(200); });
+report('S4-09 boundary 2 (funded, 4 shares outstanding)'); if (outstandingAmt() > 0 && C2()) c2NonZero++;
+tx('S4-09-pay', () => { jPayB(200); jClose(2); });
+report('S4-09 boundary 3 (paid, 4 shares outstanding)'); if (outstandingAmt() > 0 && C2()) c2NonZero++;
+test('S4-09', 'C2 true at all 3 non-zero boundaries (not a zero-balance false positive)', true, c2NonZero === 3 && outstandingAmt() === 8);
+ISSUANCE_APPROVED = false;
 
 console.log('\n================ SUMMARY ================');
 console.log(`test cases: ${tests} (${tests - testFails} passed, ${testFails} failed)`);

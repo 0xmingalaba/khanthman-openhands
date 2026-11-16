@@ -1,14 +1,15 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 10)
+# Milestone 0 — Discovery & Architecture Report (Revision 11)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 10) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 9 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 10)
+**Status:** DRAFT (Revision 11) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 10 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 11)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
 features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
-**Revision 10 is a documentation-only correction** addressing the final Milestone 0 independent
-review; **no financial policy, architecture direction, or owner decision was changed.**
+**Revision 11 corrects the C2 verification-model defect and four documentation inconsistencies**
+(D12–D15); **no financial policy, account, journal, architecture direction, or owner decision was
+changed.**
 
 ### Verification labels
 
@@ -40,8 +41,8 @@ is committed; the exact final commit hash is in the delivery message.
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → **this revision's commit** |
-| Commits ahead of `main` | **14** before this revision; one documentation commit per Milestone-0 revision plus small follow-ups. Exact final count and hash are in the delivery message |
+| Commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → `9f1304d` → **this revision's commit** |
+| Commits ahead of `main` | **15** before this revision; one documentation commit per Milestone-0 revision plus small follow-ups. Exact final count and hash are in the delivery message |
 | Commits behind `main` | 0 |
 | Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) — **canonical repository confirmed** |
@@ -70,10 +71,11 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | `8b6e3ea` | Milestone 0 revision 9 correction accounting | `AGENTS.md`, both `docs/*.md` |
 | `a8bbb06` | Milestone 0 revision 9 review preparation | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
 | `ec59879` | Milestone 0 revision 9 independent-review corrections | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
-| *(this revision)* | Milestone 0 revision 10 (final-review corrections) | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/README.md` |
+| `9f1304d` | Milestone 0 revision 10 (final-review corrections) | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/README.md` |
+| *(this revision)* | Milestone 0 revision 11 (C2 verification + consistency) | both `docs/*.md`, `AGENTS.md`, `docs/verification/rev9/*` |
 
 **Shallow-clone limitation:** the clone is **shallow**, so historical file-change verification is
-limited to the commits present locally (all listed above are present). The exact Revision 10 hash and
+limited to the commits present locally (all listed above are present). The exact Revision 11 hash and
 counts are reported in the delivery message.
 
 ### 1.2 Direct answers
@@ -156,19 +158,23 @@ here is approved. Localization (EN + MY), theme (light/dark), responsive layout 
 and loading/empty/error/unavailable states are **cross-cutting requirements for every page**. The
 **Staff/Admin dashboard is explicitly excluded** from current scope.
 
+The **Milestone** column is a **proposed** assignment and is aligned with the **§3.3 roadmap** and the
+**§8 PR sequence** (auth pages → M3, discovery/detail pages → M4, trading/portfolio → M7+). **All
+milestone numbers are PROPOSED and subject to owner approval**; they are not delivery commitments.
+
 | # | Page / surface | Route (proposed) | Key content | Milestone |
 | - | - | - | - | - |
-| P1 | Home / discovery | `/` | featured + trending market cards, category chips, locale & theme toggles | M1 (shell) / M5 |
-| P2 | Categories | `/categories`, `/category/[slug]` | category grid → filtered market list | M5 |
-| P3 | Search | `/search` (or query on P1) | query box, filters (category, status, close date), results | M5 |
-| P4 | Market detail | `/market/[slug]` | question, outcome probabilities, price history chart, order book, resolution rules & source, end date | M5 |
+| P1 | Home / discovery | `/` | featured + trending market cards, category chips, locale & theme toggles | M1 (shell) / M4 |
+| P2 | Categories | `/categories`, `/category/[slug]` | category grid → filtered market list | M4 |
+| P3 | Search | `/search` (or query on P1) | query box, filters (category, status, close date), results | M4 |
+| P4 | Market detail | `/market/[slug]` | question, outcome probabilities, price history chart, order book, resolution rules & source, end date | M4 |
 | P5 | Event / multi-outcome (later) | `/event/[slug]` | several binary markets under one event | later (AR5) |
 | P6 | Trading interface | within `/market/[slug]` | the four planned modes: order book, limit, market, 1-Tap; split/merge | M7+ (gated) |
 | P7 | Portfolio / positions | `/portfolio` | open positions, claim units, split/merge actions | M7+ (gated) |
 | P8 | Orders | `/orders` | open/historical orders | M7+ (gated) |
 | P9 | Activity | `/activity` | trade & settlement history (append-only view) | M7+ |
-| P10 | Authentication | `/login`, `/register` | email + password (AR2); recovery (AR10) | M4 |
-| P11 | Account settings | `/settings` | profile, locale, theme, session management | M4 |
+| P10 | Authentication | `/login`, `/register` | email + password (AR2); recovery (AR10) | M3 |
+| P11 | Account settings | `/settings` | profile, locale, theme, session management | M3 |
 | P12 | Legal / disclosure | `/about`, `/terms`, `/disclosure` | "virtual credits only, no real money" disclosure | M1 (static) |
 | P13 | Not found / error | `not-found`, `error` | standard Next.js states | M1 |
 
@@ -257,7 +263,7 @@ committed atomically in one DB transaction (financial spec Part 1).
 **Recommended (Option B):** no separately recognized correction-payable account; realized funding in
 `SettlementCorrection:{m}` backs the reopened claim units via C1. **Alternative (Option A):** a
 market-scoped control account `CorrectionPayableMarket:{m}` in C1 with a subledger.
-**OWNER DECISION F20 / AR15 (unchanged in Revision 10).**
+**OWNER DECISION F20 / AR15 (unchanged in Revision 11).**
 
 ### 4.6 Correction lifecycle (PROPOSED, corrected in Rev 9)
 
@@ -382,7 +388,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 10)
+## 9. Risk register (Revision 11)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -421,7 +427,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 10. Owner decision register (Revision 10)
+## 10. Owner decision register (Revision 11)
 
 ### 10.1 Architecture / product
 
@@ -502,10 +508,13 @@ register. See spec Part 10a for the full statements.
 | **T25** | **Which issuance path (Path A vs Path B) and what does issuance cancel (F27/F28)?** | **OWNER DECISION** |
 | **T26** | **Is the issuance group atomic (F29)?** | **OWNER DECISION** |
 | **T27** | **How is a partially written-off claim handled when issuance funds the remainder?** | **OPEN** |
+| **T28** | **What immutable per-correction and per-entitlement identifier model is used, so several corrections on one market and several beneficiaries can be represented distinctly (F30)?** | **OWNER DECISION** |
+| **T29** | **How are the market-level aggregate correction accounts reconciled to individual correction records and per-user entitlements — i.e. what accounting granularity is authoritative (F30)?** | **OWNER DECISION** |
+| **T30** | **Must an issuance amount `x` be a whole multiple of the payout-per-share `P`, and what is the rejection/handling rule for a fractional `x/P` (F31)?** | **OWNER DECISION** |
 
 ---
 
-## 12. Change list (Revision 8 → Revision 9, then Revision 9 → Revision 10)
+## 12. Change list (Revision 8 → 9, 9 → 10, then 10 → 11)
 
 1. **E7 issuance defect corrected.** Issuance is now the atomic group **E6 (issue) + E4 (realize) +
    E7 (reopen)**: it creates funding, cancels the outstanding claim, realizes funding, and reopens the
@@ -544,7 +553,8 @@ register. See spec Part 10a for the full statements.
     historical, not re-tested). Write access is never tested by pushing.
 13. **D4 — C2 and S1 defined** (financial spec **Part 4a**), with scope, sign convention, and a
     **reported discrepancy**: the scratch model's `C2()` is sign-inverted and is never exercised at
-    non-zero share balances. **The model was not modified.**
+    non-zero share balances. **The model was not modified** in Revision 10. *(Corrected in Revision 11:
+    see §12.2 item 20.)*
 14. **D5 — page/component inventory and roadmap added** (§3.1, §3.2, §3.3), labelled **PROPOSED**
     planning artifacts. Staff/Admin dashboard remains **excluded**.
 15. **D6 — coverage claim withdrawn.** The README "20 required topics — complete" phrasing is replaced;
@@ -563,6 +573,32 @@ register. See spec Part 10a for the full statements.
 19. **D11 — scaffold file count corrected.** §1.2 states **15** tracked scaffold files (exact list),
     what is excluded, and how the "19 files" commit figure decomposes.
 
+### 12.2 Change list — Revision 10 → Revision 11 (C2 verification + consistency)
+
+20. **C2 verification-model defect corrected.** `docs/verification/rev9/rev9.mjs` now computes
+    `C2() = amt(YES) === amt(NO)` (magnitudes) instead of the sign-inverted
+    `bal[YES] === -bal[NO]`. This is a **scratch-verification fix only**; no financial rule, account,
+    journal, or decision changed. See the financial spec **Part 4a**.
+21. **S1 independently re-derived.** Part 4a derives S1 from the split/merge/escrow/release/retire
+    journals and confirms the model's S1 is correct (restated via `amt(...)` for clarity). S1 is
+    **unchanged in substance**.
+22. **New share-ledger tests (Section 4, S4-01…S4-09).** They exercise C2/S1 at **zero and non-zero**
+    outstanding balances (single split, multiple splits, merge, escrow/release, retirement,
+    intermediate states, correction-lifecycle boundaries) and include a **regression guard**
+    (`S4-02e`/`S4-02f`) proving the old formula returns `false` where the corrected one returns `true`.
+    Scratch totals: **136 test cases, 253 invariant assertions** (was 105/220).
+23. **D12 — page-inventory milestone tags corrected.** §3.1 now tags auth pages **M3** and
+    discovery/detail pages **M4**, consistent with the **§3.3 roadmap** and the **§8 PR sequence**;
+    a note states the milestone column is **PROPOSED** and not a delivery commitment.
+24. **D13 — trading milestone reference corrected.** The financial spec Part 11 no longer says trading
+    ships in "Milestone 4"; it now states **Milestone 7+ (gated)**, labelled **PROPOSED** and subject to
+    owner approval.
+25. **D14 — F30/F31 added to the stop-condition list.** §13 now lists **F14, F16–F31** (naming F30 and
+    F31) as awaiting owner decisions, all **NOT APPROVED**.
+26. **D15 — open questions T28–T30 added.** §11 now covers the **F30** identifier model, the
+    **F30** aggregate-to-detail reconciliation/accounting granularity, and the **F31** whole-Kyat
+    divisibility rule — recorded, **not selected**.
+
 ---
 
 ## 13. Unresolved limitations and stop condition
@@ -580,6 +616,10 @@ register. See spec Part 10a for the full statements.
 - **Option A is demonstrated for the supplied scenario only**, not established as production-complete.
 
 Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
-implemented auth/trading/ledger/settlement, created schemas or migrations, modified financial logic,
-or pushed/merged/deployed. **No financial specification approval is assumed.** I await your
-independent review and explicit decisions on F14, F16–F29, AR13, AR15–AR19.
+implemented auth/trading/ledger/settlement, created schemas or migrations, or pushed/merged/deployed.
+**No financial rule, account, journal, or decision was changed**; the only code change is the
+**C2 verification-model correction** in `docs/verification/rev9/rev9.mjs` (a scratch verification
+script, not application or financial logic). **No financial specification approval is assumed.** I
+await your independent review and explicit decisions on **F14, F16–F31** (including **F30**
+correction/entitlement identifier model and **F31** whole-Kyat divisibility), **AR13, AR15–AR19**. All
+remain **NOT APPROVED**.

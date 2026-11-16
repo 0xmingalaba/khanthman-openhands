@@ -280,7 +280,74 @@ PASS R9-37 Option A reconciliation                  MMK=true SH=true UN=true C1=
    [R9-38] REJECTED (NEGATIVE BALANCE: SettlementCorrection:M would be -200) -> ROLLBACK
 PASS R9-38 Option A: double recognition rejected (corr already 0) | expected=rolled-back actual=rolled-back
 
+############ SECTION 4 — Share-ledger invariants C2 / S1 (Revision 11) ############
+--- S4-01: C2/S1 at zero outstanding shares ---
+PASS S4-01 C2 holds at zero outstanding (both sides 0) | expected=true actual=true
+PASS S4-01b S1 holds at zero outstanding | expected=true actual=true
+PASS S4-01c outstanding magnitudes are 0 | expected=true actual=true
+--- S4-02: C2 evaluated at NON-ZERO outstanding after one split ---
+   [S4-02-split] COMMITTED (all invariants hold at boundary)
+PASS S4-02 C2 holds with 3 YES and 3 NO outstanding (NON-ZERO) | expected=true actual=true
+PASS S4-02b outstanding magnitudes are YES 3 and NO 3 | expected=true actual=true
+PASS S4-02c raw balances are both negative (credit-normal): -3 and -3 | expected=true actual=true
+PASS S4-02d S1 holds: Alice free 3 = outstanding 3 per outcome | expected=true actual=true
+PASS S4-02e old sign-inverted formula returns FALSE at non-zero outstanding (defect regression) | expected=false actual=false
+PASS S4-02f corrected C2 TRUE where the old formula is FALSE | expected=true actual=true
+--- S4-03: multiple complete-set splits ---
+   [S4-03-splitA] COMMITTED (all invariants hold at boundary)
+   [S4-03-splitB] COMMITTED (all invariants hold at boundary)
+PASS S4-03 C2 holds after two splits (7 YES, 7 NO) | expected=true actual=true
+PASS S4-03b S1 holds: Alice free 2, Bob free 5 per outcome | expected=true actual=true
+--- S4-04: merge of complete sets ---
+   [S4-04-split] COMMITTED (all invariants hold at boundary)
+   [S4-04-merge] COMMITTED (all invariants hold at boundary)
+PASS S4-04 C2 holds after merge (4 YES, 4 NO outstanding) | expected=true actual=true
+PASS S4-04b S1 holds after merge (Alice free 4 per outcome) | expected=true actual=true
+--- S4-05: escrow and release (no outstanding change) ---
+   [S4-05-split] COMMITTED (all invariants hold at boundary)
+   [S4-05-escrow] COMMITTED (all invariants hold at boundary)
+PASS S4-05 C2 holds while 3 YES escrowed (outstanding unchanged at 5) | expected=true actual=true
+PASS S4-05b S1 holds: free 2 + escrowed 3 = outstanding 5 (YES) | expected=true actual=true
+   [S4-05-release] COMMITTED (all invariants hold at boundary)
+PASS S4-05c C2/S1 hold after release (free 5, escrowed 0) | expected=true actual=true
+--- S4-06: retirement of shares ---
+   [S4-06-split] COMMITTED (all invariants hold at boundary)
+   [S4-06-retire2] COMMITTED (all invariants hold at boundary)
+PASS S4-06 C2 holds after retiring a complete set (2 YES, 2 NO outstanding) | expected=true actual=true
+PASS S4-06b C2 FAILS after an unbalanced YES-only retire (0 YES, 2 NO) | expected=false actual=false
+PASS S4-06c C2 asymmetry is exactly YES 0 vs NO 2; S1 still holds per outcome | expected=true actual=true
+PASS S4-06d C2/S1 hold again after restoring the balanced state | expected=true actual=true
+   [S4-06-guard] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS S4-06e unbalanced retire is rolled back by the commit-boundary guard | expected=rolled-back actual=rolled-back
+--- S4-07: intermediate states before full retirement ---
+   [S4-07-split] COMMITTED (all invariants hold at boundary)
+   [S4-07-merge] COMMITTED (all invariants hold at boundary)
+PASS S4-07 intermediate (after merge 3 of 10): C2 holds, 7 outstanding | expected=true actual=true
+   [S4-07-xfer] COMMITTED (all invariants hold at boundary)
+PASS S4-07b transfer keeps totals: Alice 4, Bob 3 YES; C2/S1 hold | expected=true actual=true
+PASS S4-07c C2 detects asymmetry mid-lifecycle (0 YES, 7 NO outstanding) | expected=false actual=false
+PASS S4-07d C2/S1 restored (7 YES, 7 NO) | expected=true actual=true
+--- S4-08: C2/S1 across correction-lifecycle boundaries (shares + correction) ---
+   [S4-08-split] COMMITTED (all invariants hold at boundary)
+PASS S4-08a C2/S1 hold at correction start with 2 shares outstanding | expected=true actual=true
+   [S4-08-recognize] COMMITTED (all invariants hold at boundary)
+PASS S4-08b C2/S1 hold after recognition (shares unaffected) | expected=true actual=true
+   [S4-08-issue] COMMITTED (all invariants hold at boundary)
+PASS S4-08c C2/S1 hold after issuance+reopen (shares unaffected, units 2) | expected=true actual=true
+PASS S4-08d C1, C2 and S1 all hold together at the funded boundary | expected=true actual=true
+   [S4-08-pay] COMMITTED (all invariants hold at boundary)
+PASS S4-08e C2/S1 hold after payout+close (correction complete) | expected=true actual=true
+--- S4-09: C2 evaluated with NON-ZERO outstanding at every commit boundary ---
+   [S4-09-split] COMMITTED (all invariants hold at boundary)
+   [S4-09-recognize] COMMITTED (all invariants hold at boundary)
+PASS S4-09 boundary 1 (recognized, 4 shares outstanding) MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [S4-09-collect] COMMITTED (all invariants hold at boundary)
+PASS S4-09 boundary 2 (funded, 4 shares outstanding) MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [S4-09-pay] COMMITTED (all invariants hold at boundary)
+PASS S4-09 boundary 3 (paid, 4 shares outstanding)  MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+PASS S4-09 C2 true at all 3 non-zero boundaries (not a zero-balance false positive) | expected=true actual=true
+
 ================ SUMMARY ================
-test cases: 105 (105 passed, 0 failed)
-invariant assertions at commit boundaries: 220
+test cases: 136 (136 passed, 0 failed)
+invariant assertions at commit boundaries: 253
 >>> ALL CHECKS PASSED (scratch)

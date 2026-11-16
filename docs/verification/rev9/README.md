@@ -1,13 +1,14 @@
 # Revision 9 verification (Milestone 0)
 
-Reproducible scratch verification for **Revision 9** of the financial specification. These files are
-**verification artifacts, not application code** and are **not** imported by the app.
+Reproducible scratch verification for the **Revision 9** financial-specification model, with the
+**Revision 11** C2/S1 share-ledger correction and tests. These files are **verification artifacts,
+not application code** and are **not** imported by the app.
 
 ## Files
 
 | File | Purpose |
 | - | - |
-| `rev9.mjs` | Scratch accounting model. Section 1 = the 45 Revision 8 tests (preserved); Section 2 = the 30 Revision 9 tests; Section 3 = 30 review-prep tests (F28 cancel-order — both alternatives — and Option A). |
+| `rev9.mjs` | Scratch accounting model. Section 1 = the 45 Revision 8 tests (preserved); Section 2 = the 30 Revision 9 tests; Section 3 = 30 review-prep tests (F28 cancel-order — both alternatives — and Option A); Section 4 = 31 Revision 11 share-ledger tests (C2/S1 lifecycle at zero and non-zero outstanding, regression guard for the corrected C2). |
 | `rev9-pglite.mjs` | PGlite mechanism test (atomic multi-journal, rollback, unique issuance/collection/payout keys, non-negative, corrected issuance). |
 | `rev9.expected.out` | Captured stdout of `rev9.mjs`. |
 | `rev9-pglite.expected.out` | Captured stdout of `rev9-pglite.mjs`. |
@@ -30,8 +31,8 @@ directory where that package is installed.
 node docs/verification/rev9/rev9.mjs
 ```
 
-Expected: `test cases: 105 (105 passed, 0 failed)` and
-`invariant assertions at commit boundaries: 220` and `>>> ALL CHECKS PASSED (scratch)`. Exit code `0`.
+Expected: `test cases: 136 (136 passed, 0 failed)` and
+`invariant assertions at commit boundaries: 253` and `>>> ALL CHECKS PASSED (scratch)`. Exit code `0`.
 
 **Option 2 — run both scripts from a scratch directory** (needed for the PGlite test, which requires
 `@electric-sql/pglite`). Set `REPO` to the absolute path of the repository root, then:
