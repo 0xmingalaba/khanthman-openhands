@@ -15,21 +15,21 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 5** delivered in `docs/`. Awaiting owner approval.
+- Milestone 0 (Discovery & Architecture) **Revision 6** delivered in `docs/`. Awaiting owner review.
+- **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
-- Accounting model (Rev 5): three **independently balanced domains** — MMK, Share, Claim-unit.
+- Accounting model (Rev 6): three **independently balanced domains** — MMK, Share, Claim-unit.
   Single-domain journals; no domain balances against another; committed atomically together.
-- Non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued` contra-equity;
-  `CollateralBucket` = restricted virtual-credit bucket (not a real asset).
-- Backing invariant is **claim-based**: `CollateralBucket + SettlementPayable +
-  SettlementCorrection = payout_per_share x ClaimUnitsRemaining` (C1), plus C1b (units), C2, S1.
-- Settlement: 12-step, two-phase, resumable; payout journal + unit journal + unique payout key
-  committed atomically; no reliance on a worker-progress flag.
-- Corrections: immutable `SettlementEntitlement` snapshot survives share retirement;
-  `CorrectionReceivable`/`CorrectionPayable`/`SettlementCorrection`; never silent negative balances.
+- Case F corrections are **one atomic transaction** (establish funding -> recover receivable ->
+  re-open claim units). A negative receivable is **forbidden** (scratch rejects; PGlite CHECK).
+- C1 counts backing as `CollateralBucket + SettlementPayable + SettlementCorrection =
+  payout_per_share x ClaimUnitsRemaining`. **Open decision F17**: does an uncollected receivable
+  count as backing (Policy A) or only realized funding (Policy B)? Recommend Policy B.
+- Non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued` contra-equity.
+- Issuance to fund a correction remains an **OWNER DECISION (F14)**; not implemented.
 - Verification labels: VERIFIED (scratch) / VERIFIED (PGlite) / VERIFIED (real PostgreSQL) /
-  DOCUMENTED / RECOMMENDED / PROPOSED / OPEN / OWNER DECISION. **No real PostgreSQL concurrency
-  has been verified.** Do not mark designs VERIFIED without executed evidence.
+  DOCUMENTED / RECOMMENDED / PROPOSED / OPEN / OWNER DECISION / NOT VERIFIED. **No real PostgreSQL
+  concurrency has been verified.** Do not mark designs VERIFIED without executed evidence.
 - Recommended stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle +
   Zod + Vitest/Playwright + key-based `en`/`my` i18n.
 - PGlite VERIFIED for local/test (logic + constraints); real PostgreSQL needed for concurrency tests.

@@ -1,396 +1,359 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 5) — **requires explicit product owner approval before any trading code is written**
-**Supersedes:** Revision 4 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 5)
-**Milestone:** still Milestone 0 — planning only. **No trading, ledger, matching, settlement,
-schema, migration, or auth code exists.**
+**Status:** DRAFT (Revision 6) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 5 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 6)
+**Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
+ledger, matching, settlement, schema, migration, or auth code exists.**
 
 ### Verification labels
 
 | Label | Meaning |
 | - | - |
 | **VERIFIED (scratch)** | A scratch model outside the repo was run; output observed (Appendix V). **Not** a product test. |
-| **VERIFIED (PGlite)** | A scratch test ran against PGlite (PostgreSQL 18.6 in WASM). Constraint/mechanism evidence only. |
-| **VERIFIED (real PostgreSQL)** | Ran against a real PostgreSQL **server** with multiple sessions. **None performed.** |
+| **VERIFIED (PGlite)** | A scratch test ran against PGlite (PostgreSQL 18.6 WASM, **single connection**). Constraint/mechanism evidence only. |
+| **VERIFIED (real PostgreSQL)** | Ran against a real PostgreSQL **server** with multiple sessions. **NONE PERFORMED.** |
 | **DOCUMENTED** | Supported by a primary technical document (URL given). |
 | **RECOMMENDED** | My professional recommendation. |
 | **PROPOSED** | A design not implemented and not tested. |
 | **OPEN** | Needs further investigation or an owner decision. |
 | **OWNER DECISION** | Needs explicit product-owner approval. |
+| **NOT VERIFIED** | Explicitly not established. |
 
 > **Honesty statement.** No application, schema, migration, ledger, matching, settlement, or auth
-> code has been written. **Scratch and PGlite results are not product tests.** **No real
-> PostgreSQL multi-session concurrency has been verified.** Everything describing the product is
-> **PROPOSED**.
+> code has been written. **Scratch and PGlite results are not product tests. No real PostgreSQL
+> multi-session concurrency has been verified.** Everything describing the product is **PROPOSED**.
+> **Nothing in this document is approved.**
 
 ---
 
-## Part 0 — What changed in Revision 5
+## Part 0 — What changed in Revision 6 (and why)
 
-1. **Correction paths B–F fully specified** with before/after balances, an MMK journal, a
-   claim-unit journal, and explicit C1/C1b/M1 checks at each step, all executed in the scratch
-   model (Part 6). `SettlementCorrection` is explicitly accounted.
-2. **Three independent accounting domains** defined (MMK, Share, Claim-unit); journals may not
-   mix units, and no domain balances against another (Part 1, Part 2).
-3. **Settlement failure modes** extended (crash before/after commit, duplicate payout, concurrent
-   workers, idempotency-key conflict, restart) — simulated in scratch and, for the unique-key
-   mechanism, in PGlite; **real concurrency is explicitly not claimed** (Part 5).
-4. **M1 completed** with a per-operation delta proof for every financial operation, including
-   issuance, receivable recovery, and every correction path (Part 3).
-5. **Entitlement rules completed**: the settlement ownership cutoff (free + escrowed shares,
-   cancellations, pending executions) and superseding resolution versions (Part 7).
-6. **Market-order terminology corrected** — filled quantity, partial fills, unspent budget,
-   expired orders, and rejected orders are distinct; fill completion is never inferred from
-   budget consumption (Part 8).
+Revision 5 had four defects the owner identified. Revision 6 corrects each.
 
----
-
-## Part 1 — Three accounting domains (PROPOSED)
-
-The system maintains **three ledgers that balance independently**:
-
-| Domain | Unit | Balances when |
+| # | Revision 5 defect | Revision 6 correction |
 | - | - | - |
-| **MMK ledger** | whole MMK | Σ debits = Σ credits over MMK accounts |
-| **Share ledger** | integer shares of an outcome | Σ debits = Σ credits over share accounts |
-| **Claim-unit control ledger** | integer "claim units" (winning shares) | `ClaimUnitsRemaining = UnitsControl` |
-
-**Rules.**
-1. **A journal belongs to exactly one domain** and must balance **within that domain**.
-2. **Units are never mixed** in a single journal. An MMK journal has only MMK accounts; a share
-   journal has only share accounts; a unit journal has only unit accounts.
-3. **No domain balances against another.** The MMK ledger is not "made true" by the share ledger.
-4. **One logical operation may comprise several single-domain journals**, all committed in **one
-   database transaction**, so the whole operation is atomic while each domain balances itself.
-5. Cross-domain consistency is enforced by **invariants** (C1, C1b, C2, S1) and by the
-   **atomic transaction**, not by netting one domain's debits against another's credits.
-
-**VERIFIED (scratch):** the scratch model **refuses to post a journal that spans domains**
-(`MIXED DOMAINS` error) and **refuses an unbalanced journal** (`UNBALANCED` error); every one of
-the 34 executed checks confirmed each domain balanced on its own.
+| A | **Case F broke C1.** It re-opened claim units **before** funding `SettlementCorrection`, so during the intermediate state `ClaimUnitsRemaining` and `UnitsControl` increased while `CollateralBucket`, `SettlementPayable`, and `SettlementCorrection` stayed 0 → C1 false. Its recovery path also **credited `CorrectionReceivable` before it existed**, which can make the receivable **negative**. | Case F is now **one atomic logical operation** whose **single-domain journals** establish funding, recover the receivable **after** establishing it, and re-open units — all in **one transaction**, asserted at the commit boundary. A negative receivable is now **forbidden** (scratch rejects it; PGlite `CHECK` enforces it). (Part 6) |
+| B | **Case F-issue sequencing** was not atomic (issuance and unit reopening could be ordered wrongly). | Issuance funding and claim-unit reopening are now **one transaction**; the `CreditsIssued` increase and the resulting supply increase are shown. Issuance remains an **OWNER DECISION (F14)**. (Part 6.5) |
+| C | **C1 vs recoverable funding were conflated**: `CorrectionReceivable` was treated as backing without stating when it is *recoverable*. | Revision 6 separates **accounting balance**, **correction receivable**, **recoverable funding**, **additional issuance**, and **uncollectible receivable**, answers the owner's questions, and presents **two clearly separated policy alternatives (A and B)**. (Part 7) |
+| D | The **2,000 MMK market-buy example** had no requested quantity and wrongly concluded "not a partial fill". | The example now specifies an **explicit requested quantity** and compares it to the filled quantity, and defines all ten quantities distinctly. Policy stays **OPEN/OWNER DECISION**. (Part 9) |
 
 ---
 
-## Part 2 — Complete account catalogue (PROPOSED)
+## Part 1 — Three accounting domains (unchanged)
 
-Sign convention: each account has a **normal side** (D or C). An entry on the normal side
-increases the account; an entry on the opposite side decreases it.
+Three ledgers balance **independently**: **MMK** (whole MMK), **Share** (integer shares), **Claim-unit**
+(integer claim units). Rules:
+
+1. **A journal belongs to exactly one domain** and must balance within it.
+2. **Units are never mixed** in one journal.
+3. **No domain balances against another.**
+4. One logical operation may comprise several single-domain journals, all committed in **one DB
+   transaction** (atomic), while each domain balances itself.
+5. Cross-domain consistency is enforced by invariants (C1, C1b, C2, S1) **at commit boundaries**,
+   not by netting one domain against another.
+
+**VERIFIED (scratch):** the model **refuses** a mixed-domain journal (`MIXED DOMAINS`) and an
+unbalanced journal (`UNBALANCED`). **VERIFIED (PGlite):** a three-journal correction (MMK + MMK +
+UNIT) committed atomically; a forced failure left all domains unchanged (Appendix V.2).
+
+---
+
+## Part 2 — Complete account catalogue
+
+Sign convention: each account has a **normal side** (D or C); an entry on the normal side increases
+the account. **No normal-side balance may become negative.**
 
 ### 2.1 MMK ledger
 
-| Account | Type | Represents | Normal | Debit effect | Credit effect |
-| - | - | - | - | - | - |
-| `CreditsIssued` | Contra-equity (source of credits) | Total virtual credits issued | **D** | Increase issued (new issuance) | Decrease issued (permitted withdrawal) |
-| `UserAvailable:{u}` | User holding (unrestricted) | Spendable credits owed to `u` | **C** | Decrease | Increase |
-| `UserReserved:{u}` | User holding (restricted) | Credits `u` committed to open **buy** orders | **C** | Release | Reserve |
-| `CollateralBucket:{m}` | Restricted virtual-credit bucket | Credits backing `m`'s outstanding complete sets | **C** | Release (merge) or move to payable (recognition) | Move in (split) |
-| `SettlementPayable:{m}` | Liability | Credits owed to `m`'s winners, unpaid | **C** | Pay a winner | Recognize owed; receive funding |
-| `SettlementCorrection:{m}` | Correction clearing balance | Credits held to settle corrections of `m` | **C** | Apply a correction payout | Receive correction funding (receivable or issuance) |
-| `CorrectionReceivable:{u}` | Receivable (claim on a user) | Credits a user must be debited (mis-paid, not recoverable from a live balance) | **D** | Increase what `u` owes | Reduce (as recovered) |
-| `CorrectionPayable:{u}` | Liability | Credits owed to `u` (under-paid) | **C** | Pay the user | Recognize owed |
+| Account | Type | Represents | Normal |
+| - | - | - | - |
+| `CreditsIssued` | Contra-equity (source of credits) | Total virtual credits issued | **D** |
+| `UserAvailable:{u}` | User holding (unrestricted) | Spendable credits owed to `u` | **C** |
+| `UserReserved:{u}` | User holding (restricted) | Credits committed to open **buy** orders | **C** |
+| `CollateralBucket:{m}` | Restricted virtual-credit bucket | Credits backing `m`'s outstanding complete sets | **C** |
+| `SettlementPayable:{m}` | Liability | Credits owed to `m`'s winners, unpaid | **C** |
+| `SettlementCorrection:{m}` | Correction clearing balance | Credits held to settle corrections of `m` | **C** |
+| `CorrectionReceivable:{u}` | Receivable (claim on a user) | Credits `u` must be debited (mis-paid) | **D** |
+| `CorrectionPayable:{u}` | Liability | Credits owed to `u` (under-paid) | **C** |
 
 ### 2.2 Share ledger
 
-| Account | Type | Represents | Normal | Debit effect | Credit effect |
-| - | - | - | - | - | - |
-| `SharesFree:{u}:{o}` | User holding (unrestricted) | Free shares of outcome `o` owned by `u` | **D** | Increase | Decrease |
-| `SharesEscrowed:{u}:{o}` | User holding (restricted) | Shares `u` locked in open sell orders | **D** | Increase | Decrease |
-| `SharesOutstanding:{m}:{o}` | Control | Total shares of outcome `o` in existence | **C** | Decrease (merge/settle) | Increase (split) |
-
-Ownership of `o` = `SharesFree:{u}:{o} + SharesEscrowed:{u}:{o}` (two buckets of one holding).
+`SharesFree:{u}:{o}` (D), `SharesEscrowed:{u}:{o}` (D), `SharesOutstanding:{m}:{o}` (C).
+Ownership of `o` = free + escrowed.
 
 ### 2.3 Claim-unit control ledger
 
-| Account | Type | Represents | Normal | Debit effect | Credit effect |
-| - | - | - | - | - | - |
-| `ClaimUnitsRemaining:{m}` | Control (units) | Winning claim units not yet paid | **D** | Increase (new set created / correction re-opens) | Decrease (a unit is paid) |
-| `UnitsControl:{m}` | Control (units, balancing) | Balancing control for the above | **C** | Decrease | Increase |
+`ClaimUnitsRemaining:{m}` (D), `UnitsControl:{m}` (C).
 
-**Lifecycle and permitted balance of the claim-unit ledger (per market `m`):**
-
-- **Opens** at 0. Each **split of n sets** adds **+n** (exactly one side of a set will win).
-- **Merge of n sets** removes **−n** (a merged set can no longer produce a claim).
-- **Recognition** does **not** change the unit count.
-- **Each payout of k units** removes **−k**.
-- At **full settlement** the count returns to **0**; it may never go negative (a payout can never
-  exceed the remaining claim units).
-- A **correction** may re-open the count by writing a **new resolution version**; the count for
-  that version opens at the corrected entitlement and again returns to 0.
-- **Permitted balance:** `0 ≤ ClaimUnitsRemaining` and `ClaimUnitsRemaining = UnitsControl` at
-  all times (**C1b**).
+**Lifecycle / permitted balance (per market `m`):** opens at 0; **split +n**, **merge −n**;
+recognition unchanged; **payout −k**; returns to **0** at full settlement; may **never** go
+negative; a correction may re-open it under a **new resolution version**. Always
+`ClaimUnitsRemaining = UnitsControl` (**C1b**), and `ClaimUnitsRemaining ≥ 0`.
 
 ---
 
-## Part 3 — M1: complete credit-conservation proof (PROPOSED)
-
-### 3.1 M1
+## Part 3 — M1: credit conservation (unchanged form)
 
 > **M1:** `CreditsIssued + Σ_u CorrectionReceivable:{u}`
 > `= Σ_u (UserAvailable + UserReserved + CorrectionPayable)`
 > `+ Σ_m (CollateralBucket + SettlementPayable + SettlementCorrection)`
 
-(`CorrectionReceivable` is an asset-like claim, so it sits on the debit side with `CreditsIssued`.)
+M1 is an algebraic consequence of double-entry over this account set; each side moves by the same
+amount in every journal. **VERIFIED (scratch)** in Revision 5 (per-operation delta table) and
+re-asserted at **every commit boundary** in the Revision 6 model.
 
-### 3.2 Per-operation M1 delta proof
-
-Every journal has Σ debits = Σ credits, so each side of M1 moves by the **same** amount.
-**VERIFIED (scratch)** — the model computed both sides before and after each operation and
-confirmed equal deltas (`dL == dR`) and M1 true after each:
-
-| Operation | MMK journal | ΔL | ΔR | M1 |
-| - | - | - | - | - |
-| Grant | `CreditsIssued D 10000` / `UserAvailable:Alice C 10000` | +10000 | +10000 | ✅ |
-| Split | `UserAvailable:Alice D 100` / `CollateralBucket C 100` | 0 | 0 | ✅ |
-| Recognition | `CollateralBucket D 100` / `SettlementPayable C 100` | 0 | 0 | ✅ |
-| Payout | `SettlementPayable D 100` / `UserAvailable:Alice C 100` | 0 | 0 | ✅ |
-| **Issuance** | `CreditsIssued D 50` / `SettlementCorrection C 50` | +50 | +50 | ✅ |
-| **Receivable raised** | `CorrectionReceivable:Bob D 50` / `SettlementCorrection C 50` | +50 | +50 | ✅ |
-| **Receivable recovered** | `UserAvailable:Bob D 50` / `CorrectionReceivable:Bob C 50` | −50 | −50 | ✅ |
-| Correction payable | `SettlementCorrection D 50` / `CorrectionPayable:Alice C 50` | 0 | 0 | ✅ |
-| Correction payout | `CorrectionPayable:Alice D 50` / `UserAvailable:Alice C 50` | 0 | 0 | ✅ |
-
-**Interpretation.** M1 is preserved because it is an algebraic consequence of double-entry over
-this account set. **Issuance and receivable-raising are the only operations that change both
-sides (they change the "size" of the system); all others redistribute within M1.**
-
-### 3.3 SettlementCorrection lifecycle and permitted balance
-
-- **Opens** at 0. **Funded** by a `CorrectionReceivable` (money owed by a mis-paid user) or by
-  permitted **issuance** (`CreditsIssued D` / `SettlementCorrection C`).
-- **Spent** by paying corrected entitlements (`SettlementCorrection D` / `CorrectionPayable:{u} C`,
-  then `CorrectionPayable:{u} D` / `UserAvailable:{u} C`).
-- **Closes** at 0 when the correction is fully settled.
-- **Permitted balance:** non-negative. A correction may not pay out more than it was funded with.
-- **C1 interplay:** while a correction is open, `SettlementCorrection` is part of C1's backing
-  total and the corresponding claim units are re-opened (Part 4).
+**Important:** M1 is a statement of **accounting conservation**, **not** of economic backing. See
+Part 7 for the distinction.
 
 ---
 
-## Part 4 — Claim-based backing invariant C1 (PROPOSED)
+## Part 4 — Backing invariant C1
 
 > **C1:** `CollateralBucket:{m} + SettlementPayable:{m} + SettlementCorrection:{m}`
 > `= PAYOUT_PER_SHARE × ClaimUnitsRemaining:{m}`
 > **C1b:** `ClaimUnitsRemaining:{m} = UnitsControl:{m}`
 > **C2:** `SharesOutstanding:YES = SharesOutstanding:NO` (before retirement)
-> **S1:** for each outcome, `Σ_u (SharesFree + SharesEscrowed) = SharesOutstanding`
+> **S1:** per outcome, `Σ_u (SharesFree + SharesEscrowed) = SharesOutstanding`
 
-**Why it holds at every stage:** recognition moves credits bucket → payable **without changing the
-total or the unit count**; a payout reduces the total and the unit count by the same unit amount;
-a correction re-opens the unit count and funds `SettlementCorrection` by the same amount. At
-retirement all three terms are 0. **VERIFIED (scratch):** C1 and C1b held at **every** check in
-Parts 6 and 7 (34/34 checks passed).
-
-### 4.1 Assumptions
-
-**A1** shares created only in equal YES/NO pairs, only by Split (or paired cross-outcome minting);
-**A2** each split locks exactly `P` per set and adds one claim unit; **A3** merge/settlement
-removes an equal pair and releases exactly `P` per set; **A4** transfers move value/shares without
-changing totals; **A5** `P` constant per market; **A6** no path creates shares or moves the bucket
-outside these operations.
+C1 is preserved because recognition moves credits bucket → payable (total unchanged), a payout
+reduces total and units equally, and a correction re-opens units and funds `SettlementCorrection`
+by the same amount **in the same transaction**. **VERIFIED (scratch):** C1/C1b held at every commit
+boundary (Appendix V.1).
 
 ---
 
-## Part 5 — Settlement lifecycle, atomicity, and failure modes
+## Part 5 — Settlement lifecycle and atomicity
 
-### 5.1 The twelve steps (PROPOSED)
+Twelve steps (unchanged): (1) stop orders; (2) cancel/expire; (3) release buy reservations;
+(4) return escrowed sell shares; (5) resolution record + **entitlement snapshot**; (6) recognition
+(atomic per market); (7) pay winners (atomic per user: payout key + MMK journal + unit journal);
+(8) crash/restart resume; (9) retire shares; (10) assert zeros; (11) reconcile; (12) mark settled.
 
-As Revision 4: (1) stop orders/disable matching; (2) cancel/expire open orders; (3) release buy
-reservations; (4) return escrowed sell shares; (5) write the resolution record **and entitlement
-snapshot**; (6) recognition (bucket → payable, **one atomic transaction per market**); (7) pay
-winners (**one atomic transaction per user**: payout key + MMK journal + unit journal together);
-(8) crash/restart resume by scanning payout keys; (9) retire shares; (10) assert
-`CollateralBucket = 0` and `ClaimUnitsRemaining = 0`; (11) final M1/C1 reconciliation; (12) mark
-`settled` (guarded).
+**Atomicity rule:** the payout's **MMK journal, unit journal, and unique payout key commit in ONE
+transaction**. Correctness does not depend on a progress flag — the set of keys *is* the progress
+record. **VERIFIED (PGlite):** unique key + atomic credit rejects duplicates and credits once
+(Revision 5, Appendix V.3 of Rev 5; carried forward).
 
-### 5.2 Atomicity rule (no progress-flag reliance)
+**Failure modes** (simulated in scratch; **real concurrency NOT claimed**): crash before commit
+(no effect); crash after commit before ack (restart rescans, no double-pay); duplicate payout
+(rejected); two workers (simulated: one commits, one no-ops); idempotency key with different
+payload (conflict); restart/recovery (exactly-once).
 
-The payout's **MMK journal, unit journal, and unique payout key commit in ONE transaction**. The
-unique key `(market_id, user_id, resolution_version)` has a `UNIQUE` constraint. **Correctness
-does not depend on any separately-updated worker-progress flag** — the set of existing keys *is*
-the progress record.
+---
 
-### 5.3 Failure modes
+## Part 6 — Case F: atomic correction (CORRECTED)
 
-| Mode | Simulated result (scratch) | PGlite result |
+### 6.1 The Revision 5 defect
+
+Revision 5's Case F posted the unit-reopening journal **before** the funding journal and posted a
+receivable recovery that **credited `CorrectionReceivable` before it was established**. Two
+consequences:
+
+- **C1 broke** in the intermediate state (units up, backing still 0).
+- The recovery could drive `CorrectionReceivable:Bob` **negative** — an invalid balance.
+
+### 6.2 The corrected design: one atomic logical operation
+
+**Case F (recoverable mispayment) is one transaction `T-F` comprising three single-domain
+journals**, in this order:
+
+| Journal | Domain | Entries |
 | - | - | - |
-| Crash **before** commit | Transaction not applied; state byte-identical; retry commits once | — |
-| Crash **after** commit, before worker ack | Payout persisted; restart rescan finds the key; retry is a no-op; no double-pay | — |
-| Duplicate payout attempt | Second attempt `duplicate` (no-op) | `rejected: duplicate key value violates unique constraint "settlement_payouts_pkey"` |
-| Two concurrent workers, same payout | One `committed`, one `duplicate` | (mechanism) unique key rejects the second |
-| Duplicate idempotency key, **different payload** | `conflict` (rejected) | `rejected: duplicate key value violates unique constraint "settlement_payouts_idempotency_key_key"` |
-| Restart and recovery | Rescan pays only missing users; exactly-once | Alice credited exactly once (`10300`) |
+| **j1 — establish funding** | MMK | `CorrectionReceivable:Bob D 200` / `SettlementCorrection:M C 200` |
+| **j2 — recover the receivable** | MMK | `UserAvailable:Bob D 200` / `CorrectionReceivable:Bob C 200` |
+| **j3 — re-open claim units** | UNIT | `ClaimUnitsRemaining:M D 2` / `UnitsControl:M C 2` |
 
-**VERIFIED (scratch):** Section 2 of the scratch model exercised all six modes; every check passed.
-**VERIFIED (PGlite):** the unique-key + atomic-credit mechanism was tested directly (Appendix V.3):
-the duplicate insert was rejected and the user was credited exactly once.
+The **corrected payout** is a second transaction `T-F-pay`:
 
-**NOT VERIFIED (real PostgreSQL):** PGlite is single-connection; it **cannot** reproduce true
-multi-session contention. **Real multi-session concurrency is NOT verified.** The "two concurrent
-workers" result above is a **simulated** serialization in scratch, not a real race. Real
-concurrency must be tested on a PostgreSQL server (PROPOSED, not done).
+| Journal | Domain | Entries |
+| - | - | - |
+| **j4 — pay corrected entitlement** | MMK | `SettlementCorrection:M D 200` / `UserAvailable:Alice C 200` |
+| **j5 — close claim units** | UNIT | `ClaimUnitsRemaining:M C 2` / `UnitsControl:M D 2` |
 
----
+A **share-domain** journal participates only if the corrected entitlement requires a share
+movement; in this example none is needed (shares were retired under v1 and the correction is
+purely a credit settlement).
 
-## Part 6 — Correction paths B–F, with before/after balances (PROPOSED, VERIFIED scratch)
+**Ordering rule (receivable recovery):** the receivable **must be established (j1) before it is
+recovered (j2)**. `CorrectionReceivable` is **debit-normal**, so crediting it (j2) is only valid
+once a debit balance exists. **VERIFIED (scratch):** posting j2 without j1 is **rejected**
+(`NEGATIVE BALANCE: CorrectionReceivable:Bob would be -200`). **VERIFIED (PGlite):** the
+`balances.balance >= 0` `CHECK` rejects the same move (`violates check constraint
+"balances_balance_check"`).
 
-Each case is executed in the scratch model. Below, `bucket/payable/corr/units` are the MMK and
-unit control balances; `AvA/AvB/AvC` are `UserAvailable` for Alice/Bob/Carol; `recvB` is
-`CorrectionReceivable:Bob`. **Every step below reported MMK=true, SHARE=true, UNIT=true, C1=true.**
+### 6.3 Case F recovery — state and invariant trace (VERIFIED scratch)
 
-### Case B — mistake after recognition, before payout
+| Stage | bucket | payable | corr | units | AvA | AvB | AvC | recvB | issued | C1 | C1b | M1 |
+| - | - | - | - | - | - | - | - | - | - | - | - | - |
+| **Before** (wrong v1 settled) | 0 | 0 | 0 | 0 | 9800 | 10200 | 10000 | 0 | 30000 | ✅ | ✅ | ✅ |
+| *mid1 (uncommitted, after j1)* | 0 | 0 | 200 | 0 | 9800 | 10200 | 10000 | 200 | 30000 | *breaks* | ✅ | ✅ |
+| *mid2 (uncommitted, after j2)* | 0 | 0 | 200 | 0 | 9800 | 10000 | 10000 | 0 | 30000 | *breaks* | ✅ | ✅ |
+| **After T-F commit** (j1+j2+j3) | 0 | 0 | 200 | 2 | 9800 | 10000 | 10000 | 0 | 30000 | ✅ | ✅ | ✅ |
+| **After T-F-pay commit** (j4+j5) | 0 | 0 | 0 | 0 | 10000 | 10000 | 10000 | 0 | 30000 | ✅ | ✅ | ✅ |
 
-- **Journal (MMK):** `SettlementPayable:M D 200` / `CollateralBucket:M C 200` (reverse recognition).
-- **Unit journal:** none. **ClaimUnitsRemaining: unchanged (2). UnitsControl: unchanged (2).**
-- **SettlementCorrection:** unchanged (0).
-- **Before:** bucket 0, payable 200, corr 0, units 2.
-- **After:** bucket 200, payable 0, corr 0, units 2. **C1 ✅ C1b ✅ M1 ✅.**
+- **mid1/mid2 are UNCOMMITTED.** The model shows them only to explain ordering; they are **not
+  observable** by another transaction (see 6.6). C1 is momentarily unsatisfied inside the
+  transaction, which is exactly why the whole correction **must be one transaction** and why a
+  partial commit is forbidden.
+- **After each commit**, all invariants hold: MMK ✅, SHARE ✅, UNIT ✅, C1 ✅, C1b ✅, M1 ✅, C2 ✅,
+  S1 ✅, non-negative ✅.
+- **CorrectionReceivable never goes negative**; **SettlementCorrection never goes negative**; **no
+  user balance goes negative** (all `nonNeg=true`).
 
-### Case C — during partial payout; mis-paid credits still AVAILABLE
+### 6.4 Rollback (VERIFIED scratch + PGlite)
 
-Two steps: reverse the wrong payout, then pay the true winner.
+If any journal in the transaction fails (e.g. an unbalanced journal, or a policy violation), the
+**entire transaction rolls back**. **VERIFIED (scratch):** after an injected failure the state was
+**byte-identical** to the pre-transaction state. **VERIFIED (PGlite):** after an injected failure,
+zero ledger rows existed for the failed transaction and every balance was unchanged.
 
-- **Reverse (MMK):** `UserAvailable:Bob D 100` / `SettlementPayable:M C 100`.
-- **Reverse (unit):** `ClaimUnitsRemaining:M D 1` / `UnitsControl:M C 1` (**restores the unit**).
-- **SettlementCorrection:** unchanged (0).
-- **Before:** bucket 0, payable 100, corr 0, units 1, AvB 10100.
-- **After reverse:** bucket 0, payable 200, corr 0, units 2, AvB 10000.
-- **Pay true winner (MMK):** `SettlementPayable:M D 200` / `UserAvailable:Alice C 200`; **(unit)**
-  `ClaimUnitsRemaining:M C 2` / `UnitsControl:M D 2`.
-- **After:** bucket 0, payable 0, corr 0, units 0, AvA 10000. **C1 ✅ C1b ✅ M1 ✅.**
+### 6.5 Case F-issue — atomic issuance funding (CORRECTED)
 
-### Case D — mis-paid credits TRANSFERRED to another user
+When the mis-paid credits were **already spent** (uncollectible), the correction may be funded by
+**permitted issuance** — **an OWNER DECISION (F14)**, not assumed here.
 
-- **Raise receivable (MMK):** `CorrectionReceivable:Bob D 100` / `SettlementCorrection:M C 100`.
-- **Restore unit:** `ClaimUnitsRemaining:M D 1` / `UnitsControl:M C 1`.
-- **Before:** bucket 0, payable 100, corr 0, units 1, AvC 10100.
-- **After funding:** bucket 0, payable 100, corr 100, units 2, recvB 100.
-- **Pay winner (MMK):** `SettlementPayable:M D 100` / `UserAvailable:Alice C 100` **and**
-  `SettlementCorrection:M D 100` / `UserAvailable:Alice C 100`; **(unit)** remove 2 units.
-- **After:** bucket 0, payable 0, corr 0, units 0, AvA 10000, recvB 100 (open claim on Bob).
-- **SettlementCorrection:** funded 100, spent 100, closed 0. **C1 ✅ C1b ✅ M1 ✅.**
+**One transaction `T-G`:**
 
-### Case E — mis-paid credits USED TO BUY SHARES
+| Journal | Domain | Entries |
+| - | - | - |
+| **j1 — issuance funding** | MMK | `CreditsIssued D 200` / `SettlementCorrection:M C 200` |
+| **j2 — re-open claim units** | UNIT | `ClaimUnitsRemaining:M D 2` / `UnitsControl:M C 2` |
+| **j3 — pay corrected entitlement** | MMK | `SettlementCorrection:M D 200` / `UserAvailable:Alice C 200` |
+| **j4 — close claim units** | UNIT | `ClaimUnitsRemaining:M C 2` / `UnitsControl:M D 2` |
 
-Economically identical to Case D (the credits left Bob's balance via a trade); the trade is **not
-unwound** (share and MMK transfers remain valid).
+**Effect on `CreditsIssued` and supply:** `CreditsIssued` increases by 200 (30000 → 30200); the
+**virtual-credit supply increases by 200**. M1 holds because both sides rise by 200. **VERIFIED
+(scratch):** all invariants hold before and after; rollback restores the pre-state.
 
-- **Raise receivable (MMK):** `CorrectionReceivable:Bob D 100` / `SettlementCorrection:M C 100`.
-- **Restore unit:** +1. **Pay winner** from payable and from `SettlementCorrection`; remove 2 units.
-- **After:** bucket 0, payable 0, corr 0, units 0, AvA 10000, recvB 100; Bob's purchased shares
-  remain. **C1 ✅ C1b ✅ M1 ✅.**
+**If issuance is NOT approved (alternative operational outcome):** the correction cannot be funded
+by new credits. Options: (i) **leave the correction PENDING** until recoverable funding exists
+(possibly never); (ii) fund from **recovered receivables only** (policy B); (iii) fund from a
+**pre-approved correction reserve** created at market creation (a design change — OPEN); or
+(iv) accept the deficit as an **explicitly disclosed platform loss** and mark it uncollectible
+(Part 7). **The owner must choose; I do not choose on the owner's behalf.**
 
-### Case F — after FULL settlement (new resolution version)
+### 6.6 Why intermediate states are never observable
 
-- **Before (v1, wrong):** bucket 0, payable 0, corr 0, units 0, AvB 10200 (Bob wrongly paid).
-- **Re-open units for v2:** `ClaimUnitsRemaining:M D 2` / `UnitsControl:M C 2`.
-- **Recover from Bob (MMK):** `UserAvailable:Bob D 200` / `CorrectionReceivable:Bob C 200`
-  (reduces what he was over-credited); **fund** `CorrectionReceivable:Bob D 200` /
-  `SettlementCorrection:M C 200`.
-- **After funding:** bucket 0, payable 0, corr 200, units 2, AvB 10000, recvB 0.
-- **Pay true winner (v2):** `SettlementCorrection:M D 200` / `UserAvailable:Alice C 200`;
-  **(unit)** remove 2.
-- **After:** bucket 0, payable 0, corr 0, units 0, AvA 10000. **C1 ✅ C1b ✅ M1 ✅.**
+A relational database gives **transaction isolation**: other transactions see either the
+**pre-commit** state or the **post-commit** state, never the in-flight state. Therefore:
 
-### Case F-issue — fully settled and mis-paid credits ALREADY SPENT (issuance)
-
-- **Re-open units for v2:** +2.
-- **Issue to fund (MMK):** `CreditsIssued D 200` / `SettlementCorrection:M C 200`.
-- **Pay true winner:** `SettlementCorrection:M D 200` / `UserAvailable:Alice C 200`; remove 2 units.
-- **After:** bucket 0, payable 0, corr 0, units 0, AvA 10000, AvC 10200 (Bob spent to Carol).
-- **Effect on M1:** issuance raised **both** sides by 200; M1 holds. **C1 ✅ C1b ✅ M1 ✅.**
-  *(OWNER DECISION F14: is issuance permitted at all?)*
-
-### 6.1 Summary of correction journals
-
-| Case | MMK journal(s) | Unit journal(s) | ClaimUnits change | UnitsControl change | SettlementCorrection |
-| - | - | - | - | - | - |
-| B | reverse recognition | none | 0 | 0 | 0 |
-| C | reverse payout; pay winner | +1 then −2 | +1 then −2 | +1 then −2 | 0 |
-| D | receivable→corr; pay from payable+corr | +1 then −2 | +1 then −2 | +1 then −2 | +100 then −100 |
-| E | receivable→corr; pay from payable+corr | +1 then −2 | +1 then −2 | +1 then −2 | +100 then −100 |
-| F | recover from Bob; corr→pay | +2 then −2 | +2 then −2 | +2 then −2 | +200 then −200 |
-| F-issue | issuance→corr; corr→pay | +2 then −2 | +2 then −2 | +2 then −2 | +200 then −200 |
+- The invariant-breaking intermediate states (mid1/mid2) are **invisible** to any other session.
+- The application **must never** commit an invariant-breaking partial correction; each
+  transaction is asserted at its commit boundary (in the design, by running the invariant checks
+  **inside** the transaction and aborting if any fails).
+- **NOT VERIFIED (real PostgreSQL):** this isolation behaviour was **not** tested on a real
+  PostgreSQL server with multiple sessions. PGlite is single-connection. **Real concurrency is not
+  claimed.**
 
 ---
 
-## Part 7 — Entitlement rules (PROPOSED)
+## Part 7 — What C1 actually guarantees (CLARIFICATION)
 
-### 7.1 Settlement ownership cutoff
+### 7.1 Five distinct concepts
 
-The **entitlement snapshot** is computed at **step 5**, from ownership **as of market closure**
-(step 1), and recorded immutably.
+1. **Accounting balance** — the ledger identity (Σ debits = Σ credits per domain; M1; C1) is
+   mathematically satisfied. This is what the scratch model and the invariants check.
+2. **Correction receivable** — a **recorded claim** (`CorrectionReceivable:{u}`, debit-normal)
+   against a user who was mis-paid. It is an accounting claim, **not** a recovered asset.
+3. **Recoverable funding** — credits **actually recovered** and sitting in `SettlementCorrection`
+   (or otherwise available) to pay a correction.
+4. **Additional issuance** — **newly created** virtual credits, approved by the product owner.
+5. **Uncollectible receivable** — an outstanding claim that **cannot currently be recovered**
+   (e.g. the mis-paid user spent the credits).
 
-- **Ownership counted = `SharesFree + SharesEscrowed`** for the winning outcome. Escrowed shares
-  are still the user's shares, so they count.
-- **Open buy orders** never confer ownership (they hold reserved credits, not shares); their
-  reservations are released in step 3 and are **not** entitlements.
-- **Open sell orders:** the shares are counted for their owner, but steps 2–4 **cancel** the
-  orders and **return** the escrowed shares to `SharesFree` first, so the snapshot sees free
-  shares. A sell order that had **partially filled** before closure entitles its owner to the
-  **unfilled remainder** (the filled portion already transferred).
-- **Pending executions at the instant of closure:** matching is disabled at step 1 and the market
-  row is locked, so **no trade is mid-flight** when the snapshot is taken. Any trade that commits
-  before closure is reflected in ownership; none commits after.
-- **Cutoff is the closure timestamp**; the snapshot is a pure function of the frozen ledger state
-  at that timestamp.
+### 7.2 Answers to the owner's questions
 
-### 7.2 Superseding resolution versions
+| Question | Answer |
+| - | - |
+| **Does C1 permit a receivable to count as backing?** | **Only under Policy A (below).** Under Policy B it does **not**. This is an **OWNER DECISION (F17)**. |
+| **If yes, what justifies it?** | Policy A assumes the receivable is **enforceable and will be recovered** (a contractual claim on the user), so it is treated as backing pending recovery. This is an **assumption**, not a guarantee. |
+| **If no, how must the model change?** | Policy B: `SettlementCorrection` may be funded **only** by realized funding (recovered credits or approved issuance). C1 then always means **funded** backing. Units are re-opened **only for the funded tranche**. |
+| **What if the user spent the credits and cannot repay?** | The receivable is **uncollectible**. Under Policy A it remains an outstanding claim (with a **WARN** and disclosure); under Policy B the correction **cannot proceed** on that funding and stays **PENDING**. |
+| **Can a correction remain pending until funding is available?** | **Yes.** A pending correction is a first-class state; nothing is paid until funded (Policy B), or it proceeds with disclosed unfunded backing (Policy A). |
+| **Can a correction proceed using newly issued credits?** | **Only if the owner approves issuance (F14).** Then Part 6.5 applies. Otherwise no. |
+| **Treatment of an uncollectible receivable?** | Policy A: keep it outstanding, **disclose** it, and never present it as recovered. Policy B: it **cannot** back funding; the correction stays pending or is written off as a disclosed loss. |
+| **Can `SettlementCorrection` remain outstanding after settlement?** | **Recommendation: no** (F16) — it should close at 0 when the correction completes. An outstanding `SettlementCorrection` means a correction is still in flight; if it cannot close, that is an **explicit deficit**, not hidden collateral. |
 
-- A resolution is identified by `resolution_version` (v1, v2, …).
-- **Historical records are never modified.** A correction writes a **new**
-  `SettlementEntitlement` set with the next version and a **new** `ResolutionRecord` that
-  references the superseded version and states the reason.
-- **Claim units re-open per version:** the corrected version's claim units are opened, funded, and
-  paid to 0; the prior version's units remain as historical record (already 0 after its payouts).
-- **Idempotency:** each correction carries `(market_id, resolution_version, user_id,
-  correction_seq)`; duplicates are no-ops.
-- **Audit:** every supersession and every compensating journal writes an append-only `AuditLog`
-  entry (who/what/when/why/before/after).
+### 7.3 Two policy alternatives (OWNER DECISION)
+
+**Policy A — Receivable-backed (C1 counts uncollected receivables).**
+`SettlementCorrection` may be funded by a `CorrectionReceivable`. C1 and M1 hold immediately; the
+correction proceeds. **Risk:** an uncollectible receivable means C1's "backing" is **not
+economically realized** — this is an **unfunded deficit that must be disclosed**, never disguised.
+**VERIFIED (scratch):** Policy A runs; the model emits `WARN: N MMK outstanding receivable`.
+
+**Policy B — Realized-funding-only (C1 counts only recovered credits / approved issuance).**
+A correction may re-open **only** the funded tranche; an uncollected receivable **cannot** back
+funding. Corrections with insufficient funding stay **PENDING**. **VERIFIED (scratch):** Policy B
+rejects an unfunded reopen (`REJECTED: uncollected receivable cannot back funding`) and re-opens
+only the funded tranche.
+
+**Recommendation (not a decision):** **Policy B** is safer for a system that must never present an
+unfunded deficit as collateral. **The owner must choose.** Recorded as **F17** (financial) and
+**AR13** (architecture).
 
 ---
 
-## Part 8 — Market-order terminology (PROPOSED)
+## Part 8 — SettlementCorrection lifecycle
 
-These are **distinct** quantities and must not be conflated:
+- **Opens** at 0. **Funded** by recovered receivables (Policy A/B) or approved issuance (F14).
+- **Spent** paying corrected entitlements via `CorrectionPayable:{u}`.
+- **Closes** at 0 when the correction completes.
+- **Permitted balance:** **non-negative**; **should close at 0** (F16). Any residual is an explicit
+  deficit.
+- **C1 interplay:** while open, it is part of C1's backing total and the matching claim units are
+  re-opened in the **same transaction**.
+
+---
+
+## Part 9 — Market-buy terminology (CORRECTED)
+
+### 9.1 Ten distinct quantities
 
 | Term | Definition |
 | - | - |
-| **Maximum spend** | The MMK cap the user authorizes for a market buy. |
-| **Actual spend** | Σ (fill price × fill qty) over executed fills. |
-| **Filled quantity** | Integer shares actually executed. |
-| **Partial fill** | Filled quantity < requested quantity (for a market buy, **unspent budget remains**). |
+| **Maximum spend** | MMK cap the user authorizes. |
+| **Actual spend** | Σ (fill price × fill qty). |
+| **Requested quantity** | Shares the user asked for (**may be undefined for a pure "spend this much" order**). |
+| **Filled quantity** | Integer shares executed. |
+| **Remaining quantity** | `requested − filled` (undefined if requested is undefined). |
 | **Unspent budget** | `maximum spend − actual spend`, returned to `UserAvailable`. |
-| **Expired order** | A quote/order past its validity window; **not executed**; requires re-quote. |
-| **Rejected order** | An order refused (slippage beyond tolerance, insufficient funds, FOK failure, market closed). **No fill occurred.** |
+| **Complete fill** | Filled quantity **equals** requested quantity (requires a requested quantity). |
+| **Partial fill** | Filled quantity **less than** requested quantity (requires a requested quantity). |
+| **Expired quote/order** | Past its validity window; **not executed**; re-quote. |
+| **Rejected order** | Refused (slippage, insufficient funds, FOK failure, market closed); **no fill**. |
 
-**Rule:** **fill completion is never inferred from budget consumption.** A market buy may spend
-its entire budget and still be a **partial fill** (the last level did not have enough shares), or
-may spend less than budget and be **fully filled** for its intended size. Only the **filled
-quantity vs requested quantity** determines partial-vs-complete.
+### 9.2 Corrected 2,000 MMK example
 
-### 8.1 Worked examples
+**Specify an explicit requested quantity.** Suppose the user requests **35 shares** with a maximum
+spend of 2,000 MMK. Asks: L1 5@60, L2 10@62, L3 20@65.
 
-- **Multi-level fill** (max 2,000): asks L1 5@60, L2 10@62, L3 20@65 → L3 fills `floor(1,080/65)=16`;
-  actual 1,960; filled 31; unspent 40 returned; **not** partial (budget fully consumed, and the
-  remaining 40 cannot buy a whole share).
-- **Insufficient liquidity** (partial): only L1 5@60, L2 10@62 → 15 shares cost 920; **unspent
-  1,080 returned**; **partial fill**.
-- **Slippage breach:** new average 70 vs best ask 60 → **relative slippage 16.67%**, **10 points**;
-  beyond tolerance → **rejected**, re-quote.
-- **Expired quote:** submitted after expiry → **rejected**, re-quote.
-- **Duplicate submission:** same idempotency key → returns original result; never executes twice.
+- Fills: 5 + 10 + `floor(1,080/65) = 16` = **31 shares**; **actual spend 1,960**;
+  **unspent budget 40**; **remaining quantity = 35 − 31 = 4 shares**.
+- Because **filled (31) < requested (35)**, this **is a partial fill**. Revision 5's claim that it
+  was "not a partial fill" was **wrong**: it had no requested quantity and (incorrectly) inferred
+  completion from budget consumption.
+- **Fill completion is never inferred from budget consumption.** Budget exhaustion and fill
+  completion are independent.
 
-### 8.2 Owner decisions retained
+**Alternative presentation (no requested quantity):** if the order is a pure "spend up to 2,000"
+order, report **executed quantity 31, actual spend 1,960, unspent budget 40** and **make no claim
+about completeness**.
 
-- **Partial-fill policy** (fill-available vs FOK) — **OPEN** (F8).
-- **Slippage unit (relative % vs points) and default value** — **OWNER DECISION** (F5). I do
-  **not** approve a default on your behalf. (Note: the Rev-3 "3%" would reject the worked
-  multi-level example at 5.376% relative.)
+**Other cases:** *insufficient liquidity* — only L1+L2 → 15 shares cost 920, **unspent 1,080
+returned**, **partial**; *slippage breach* — new average 70 vs best ask 60 → relative 16.67%,
+beyond tolerance → **rejected**; *expired quote* → **rejected**, re-quote; *duplicate submission* —
+idempotency key returns the original result.
+
+### 9.3 Policy retained as OPEN/OWNER DECISION
+
+- **Partial-fill policy (fill-available vs fill-or-kill)** — **OPEN (F8)**.
+- **Slippage unit and default** — **OWNER DECISION (F5)**. I do not approve a default.
 
 ---
 
-## Part 9 — Financial decision register (Revision 5)
+## Part 10 — Financial decision register (Revision 6)
 
 | ID | Decision | Recommended | Tag |
 | - | - | - | - |
@@ -409,14 +372,17 @@ quantity vs requested quantity** determines partial-vs-complete.
 | F13 | "To Win" display | gross payout; profit separate | OWNER DECISION |
 | F14 | May the platform issue extra virtual credits to fund a correction? | undecided | OWNER DECISION |
 | F15 | Recovery of `CorrectionReceivable`: automatic netting vs manual review | manual review | OPEN |
-| F16 | Are `SettlementCorrection` balances allowed to persist across a market close? | no — must close at 0 | RECOMMENDED |
+| F16 | Must `SettlementCorrection` close at 0 (no residual after settlement)? | yes | RECOMMENDED |
+| **F17** | **Does C1 count an uncollected `CorrectionReceivable` as backing (Policy A) or only realized funding (Policy B)?** | **Policy B** | **OWNER DECISION** |
+| **F18** | **Treatment of an uncollectible receivable: keep outstanding with disclosure, or write off as a disclosed loss?** | **write off as disclosed loss** | **OWNER DECISION** |
+| **F19** | **If issuance (F14) is not approved, what is the fallback: pending correction, reserve, or disclosed loss?** | **pending correction** | **OWNER DECISION** |
 
 ---
 
-## Part 10 — Approval
+## Part 11 — Approval
 
-Approving this document confirms the financial rules and authorizes implementation of executable
-trading in Milestone 4. **Nothing here is implemented.**
+**NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.** Approving this document is required
+before any executable trading is implemented in Milestone 4. **Nothing here is implemented.**
 
 - ☐ **Approved as written**
 - ☐ **Approved with changes:** ______________________________
@@ -428,65 +394,70 @@ Product owner signature / date: ______________________________
 
 ## Appendix V — Exact local verification performed
 
-Environment: **Node.js v24.22.2**; **@electric-sql/pglite 0.5.16** (PostgreSQL 18.6, wasm32);
-**Linux 6.8.0-1055-gke**. All commands ran in scratch directories **outside** the repository.
+Environment: **Node.js v24.22.2**; **@electric-sql/pglite 0.5.16**; **PostgreSQL 18.6 (PGlite
+0.5.16) on wasm32**; **Linux 6.8.0-1055-gke**. All commands ran in scratch directories **outside**
+the repository (`/tmp/ledgertest`).
 
-### V.1 Extended scratch model — VERIFIED (scratch)
+### V.1 Revision 6 scratch model — VERIFIED (scratch)
 
-Command: `node rev5.mjs`. It enforces (a) single-domain journals, (b) balanced journals, and
-(c) C1/C1b/M1/C2/S1 after every operation; it runs all correction cases, all six settlement
-failure modes, and the M1 delta proof.
-
-Result: **34 PASS / 0 FAIL**, ending `>>> ALL CHECKS PASSED (scratch)`. Selected output:
-
-```
-PASS B0 after recognition        MMK=true SHARE=true UNIT=true C1=true
-PASS D1 receivable raised, corr funded   ... C1=true   | payable=100 corr=100 units=2 recvB=100
-PASS Fissue1 issued 200 to fund  ... C1=true
---- M2: crash AFTER commit but BEFORE worker ack ---
-   RESTART: rescan keys -> Alice present; Carol missing
-   SKIP: duplicate key M:Alice:v1 (no-op)
-PASS M2 no double-pay            ...
---- M4: two concurrent workers, same payout (simulated) ---
-   worker1=committed worker2=duplicate (one commits, other no-ops)
-PASS M4 exactly-once             ...
-PASS M1delta issuance            dL=50 dR=50 (equal) M1=true
-PASS M1delta receivable recovery dL=-50 dR=-50 (equal) M1=true
->>> ALL CHECKS PASSED (scratch)
-```
-
-**Interpretation:** the **arithmetic of the proposed design** holds for all correction paths,
-the six simulated failure modes, and every M1 delta. **This is a scratch model, not a product
-test, and the "concurrent workers" case is a simulated serialization — not a real race.**
-
-### V.2 Proposed DB constraint mechanism in PGlite — VERIFIED (PGlite)
-
-Command: `node constraints.mjs` (from Rev 4; re-run for Rev 5). Result:
-`>>> ALL PROPOSED CONSTRAINTS ENFORCED` — negative balances, out-of-range prices, and negative
-quantities all rejected; valid insert accepted.
-
-### V.3 Unique payout key + atomic credit in PGlite — VERIFIED (PGlite)
-
-Command: `node payoutkey.mjs`. Creates `settlement_payouts` with
-`PRIMARY KEY (market_id, user_id, resolution_version)` and `UNIQUE (idempotency_key)`, and
-performs the payout (insert key + credit) in **one transaction**. Output:
+- **Command:** `node rev6.mjs`
+- **Purpose:** Case F recovery, Case F-issue, atomicity/failure modes, invariant assertions at
+  commit boundaries; reject invalid intermediate commits and unbalanced journals.
+- **Result:** **22 PASS / 0 FAIL**, ending `>>> ALL CHECKS PASSED (scratch); warnings=2`.
+  (`warnings=2` are the two **Policy A** cases where an uncollected receivable is counted as
+  backing — C1/M1 hold but funding is not realized.)
+- **Selected actual output:**
 
 ```
-pay1 (alice): committed
-dup  (alice): rejected: duplicate key value violates unique constraint "settlement_payouts_pkey"
-dup key diff user: rejected: duplicate key value violates unique constraint "settlement_payouts_idempotency_key_key"
-balances: [{"user_id":"alice","available":10300},{"user_id":"bob","available":10000}] | payout rows: 1
-alice credited exactly once: true
+PASS F0 fully settled (wrong v1)   MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true recv=0
+   before: bucket=0 payable=0 corr=0 units=0 | AvA=9800 AvB=10200 AvC=10000 recvB=0 issued=30000
+   -- transaction T-F (3 single-domain journals, one transaction) --
+     (uncommitted after j1) mid1: corr=200 units=0 recvB=200
+     (uncommitted after j2) mid2: corr=200 units=0 recvB=0
+   [T-F] COMMITTED (all invariants hold at boundary)
+PASS F1 after T-F commit           ... C1=true C1b=true M1=true ...
+   after: bucket=0 payable=0 corr=200 units=2 | AvA=9800 AvB=10000 AvC=10000 recvB=0 issued=30000
+   [T-F-pay] COMMITTED (all invariants hold at boundary)
+PASS F2 after corrected payout     ... C1=true C1b=true M1=true ...
+   final: bucket=0 payable=0 corr=0 units=0 | AvA=10000 AvB=10000 AvC=10000 recvB=0 issued=30000
+PASS G1 after issuance-funded correction   ... | AvA=10000 AvB=0 AvC=20200 issued=30200
+   rejected: NEGATIVE BALANCE: CorrectionReceivable:Bob would be -200
+PASS F6 credit-before-exists rejected ...
+   [T-partial] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS F2 partial correction rejected ...
+   [T-uncollectible-B] REJECTED: uncollected receivable cannot back funding (policy B) -> ROLLBACK
+PASS F10b policy B: unfunded deficit rejected ...
+>>> ALL CHECKS PASSED (scratch); warnings=2
 ```
 
-**Interpretation:** the unique-key + atomic-credit mechanism prevents double payout **in a single
-PGlite instance**. This does **not** test multi-session contention.
+- **Limitations:** sequential simulation in a single process; the "concurrent workers" case is a
+  **simulated** serialization, **not** a real race. **Real PostgreSQL concurrency is NOT verified.**
 
-### V.4 Real PostgreSQL — NOT EXECUTED
+### V.2 Revision 6 PGlite mechanism test — VERIFIED (PGlite)
 
-No real PostgreSQL server was used. **Multi-session concurrency is unverified.** PGlite is
-single-connection and cannot reproduce it.
+- **Command:** `node rev6-pglite.mjs`
+- **Purpose:** atomic commit of a three-journal correction across two domains; rollback isolation;
+  a `CHECK` that forbids a negative receivable.
+- **Actual output:**
 
-### V.5 Git state — VERIFIED
+```
+rollback test (injected failure): rolled-back: injected failure after journals
+state unchanged after rollback: true
+commit test: committed
+after balances: [{"account":"ClaimUnitsRemaining:M","balance":2},{"account":"CorrectionReceivable:Bob","balance":0},{"account":"SettlementCorrection:M","balance":200},{"account":"UnitsControl:M","balance":2},{"account":"UserAvailable:Bob","balance":9800}]
+all three domains committed together: true
+ledger rows for T-F: 6 | T-FAIL rows: 0
+negative-receivable test: rolled-back: new row for relation "balances" violates check constraint "balances_balance_check"
+receivable still non-negative: true
+```
+
+- **Limitations:** PGlite is a **single-connection, single-process embedded** engine. It **cannot**
+  reproduce real multi-session contention. This is **mechanism** evidence only.
+
+### V.3 Real PostgreSQL — NOT VERIFIED
+
+No real PostgreSQL server was used. **Multi-session concurrency is unverified.**
+
+### V.4 Git state — VERIFIED
 
 See the architecture report Section 1; it agrees with the commit for this revision.
