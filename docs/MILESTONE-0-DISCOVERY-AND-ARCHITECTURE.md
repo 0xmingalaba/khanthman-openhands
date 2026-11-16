@@ -1,534 +1,466 @@
-# Milestone 0 — Discovery & Architecture Report
+# Milestone 0 — Discovery & Architecture Report (Revision 2)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Report status:** DRAFT — awaiting product owner review and approval
-**Prepared by:** OpenHands agent (AI), on behalf of the product owner
-**Date:** 2026-11-16
+**Status:** DRAFT (Revision 2) — **awaiting product-owner review**
+**Supersedes:** Revision 1 (2026-11-16)
+**Companion document:** `docs/FINANCIAL-SPECIFICATION.md`
+**Milestone:** still Milestone 0 — planning only. **No product features, no auth, no trading,
+no migrations have been implemented.**
 
-> This report is the required Milestone 0 deliverable. **No substantial application
-> code has been written.** The only code present is an unmodified `create-next-app`
-> scaffold, created solely to verify that the recommended stack builds in this
-> environment. All trading/financial logic is **deliberately not implemented** until
-> the financial specification (Section 9) is approved.
+Tags used throughout:
+
+- **VERIFIED** — confirmed by a command run or a primary source.
+- **RECOMMENDED** — my professional recommendation; needs approval.
+- **OPEN** — needs your input.
+- **OWNER DECISION** — a product/financial choice only you can make.
+
+> **What changed in Revision 2.** This revision responds to the owner's review. It adds:
+> a full collateral/accounting model with ten worked examples and a backing proof
+> (Financial Spec Part A); a corrected treatment of YES/NO pricing that does **not** assume
+> `YES + NO = 100` (Part B); an integer-safe price-precision comparison (Part C); a worked
+> multi-level market-order example (Part D); and a complete resolution/settlement
+> specification (Part E). Here in the architecture report it adds: PGlite suitability and
+> PostgreSQL production compatibility; ledger projections vs ledger-derived balances; locking
+> and concurrency; closure/cancellation races; authentication and production email recovery;
+> migration recovery; and constraint/invariant testing. The first PR is broken into small,
+> independently reviewable PRs.
 
 ---
 
-## How to read this report
+## 1. Repository and Git verification (VERIFIED)
 
-Every item is tagged with one of three statuses:
+Run against the live local clone on 2026-11-16. **No secrets, tokens, or credential contents
+are included.**
 
-- **CONFIRMED** — explicitly required by the master build prompt.
-- **RECOMMENDED** — my professional recommendation; needs your approval.
-- **OPEN** — a decision that requires your input before work can proceed.
-
-A consolidated decision register is in **Section 11**.
-
----
-
-## 1. Repository verification
-
-Verified before any work (commands run against the live clone):
-
-| Check | Result |
+| Item | Value |
 | - | - |
-| Remote `origin` fetch URL | `https://github.com/0xmingalaba/khanthman-openhands.git` — matches the canonical repo |
-| Remote `origin` push URL | Same URL (push enabled) |
-| Current branch | `main` (tracks `origin/main`) |
-| Default branch on remote | `main` (`refs/remotes/origin/HEAD -> origin/main`) |
-| History depth | Shallow clone (`git rev-parse --is-shallow-repository` → `true`) |
-| Existing commits | Exactly one: `f6c7567 Initial commit` |
-| Working tree at start | Clean, except the pre-existing `README.md` ("# khanthman-openhands / Prediction Market for Myanmar") |
-| Other branches | None (only `main`) |
+| Current branch | `milestone-0-discovery-architecture` |
+| Current commit hash | `babc73152262d7cbdd04300563dccdd175a18522` (`babc731`) |
+| Commits ahead of `main` | **2** (`main` is at `f6c7567`; `git rev-list --left-right --count main...HEAD` → `0 2`) |
+| Commits behind `main` | 0 |
+| Working-tree status | **clean** ("nothing to commit") |
+| Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) |
+| Other branches | only `main` and `milestone-0-discovery-architecture` |
+| Stashes / tags | none |
+| Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`); history is "grafted" at `f6c7567` |
 
-**Interpretation:** the repository is effectively empty — a single initial commit with a
-two-line README. There is **no prior V1.0 source code, schema, or financial implementation
-in this repository to inherit from.** The "build from scratch" requirement is therefore
-naturally satisfied: there is nothing to migrate, reuse, or accidentally depend on. The
-previous V1.0 work is referenced in the prompt as historical context only and is not present here.
+### 1.1 Files changed in each commit
 
-### Work performed so far (and its justification)
-
-To de-risk the architecture before you approve it, I created a stock Next.js scaffold
-(`npx create-next-app`) and proved it builds:
+**Commit `1b185f4`** — "docs: Milestone 0 discovery & architecture report" (19 files, +7,902 / −2):
 
 ```
-Route (app)
-┌ ○ /
-└ ○ /_not-found
-✓ Compiled successfully
+.gitignore                                        (added)
+AGENTS.md                                         (added)
+README.md                                         (modified)
+docs/FINANCIAL-SPECIFICATION.md                   (added)
+docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md    (added)
+eslint.config.mjs  next.config.ts  package.json  package-lock.json  tsconfig.json   (added)
+public/{file,globe,next,vercel,window}.svg        (added)
+src/app/{favicon.ico,globals.css,layout.tsx,page.tsx}   (added)
 ```
 
-I also proved the database recommendation works by running it in a scratch directory
-(not in the repo): PGlite starts a real PostgreSQL engine and enforces transactional
-integrity and constraints:
+**Commit `babc731`** — "docs: record Milestone 0 status and GitHub push blocker in AGENTS.md"
+(1 file, +24): `AGENTS.md` (appended a project section and the push-blocker note).
 
-```
-OK: check constraint blocked negative balance
-PGlite version: PostgreSQL 18.6 (PGlite 0.5.16) on wasm32-unknown-emscripten
-```
+### 1.2 Specific questions you asked
 
-These two checks are the *only* code executed. The scaffold is plain `create-next-app`
-output and contains **no product features**.
+- **Is the `create-next-app` scaffold committed?** **VERIFIED: yes.** All 19 scaffold files
+  (config, `public/*.svg`, `src/app/*`, `package.json`, `package-lock.json`) are tracked. It is
+  **stock, unmodified** `create-next-app` output (e.g. `src/app/page.tsx` still renders the
+  Next.js starter page; `layout.tsx` still uses Geist fonts and the title "Create Next App").
+- **Was AGENTS.md added or modified?** **VERIFIED: added** in `1b185f4` (the `next dev`-generated
+  rules block), then **modified** in `babc731` (project notes + push-blocker note appended).
+- **Any unexpected generated files?** **VERIFIED: no unexpected *tracked* files.** The only
+  generated artifacts present are `.next/`, `node_modules/`, and `next-env.d.ts`, all correctly
+  **git-ignored** (shown by `git status --porcelain --ignored` as `!!`). There are **zero**
+  untracked non-ignored files.
+
+### 1.3 Push status — not assumed
+
+**VERIFIED: the two local commits have NOT been pushed.** `origin/main` is still at `f6c7567`
+and no remote branch `milestone-0-discovery-architecture` exists. Per your instruction I have
+**not pushed** and will not push without authorization. (Revision 1 recorded that all available
+credentials are read-only integration tokens; that remains true and I am **not** asking you to
+paste a PAT into chat — see Section 9 for options.)
 
 ---
 
-## 2. Product understanding
+## 2. Product understanding (CONFIRMED)
 
-**CONFIRMED** — Khant Hman is a **prediction market** in the Polymarket style where users
-trade **virtual YES/NO shares** about real-world events. Restating the rules I will hold
-myself to, because they shape the whole design:
-
-1. **Currency is MMK only.** Whole Myanmar Kyat. No Pya, no fractional MMK, no USD/USDT
-   balances. Share quantities are **integer share counts**, not currency.
-2. **Virtual credits only.** No deposits, withdrawals, payment processing, cash payouts,
-   redemption, or KPay/WavePay. This must be disclosed prominently in the UI.
-3. **No fabricated information.** No fake prices, volume, charts, activity, orders,
-   executions, or resolution data presented as real. Development fixtures must be
-   **clearly labelled as simulated**.
-4. **No staff/admin dashboard** in this scope. The product is the ordinary user-facing app.
-   (Design for future extensibility; do not build admin workflows now.)
-5. **Original branding.** Khant Hman name, identity, and assets. Polymarket is a UX
-   *reference*, not a source of artwork/trademarks/code.
-6. **No version-based branding** ("V2.0" etc.).
-
-### Core user journey (target)
-
-Discover → open a market → understand the question and resolution rules → review
-outcomes/prices/charts → buy or sell YES/NO → manage positions and open orders → track
-portfolio and activity → follow resolution and settlement.
+Unchanged from Revision 1. Khant Hman is a Polymarket-style prediction market where users trade
+**virtual YES/NO shares** about real-world events. Hard rules: **MMK only, whole Kyat**;
+**virtual credits only** (no deposit/withdraw/payment/payout/redeem); **no fabricated data**
+(fixtures labelled SIMULATED); **no admin dashboard**; **original branding**; **no version-based
+naming**.
 
 ---
 
-## 3. UX research findings (Polymarket)
+## 3. UX research (VERIFIED against primary sources)
 
-**Source:** Polymarket's public documentation, fetched directly on 2026-11-16 from
-`https://docs.polymarket.com/*` (markdown endpoints) and the live homepage
-`https://polymarket.com`. This is a behavioural/UX study for reference only; no
-Polymarket code, artwork, or trademarks will be copied.
+Fetched 2026-11-16 from `docs.polymarket.com` (markdown) and `polymarket.com` (live HTML). This
+is behavioural/UX study only; no Polymarket code, artwork, or trademarks will be used.
 
-### 3.1 Information architecture (navigation)
+Key verified facts used in the design:
 
-The live homepage navigation bar (extracted from the served HTML) is:
-
-> Trending · Combos · Perps · Breaking · New · Live · Politics · Sports · Crypto ·
-> Esports · Iran · Finance · Geopolitics · Tech · Elections · Culture · Economy ·
-> Weather · Mentions · Art · More
-
-And the homepage is organised into sections headed **"Featured markets"**, followed by
-more market groupings. Each market card shows a title, a resolution date, one or more
-outcome rows with a **percentage probability** and a price bar, and a **volume figure**
-(e.g. `$3M Vol · 2 more`).
-
-**Takeaways for Khant Hman:**
-- A **compact top nav** with a small set of *status* tabs (Trending / New / Live) plus a
-  scrollable set of **category** tabs, with a **"More"** overflow.
-- Home = **Featured** row + **category-grouped** rows of compact cards.
-- Cards carry: title, end date, outcome label(s) + probability + coloured bar, volume,
-  and a "+N more" affordance for multi-outcome events.
-
-### 3.2 Markets & events model
-
-Per the docs (*Markets & Events*): an **event** is the question/topic shown to users;
-each **market** is a resolvable **binary** condition with **Yes and No** outcomes. A
-multi-outcome question (e.g. "Who will win?") is modelled as **one event containing
-several binary markets**. Mutually exclusive groups are linked as a "negative-risk group".
-
-### 3.3 Prices are probabilities
-
-Per *Prices & Orderbook*: every share is priced between `$0.00` and `$1.00`, and **the
-price directly represents the market's implied probability**. The displayed price is the
-**midpoint of the bid-ask spread**, except when the spread is wider than `$0.10`, in which
-case the **last traded price** is shown.
-
-**Takeaway:** Khant Hman must adopt the same mental model, expressed in MMK: a YES share
-priced `0.60` means 60% implied probability and pays out a fixed amount if correct.
-
-### 3.4 Order book & trading
-
-Per *Prices & Orderbook* and *Order Lifecycle*:
-- **Central Limit Order Book (CLOB)**; prices emerge from supply and demand, not from the
-  platform. Bids (buy) and asks (sell); the **spread** is the gap between best bid and ask.
-- **Market orders** execute immediately at the best price; **limit orders** rest on the
-  book and may **partially fill**.
-- All orders are technically limit orders; a "market order" is a limit order priced to
-  execute immediately.
-- Order types: **GTC, GTD, FOK, FAK**, plus **post-only**.
-- Order statuses: `live`, `matched`, `delayed`, `unmatched`. Trade statuses:
-  `MATCHED → MINED → CONFIRMED` (with `RETRYING`/`FAILED`).
-- **Maker vs taker**: price improvement benefits the taker.
-- **Max order size** = balance − Σ(open order size − filled). Order size is limited by
-  available balance minus amounts reserved by open orders.
-- **Cancellation**: only the unfilled portion of a partially-filled order can be cancelled.
-
-### 3.5 Split / Merge / Redeem
-
-Per *Positions & Tokens*:
-- **Split**: `1 unit of collateral → 1 Yes + 1 No`.
-- **Merge**: `1 Yes + 1 No → 1 unit of collateral` (requires equal amounts).
-- **Redeem** after resolution: winning shares pay out; losing shares pay `0`.
-- A complete Yes/No set is backed by `1 unit` of collateral.
-
-**Takeaway:** this is the exact mechanism behind the required **Split/Merge** feature.
-In MMK terms, a complete YES/NO set is backed by a fixed MMK collateral amount.
-
-### 3.6 Trading constraints
-
-Per *Market Details*:
-- A **minimum price increment (tick size)** — orders must be multiples of it
-  (`0.1`, `0.01`, `0.005`, `0.0025`, `0.001`, `0.0001`).
-- A **minimum order size** (minimum notional; smaller orders are rejected).
-- Fees: a **taker fee** exists on some markets, calculated as
-  `fee = C × feeRate × p × (1 − p)` where `C` = shares and `p` = price; **makers are never
-  charged**; **geopolitical/world-events markets are fee-free** on Polymarket.
-
-### 3.7 Market status & lifecycle
-
-Per *Market Details*: `active`, `closed`, `acceptingOrders`, `archived`, `negRisk`,
-`restricted`, plus `startDate`/`endDate`. A market may exist before its order book opens
-and stay discoverable after it closes.
-
-### 3.8 Resolution
-
-Per *Resolution*: each market has **pre-defined resolution rules** specifying the
-**resolution source**, the **end date**, and **edge cases**. Polymarket resolves via the
-UMA optimistic oracle (propose → challenge → vote). Markets can resolve 50/50 in rare
-"Unknown" cases, in which each share redeems for half.
-
-**Takeaway:** even in a virtual-credit product, every market must display **clear
-resolution rules, a resolution source, and key dates**, and the UI must warn users to read
-the rules before trading.
-
-### 3.9 Responsiveness & theming
-
-Polymarket is a dense, information-rich, light-first interface with a carefully designed
-dark mode. The master prompt's design direction (Section 4) matches this closely.
+- **Homepage nav (live):** Trending · Combos · Perps · Breaking · New · Live · Politics · Sports
+  · Crypto · Esports · Iran · Finance · Geopolitics · Tech · Elections · Culture · Economy ·
+  Weather · Mentions · Art · More. Sections include **"Featured markets"**; cards show title,
+  end date, outcome + probability + bar, volume, and "+N more".
+- **Markets & events:** an **event** is the question; each **market** is a **binary** condition
+  with YES/NO outcomes; multi-outcome questions are one event containing several binary markets.
+  (https://docs.polymarket.com/concepts/markets-events.md)
+- **Prices are probabilities:** shares priced 0–1; displayed price is the **midpoint of the
+  spread**, falling back to the last traded price when the spread is wide.
+  (https://docs.polymarket.com/concepts/prices-orderbook.md)
+- **Order book:** CLOB; bids/asks; spread; market vs limit; partial fills; all orders are limit
+  orders. (same URL)
+- **Split/Merge/Redeem:** split 1 collateral → 1 YES + 1 NO; merge the reverse; winners redeem.
+  (https://docs.polymarket.com/concepts/positions-tokens.md)
+- **Trading constraints:** minimum tick size; minimum order notional.
+  (https://docs.polymarket.com/market-data/market-details.md)
+- **Fees:** `fee = C × feeRate × p × (1 − p)`; makers fee-free; world-events fee-free.
+  (https://docs.polymarket.com/trading/fees.md)
+- **Resolution:** pre-defined rules with a source, end date, and edge cases.
+  (https://docs.polymarket.com/concepts/resolution.md)
 
 ---
 
-## 4. Recommended architecture (RECOMMENDED)
+## 4. Architecture
 
-### 4.1 Stack
+### 4.1 Stack (RECOMMENDED)
 
-| Layer | Recommendation | Why |
+Next.js (App Router) · React · strict TypeScript · Tailwind CSS · **PostgreSQL** (PGlite for
+local/test) · **Drizzle ORM** with versioned SQL migrations · Zod · Vitest + Playwright ·
+key-based `en`/`my` i18n · Noto Sans Myanmar.
+
+**VERIFIED in this environment:** the Next.js scaffold builds (`✓ Compiled successfully`); the
+Drizzle `pglite` driver resolves (`drizzle-orm/pglite` → `driver.js` present).
+
+### 4.2 Is PGlite suitable for local development and integration testing? (VERIFIED)
+
+**Yes, with clearly understood limits.** I tested PGlite directly (scratch dir, not the repo):
+
+| Capability | Result |
+| - | - |
+| Engine | **PostgreSQL 18.6** (PGlite 0.5.16, wasm32) — VERIFIED |
+| `BEGIN/COMMIT` transactions | works — VERIFIED |
+| `CHECK (bal >= 0)` rejects negative | works — VERIFIED ("check constraint blocked negative balance") |
+| `SELECT … FOR UPDATE` row locks | **supported** — VERIFIED |
+| `pg_advisory_xact_lock(...)` | **supported** — VERIFIED |
+| `BEGIN ISOLATION LEVEL SERIALIZABLE` | **supported** — VERIFIED |
+| Two independent instances | independent — VERIFIED |
+
+Official PGlite docs confirm the intended use: *"Unit and CI testing … perfect for unit tests
+— you can have a unique fresh Postgres for each test"* and *"Local development … an alternative
+to a full local Postgres."* (https://pglite.dev/docs/about)
+
+**Limits to design around (RECOMMENDED):**
+- PGlite is a **single-connection, single-process embedded** engine (no client/server sockets by
+  default). It cannot, on its own, reproduce **true multi-connection concurrency** (two sessions
+  racing on the same row). Therefore **concurrency behaviour must be tested against a real
+  PostgreSQL server** (a container or a test instance), not PGlite alone. PGlite is used for
+  fast unit/integration tests of *logic, constraints, and single-transaction atomicity*.
+- Data lives in memory or a local directory; it is not a shared multi-writer database.
+
+**Conclusion:** PGlite is **suitable for local dev and for integration tests of logic and
+constraints**, and **must be paired with a real PostgreSQL server for concurrency tests**. This
+is the split I recommend (Section 6).
+
+### 4.3 PostgreSQL production compatibility (RECOMMENDED)
+
+Because PGlite **is** PostgreSQL, the same SQL dialect, schema, constraints, and migrations run
+in both. Production uses a standard PostgreSQL server (managed or self-hosted — OWNER DECISION
+on target). Rules to keep the two aligned:
+- Migrations are **plain SQL** applied by Drizzle-kit; the same files run in both.
+- No PGlite-only extensions in production code paths; use core Postgres features only.
+- A CI job runs the full migration + integration suite against **both** PGlite and a real
+  PostgreSQL server, so dialect drift is caught early.
+
+### 4.4 Ledger balance projections vs ledger-derived balances (RECOMMENDED)
+
+**The question:** do we read a user's balance from a stored "balance" row (a *projection*), or
+recompute it from the ledger each time (*derived*)?
+
+| | Derived (sum the ledger) | Projection (stored balance row) |
 | - | - | - |
-| Framework | **Next.js (App Router) + React + strict TypeScript** | Preferred by the prompt; server-side APIs + React UI in one deployable. |
-| Styling | **Tailwind CSS** + a small design-token layer | Maintainable, matches the compact Polymarket aesthetic, supports light/dark. |
-| Database | **PostgreSQL**; **PGlite** for local dev & tests | Prompt's preference. PGlite is a WASM build of real Postgres, so local/test and production share one SQL dialect. **Verified working here (PostgreSQL 18.6).** |
-| DB access | **Drizzle ORM + drizzle-kit** with **versioned SQL migrations** | Typed schema, plain-SQL migrations (auditable), no hidden magic. |
-| Auth | **Owned email + password auth** with secure server-side sessions | See 4.4. No third-party identity dependency. |
-| Money math | **Integer MMK** (whole Kyat) + integer share counts; a small money module with explicit invariants | Prompt requires whole MMK and integer shares; avoids float errors. |
-| Validation | **Zod** schemas shared by API and forms | One source of truth for input validation. |
-| Tests | **Vitest** (unit/integration) + **Playwright** (E2E) | Matches the prompt's test matrix. |
-| i18n | **Key-based localization** (`en`, `my`) with a typed dictionary | Prompt forbids scattered hardcoded translations. |
-| Fonts | **Noto Sans Myanmar** (UI) with correct Burmese line-height/rendering | Correct Burmese rendering. Package availability verified on npm. |
+| Correctness | Always consistent with history | Requires careful maintenance |
+| Performance | Slower as history grows | Fast (single row read) |
+| Concurrency | Naturally safe (append-only) | Needs locking on updates |
+| Auditability | Excellent | Good, if reconciled |
 
-**All of the above are RECOMMENDED.** No infrastructure beyond a single Next.js app plus a
-Postgres database is proposed — no queue, no cache, no microservices, no paid services.
+**Recommendation:** use a **projection with a proof obligation**:
+- The **ledger is the source of truth** (append-only).
+- A **balance projection** row is maintained **inside the same transaction** as the ledger
+  entries, guarded by row locks, so it can never drift from the ledger within a transaction.
+- **Periodic reconciliation** recomputes balances from the ledger and alerts on any mismatch.
+- Tests assert **projection == derived** after every operation class.
 
-### 4.2 Application layers (modular, separable)
+This gives fast reads and a ledger that remains authoritative and auditable. (This is also what
+makes the "double-entry is not proof of collateralization" point testable — see the Financial
+Spec Part A.6.)
+
+### 4.5 Locking and concurrency (RECOMMENDED)
+
+- **All financial mutations run in a single DB transaction** that takes row locks in a
+  **consistent order** (e.g. by ascending account/market id) to avoid deadlocks.
+- **Row locks** (`SELECT … FOR UPDATE`) on the balance rows, the order rows being matched, and
+  the market row when needed.
+- **Advisory locks** (`pg_advisory_xact_lock`) keyed by market for the matching loop, so two
+  matching runs cannot interleave on the same book. (VERIFIED: advisory locks work in PGlite.)
+- **Optimistic guards** where appropriate (`UPDATE … WHERE version = n`).
+- **Idempotency keys** on every mutating endpoint to make retries safe.
+- **Concurrency tests run against real PostgreSQL** (per 4.2), including two simultaneous
+  buys competing for the same resting order and two simultaneous cancels.
+
+### 4.6 Market closure and cancellation race conditions (RECOMMENDED)
+
+A market can close (by time or by resolution) while orders are open. Races to handle:
+1. **Fill vs close** — an order that is mid-match when the market closes. **Solution:** the
+   matching transaction locks the market row and **re-checks market status**; if not
+   `acceptingOrders`, it aborts the fill.
+2. **Cancel vs fill** — a user cancels an order the same instant it fills. **Solution:** both
+   paths lock the order row `FOR UPDATE`; whoever gets the lock first wins, and the other sees
+   the new state (filled qty) and acts accordingly. Cancellation only releases the **unfilled**
+   remainder.
+3. **Close vs close** — the scheduled close and a resolution both trying to close the market.
+   **Solution:** a **guarded state transition** (`UPDATE … WHERE status = 'open'`) so exactly
+   one wins; the other is a no-op.
+4. **Release vs release** — double release of a reservation. **Solution:** release is bounded by
+   the unfilled quantity and the reservation row is updated under lock; a second release finds
+   nothing to release.
+
+### 4.7 Authentication and production email recovery (RECOMMENDED)
+
+- **Auth model (RECOMMENDED):** email + password, Argon2id hashing, server-side sessions in
+  `HttpOnly`+`Secure`+`SameSite` cookies, server-side session validation on every protected
+  route, CSRF protection, and rate limiting. (Phone login deferred — OPEN.)
+- **Account recovery, two modes:**
+  - **Development:** reset tokens are surfaced in the UI/log so flows are testable **without an
+    email provider**.
+  - **Production:** requires a **transactional email provider** (OWNER DECISION). Design keeps
+    the provider behind a small interface so the MVP can ship in dev mode and a provider can be
+    added without changing the domain. Reset tokens are **single-use, short-lived, hashed at
+    rest**, and the flow does not reveal whether an email exists.
+- **OPEN:** which email provider, and whether phone/SMS is required.
+
+### 4.8 Migration recovery strategy (RECOMMENDED)
+
+- Migrations are **versioned, forward-only SQL** files, applied in order, each recorded in a
+  migration table.
+- Every migration is written to be **idempotent-safe** where possible and **transactional**
+  (Postgres supports DDL in transactions), so a failed migration rolls back cleanly.
+- **Recovery:** if a migration fails mid-deploy, the transaction rolls back and the previous
+  version stays live; forward recovery is a **new** migration that corrects the issue (we do not
+  hand-edit applied migrations).
+- **Test:** a dedicated job applies **all migrations to an empty DB** and asserts the schema is
+  valid; a second job applies them to a copy of a "populated" DB to catch ordering issues.
+- **Backups/restore** procedure is defined before production (OWNER DECISION on provider).
+
+### 4.9 Testing of database constraints and financial invariants (RECOMMENDED)
+
+- **Constraint tests:** direct SQL attempts to violate `CHECK (bal >= 0)`, `CHECK (qty >= 0)`,
+  `CHECK (price BETWEEN 1 AND 99)`, unique keys, and foreign keys — each **must fail**.
+  (VERIFIED in principle: the negative-balance `CHECK` was rejected by PGlite.)
+- **Invariant tests:** assert C1–C8 from the Financial Spec after every operation class; attempt
+  to violate C1 (backing) and require failure.
+- **Projection-vs-derived tests:** assert stored balances equal ledger-derived balances.
+- **Concurrency tests:** run against **real PostgreSQL**, covering the races in 4.6.
+- **Property-style tests:** randomized sequences of split/trade/merge/cancel/settle, asserting
+  all invariants after every step.
+
+### 4.10 Module map (RECOMMENDED, unchanged in spirit)
 
 ```
-src/
-  app/                    # Next.js routes (pages + API route handlers) — thin
-  components/             # reusable UI (design system)
-  features/               # feature UI: discovery, market, trading, portfolio, account
-  server/
-    auth/                 # registration, login, sessions, CSRF, rate limiting
-    market/               # market domain: query, status, resolution records
-    trading/              # orders, matching, fills (GATED — not built until approved)
-    positions/            # positions & balances (GATED)
-    ledger/               # append-only double-entry ledger (GATED)
-    db/                   # connection, schema, migrations
-    lib/                  # money, idempotency, audit, errors
-  i18n/                   # dictionaries + locale helpers
-  styles/                 # design tokens, theme
-tests/
-  unit/ integration/ e2e/
-docs/                     # this report + the financial specification
+src/app/          routes (thin)          src/components/  design system
+src/features/     feature UI            src/server/      domain services
+  auth/ market/ trading/ positions/ ledger/ db/ lib/
+src/i18n/         en, my dictionaries   tests/  unit/ integration/ e2e/
+docs/             this report + financial spec
 ```
 
-Rule: **UI never computes authoritative balances/prices.** All financial values come from
-server-side services. Route handlers are thin; domain logic lives in `server/*`.
-
-### 4.3 Domain model (conceptual)
-
-- **User** (account) — 1:1 **Preferences** (locale, theme, timezone).
-- **Session** — server-side session records for auth.
-- **Category** — market taxonomy.
-- **Event** — a question/topic; groups one or more **Markets**.
-- **Market** — a resolvable binary condition with two **Outcomes** (YES/NO), a status,
-  dates, description, **resolution rules**, and **resolution source(s)**.
-- **Outcome** — label, and a reference to its tradable share instrument.
-- **Order** — side (buy/sell), outcome, type (limit/market), price, quantity, filled
-  quantity, status, timestamps, expiry.
-- **Trade** (fill) — links a maker and taker order, price, quantity, timestamp.
-- **Position** — per user/outcome share balance + cost basis.
-- **Balance / Account** — user MMK balances: available and reserved.
-- **LedgerAccount / Journal / Entry** — append-only double-entry records.
-- **IdempotencyKey** — dedupe of mutating requests.
-- **AuditLog** — append-only record of sensitive mutations.
-- **ResolutionRecord** — recorded outcome + source + time for a resolved market.
-
-### 4.4 Authentication (RECOMMENDED: email + password)
-
-**Options considered:**
-
-| Option | Pros | Cons | Verdict |
-| - | - | - | - |
-| Phone-only | Familiar in Myanmar; SMS is common | Requires an SMS gateway (cost, delivery reliability, SIM-farm abuse, no email recovery); no free path in dev | **Reject for MVP** |
-| Email-only | No SMS cost; standard reset flow; easy to test | Some Myanmar users prefer phone | **Recommended** |
-| Combined | Flexible | More surface area, more edge cases, more to secure | Defer |
-
-**Recommendation:** **email + password for the MVP**, with a documented path to add phone
-later. Specifics: strong password hashing (Argon2id or scrypt), **HttpOnly + Secure +
-SameSite session cookies**, **server-side session validation** on every protected route,
-**CSRF protection** for state-changing requests, **rate limiting** on auth endpoints, and a
-**secure, expiring, single-use password-reset token** (reset links shown in the UI only in
-development; no email provider required for the MVP — see OPEN items).
-
-> **OPEN:** Is an email-only MVP acceptable, or is phone-based login a hard requirement?
-> If phone is required, we need an SMS provider decision (cost + compliance).
-
-### 4.5 Design system (RECOMMENDED)
-
-- **Light-first**, white/near-white background; **carefully designed dark mode** with a
-  user toggle (persisted in preferences).
-- Compact typography scale, restrained accent colours, subtle separators — no heavy card
-  backgrounds, no gradients, no gratuitous animation.
-- A small token set: colour (bg/surface/text/muted/border/accent/positive/negative),
-  spacing scale, radii, type scale, shadows (minimal).
-- Reusable primitives: Button, Input, Select, Tabs, Badge, Table, Dialog, Tooltip, Toast,
-  Skeleton, EmptyState, PriceBar, OutcomeRow, MarketCard, OrderBook, TradePanel.
-- **Both themes must be verified** across charts, forms, menus, tables, dialogs.
-- Burmese requires extra **line-height** and careful font fallback; the UI must not clip
-  stacked diacritics.
-
-### 4.6 Localization (RECOMMENDED)
-
-- Two locales: **`en`** and **`my`**.
-- **Key-based dictionary** (e.g. `market.buy`, `orderbook.bids`), typed so missing keys are
-  compile errors.
-- Locale switch in the header and in preferences; default follows the user preference,
-  then browser, then English.
-- **Burmese terminology is an OPEN item.** Financial terms must be reviewed by a fluent
-  speaker; I will propose a glossary (see the Financial Specification appendix) but will not
-  ship machine-translated financial terms as final.
+Rule: the UI is never authoritative for balances, prices, or calculations.
 
 ---
 
 ## 5. Database design (RECOMMENDED)
 
-PostgreSQL. Key integrity rules baked into the schema (not just application code):
-
-- **Money is `BIGINT` whole MMK.** `CHECK (amount_mmk >= 0)` on balances and reservations so
-  a negative balance is impossible at the storage layer (verified working in PGlite).
-- **Share quantities are `BIGINT`** with `CHECK (qty >= 0)`.
-- **Prices are integer ticks** (e.g. price in 1/100 of a unit, range `1..99`), never floats,
-  so "prices are probabilities" and the YES+NO = 1 relationship are exact.
-- **Ledger is append-only**: entries are never updated or deleted; balances are derived or
-  maintained with a guarded update inside the same transaction as the journal.
-- **Uniqueness**: one row per (user, outcome) position; one row per idempotency key; unique
-  slugs for events/markets.
-- **Foreign keys** with explicit `ON DELETE` behaviour; no orphaned financial rows.
-- **Indexes** on the hot paths: market status/category/end-date, order book
-  (market, outcome, side, price), user orders, user trades, ledger account/time.
-- **Transaction boundaries**: every financial mutation is a single DB transaction covering
-  balance change + reservation + ledger entries + audit row, so a failure leaves **no
-  partial financial state**.
-
-Entity list: users, user_preferences, sessions, categories, events, markets, outcomes,
-market_sources, resolution_records, orders, trades, positions, balances (or accounts),
+Entities: users, user_preferences, sessions, categories, events, markets, outcomes,
+market_sources, resolution_records, orders, trades, positions, balances (projection),
 ledger_accounts, ledger_journals, ledger_entries, idempotency_keys, audit_logs.
 
-> Detailed column-level DDL will be produced in Milestone 1 as versioned migrations, after
-> the financial specification (Section 9) fixes the exact unit definitions.
+Integrity rules enforced at the storage layer (not just app code):
+- Money `BIGINT` whole MMK with `CHECK (>= 0)`; shares `BIGINT` with `CHECK (>= 0)`; price
+  `INT` with `CHECK (price BETWEEN 1 AND 99)`.
+- Append-only ledger tables (no UPDATE/DELETE paths).
+- Unique keys for (user, outcome) positions, idempotency keys, and (market, user) settlement
+  payouts; unique slugs for events/markets.
+- Foreign keys with explicit `ON DELETE` behaviour.
+- Indexes on hot paths: market status/category/end date; order book (market, outcome, side,
+  price); user orders/trades; ledger account/time.
+- **Transaction boundary = one financial mutation** (balance + reservation + ledger + audit).
+
+Column-level DDL is deferred to the migrations PRs, after the financial spec is approved.
 
 ---
 
-## 6. Page & component inventory (CONFIRMED scope)
+## 6. Testing strategy (RECOMMENDED)
 
-| Page | Route (proposed) | Key content |
-| - | - | - |
-| Home | `/` | Branding, nav, featured markets, trending, new, categories, search, compact listings |
-| Discovery | `/markets` | Search, categories, status filter, sort, empty/loading/no-results states |
-| Market detail | `/market/[slug]` | Question, category, status, YES/NO, price/probability, chart + timeframes, trading UI, order book, description, resolution rules + source, key dates, activity |
-| Portfolio | `/portfolio` | Balances (total/available/reserved), positions (qty, avg entry), open orders + cancel, trade history, transaction history |
-| Account | `/account` | Profile, preferences (language, theme), security/recovery |
-| Auth | `/login`, `/register`, `/reset` | Register, login, logout, reset |
-| Static | `/about`, `/terms`, `/disclaimer` | Virtual-credit disclosure, rules, legal |
+| Level | Tool | Runs against | Covers |
+| - | - | - | - |
+| Unit | Vitest | n/a | money math, ticks, quote/slippage logic, validation, i18n keys |
+| Integration (logic/constraints) | Vitest + **PGlite** | PGlite | auth, sessions, market retrieval, order placement, matching logic, partial fills, reservation/release, positions, split/merge, ledger, idempotency, audit, constraint tests |
+| Integration (concurrency) | Vitest + **real PostgreSQL** | Postgres server | row-lock races, closure/cancel races, simultaneous fills, double-spend attempts |
+| Migration | dedicated | PGlite + Postgres | migrations apply cleanly to empty and populated DBs |
+| E2E | Playwright | running app | navigation, search, filters, market details, trading UI, portfolio, locale/theme switch, responsive, accessibility |
+| Static | `tsc --noEmit`, ESLint, `next build` | n/a | typecheck, lint, production build |
 
-Component inventory (design system + domain): see 4.5. Trading panel is a single component
-with four modes (**1-Tap, Market, Limit, Split/Merge**), described in the financial spec.
+**Reporting rule:** the QA report lists every command and result and names any **skipped** test
+and why. A green `next build` is never presented as proof of readiness.
 
 ---
 
 ## 7. Security strategy (RECOMMENDED)
 
-- **Passwords:** Argon2id (preferred) or scrypt; per-user salt; password strength policy.
-- **Sessions:** random high-entropy tokens stored server-side; cookie `HttpOnly`,
-  `Secure`, `SameSite=Lax`; rotation on login; server-side expiry/revocation.
-- **Authorization:** every protected route/handler checks the session **server-side**; the
-  client is never trusted for identity, balances, prices, or calculations.
-- **CSRF:** double-submit token / same-site cookie strategy for all state-changing calls.
-- **Rate limiting:** per-IP and per-account on auth, order placement, and other mutations.
-- **Input validation:** Zod at every boundary; reject unknown fields.
-- **Output safety:** React auto-escaping; no `dangerouslySetInnerHTML` on user content.
-- **Account recovery:** expiring, single-use, hashed reset tokens; no account enumeration.
-- **Secrets:** environment variables only; `.env*` git-ignored; no secrets in the repo.
-- **Audit logging:** append-only `audit_logs` for sensitive actions (auth, orders, ledger).
-- **Idempotency & concurrency:** idempotency keys on mutations; row locks / guarded updates
-  to prevent double-spend, oversell, duplicate execution, and bad reservation release.
-- **Disclosure:** a clear, persistent statement that credits are **virtual, non-depositable,
-  non-withdrawable, non-redeemable**, with no monetary value.
+Unchanged from Revision 1, plus: resolution authority is a **named, authenticated operator
+action** (Financial Spec Part E); the ledger is **append-only**; and **collateralization is
+asserted and reconciled**, not assumed from double-entry alone (Financial Spec Part A.6).
+Passwords hashed (Argon2id); sessions server-side; CSRF; rate limiting; Zod validation at every
+boundary; safe output; no account enumeration; secrets in env only; audit logging; idempotency
+and concurrency protection.
 
 ---
 
-## 8. Testing strategy (RECOMMENDED)
+## 8. First PR scope — revised (RECOMMENDED)
 
-| Level | Tool | Covers |
-| - | - | - |
-| Unit | Vitest | money math, price ticks, matching rules, quote expiry, validation, i18n keys |
-| Integration | Vitest + PGlite | auth, sessions, authorization, market retrieval, order placement, matching & partial fills, cancellation, reservation/release, positions, split/merge, ledger, idempotency, concurrency, audit |
-| E2E | Playwright | navigation, search, filters, market details, trading UI, portfolio, locale switch, theme switch, responsive layouts, accessibility |
-| Static | `tsc --noEmit`, ESLint, `next build` | typecheck, lint, production build |
-| Migration | dedicated test | migrations apply cleanly from empty DB and are repeatable |
+Revision 1 proposed one large "foundation" PR. Per your review, here is a sequence of **small,
+independently reviewable PRs**, each with explicit scope, exclusions, acceptance criteria, and
+tests. **None are created yet.**
 
-**Financial invariants tested explicitly:** no negative balances; no duplicate execution;
-no double spending; no overselling; no incorrect reservation release; failed transactions
-leave no partial financial change; every financial mutation is auditable.
+### 8.1 Smallest sensible first PR — **PR-1: Design tokens + app shell (no data, no auth)**
 
-**Reporting rule:** the final QA report will list every command run and its result, and will
-explicitly name any **skipped** test and the reason. A green `next build` alone will never be
-presented as proof of readiness.
+**Why this first:** it is the least risky, most visible step, touches no financial code, and
+establishes the design system everything else builds on. It can be reviewed purely on UX.
 
----
+- **Scope (exact files):**
+  - `src/styles/tokens.css` — colour/spacing/radii/type tokens for light + dark.
+  - `src/app/globals.css` — Tailwind layers wired to tokens; Myanmar font variables.
+  - `src/app/layout.tsx` — root layout: font setup (incl. Noto Sans Myanmar), theme attribute.
+  - `src/components/` — first primitives: `Button`, `Input`, `Badge`, `Tabs`, `Container`.
+  - `src/components/theme/ThemeToggle.tsx` — light/dark toggle (client).
+  - `src/app/page.tsx` — a **static** placeholder home (brand name in EN + MY, disclosure).
+  - `src/app/layout` metadata — title "Khant Hman Prediction Market / ခန့်မှန်း ဈေးကွက်".
+- **Explicit exclusions:** no database, no auth, no markets, no trading, no i18n framework
+  beyond a minimal placeholder, no fixtures.
+- **Acceptance criteria:** builds and lints clean; light and dark both render; no horizontal
+  overflow at 390/768/1366/1440 px; the virtual-credit disclosure is visible; Burmese text
+  renders with correct line-height.
+- **Automated tests:** a Vitest component test for `Button`/`Tabs`; a Playwright smoke test
+  asserting the page loads, the theme toggle switches the theme, and no console errors.
 
-## 9. Financial specification (DRAFT for approval — CONFIRMED as a gate)
+### 8.2 Subsequent PRs (small, ordered)
 
-The prompt requires a complete financial specification **approved before any executable
-trading is built.** I have drafted it as a **separate document** so it can be reviewed on
-its own:
-
-> **See `docs/FINANCIAL-SPECIFICATION.md`.**
-
-It defines all 20 required topics (collateral units, share units, price range, payout,
-YES/NO relationship, minimums, rounding, fees, reservation, escrow, matching, market-order
-execution, slippage & quote expiry, partial fills, order expiry/cancellation, split/merge
-conversion, status restrictions, resolution, settlement, and ledger invariants) — each with
-**my recommendation plus alternatives and trade-offs**, and each awaiting your decision.
-
-**No financial execution code will be written until you approve that document.**
-
----
-
-## 10. Risks, dependencies, open questions
-
-| # | Item | Type | Mitigation / note |
+| PR | Title | Scope | Key tests |
 | - | - | - | - |
-| R1 | Myanmar financial terminology quality | Risk | Propose a glossary; require fluent-speaker review before release. |
-| R2 | Burmese font rendering (stacked diacritics) | Risk | Use Noto Sans Myanmar with tested line-height; visual QA at all breakpoints. |
-| R3 | Matching-engine correctness (partial fills, concurrency) | Risk | Deterministic price-time priority; DB transactions + locks; exhaustive invariant tests. |
-| R4 | "No fabricated data" rule vs. demo needs | Risk | Fixtures are labelled **SIMULATED** everywhere; seed data never masquerades as live. |
-| R5 | Scope creep into admin/ops | Risk | Explicitly out of scope; keep extension points only. |
-| R6 | Real-money temptation | Risk | Hard architectural separation; disclosure; no payment code paths at all. |
-| D1 | Email delivery for reset (no provider yet) | Dependency | MVP shows reset in dev; production email provider is an OPEN decision. |
-| D2 | Hosting/DB target for production | Dependency | Not chosen; MVP targets local PGlite/Postgres. |
-| O1 | Email-only vs phone auth | OPEN | See 4.4. |
-| O2 | New-user credit grant (10,000 MMK) | OPEN | Only if onboarding rules are defined and approved. |
-| O3 | Fee model (none vs. taker fee) | OPEN | See financial spec. |
-| O4 | Burmese glossary sign-off | OPEN | Needs a fluent reviewer. |
-| O5 | Multi-outcome (event with several markets) in MVP | OPEN | Binary-only MVP recommended; multi-outcome later. |
+| **PR-2** | i18n foundation | Typed `en`/`my` dictionaries, locale provider, locale switch, Burmese glossary placeholder | key-parity test; locale-switch E2E |
+| **PR-3** | Database foundation | Drizzle config, PGlite/Postgres connection, migration runner, **migration 0001** for non-financial tables (users, prefs, sessions, categories, events, markets, outcomes, sources) | migration test (empty + populated); constraint tests |
+| **PR-4** | Auth | Register/login/logout, Argon2id, sessions, protected-route guard, CSRF, rate limit, dev-mode reset | auth integration tests; session/authorization tests; reset tests |
+| **PR-5** | Market discovery + detail (read-only) | Home feed, categories, search, filters, market cards, market detail with outcomes/rules/sources/dates, empty/loading/no-results states, charts from **seeded** data | retrieval tests; discovery E2E; localization/theming E2E |
+| **PR-6** | Dev fixtures | Deterministic, idempotent seed data labelled SIMULATED | seed idempotency test; "no duplicate on re-run" test |
+| **PR-7+** | Trading (gated) | Order book, limit, market, 1-Tap, split/merge, ledger, positions, settlement — **only after the financial spec is approved** | full invariant + concurrency suites |
+
+Each PR is merged only with owner approval; none is merged or deployed in this milestone.
 
 ---
 
-## 11. Owner decision register
+## 9. Risk register (revised)
 
-Please review and mark each: **Approved / Change / Reject**.
+| # | Risk | Likelihood | Impact | Mitigation | Tag |
+| - | - | - | - | - | - |
+| R1 | Burmese financial terminology quality | Med | High | Glossary + fluent-speaker sign-off before release | OPEN (OP-B) |
+| R2 | Burmese font rendering (stacked diacritics) | Med | Med | Noto Sans Myanmar, tested line-height, visual QA | RECOMMENDED |
+| R3 | Matching correctness under concurrency | Med | High | Row/advisory locks, consistent lock order, real-Postgres concurrency tests | RECOMMENDED |
+| R4 | "No fabricated data" vs demo needs | Med | High | Fixtures labelled SIMULATED everywhere; never shown as live | RECOMMENDED |
+| R5 | Collateral not actually backed (ledger balanced but unbacked) | Low | Critical | C1 assertion + reconciliation + dedicated tests (Fin. Spec A.6) | RECOMMENDED |
+| R6 | PGlite ≠ production concurrency behaviour | Med | Med | Concurrency tests on real Postgres; PGlite for logic/constraints | VERIFIED/ RECOMMENDED |
+| R7 | Migration failure mid-deploy | Low | High | Transactional forward-only migrations; empty+populated DB tests; backups before prod | RECOMMENDED |
+| R8 | Production email recovery unavailable | High | Med | Provider-abstracted; dev-mode reset; provider decision before prod | OPEN (OP-C) |
+| R9 | Scope creep into admin/ops | Med | Med | Explicitly out of scope; extension points only | RECOMMENDED |
+| R10 | Real-money temptation | Low | High | Hard separation; disclosure; no payment code paths | RECOMMENDED |
+| R11 | Cross-outcome matching adds complexity | Med | Med | Defer to a separately reviewed feature | OPEN (OP-D) |
+| R12 | Push blocked (read-only credentials) | High | Med | Owner grants write or provides PAT out-of-band; do not paste in chat | VERIFIED |
 
-### CONFIRMED (from the prompt — no action needed)
-- MMK-only, whole Kyat; virtual credits only; no fabrication; no admin dashboard; original
-  branding; no version-based naming; the four trading modes; the page set; the test matrix.
+---
 
-### RECOMMENDED (need your approval)
-| ID | Recommendation |
-| - | - |
-| RC1 | Stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle + Zod + Vitest/Playwright. |
-| RC2 | Auth: **email + password** for MVP (phone deferred). |
-| RC3 | Money as integer MMK; prices as integer ticks; shares as integers (no floats). |
-| RC4 | Append-only double-entry ledger; balances via guarded transactional updates. |
-| RC5 | Binary YES/NO markets only for MVP; multi-outcome events later. |
-| RC6 | Fixtures clearly labelled **SIMULATED**; deterministic and idempotent seeds. |
-| RC7 | Light-first design with a real, tested dark mode; key-based `en`/`my` i18n. |
-| RC8 | Full financial spec must be approved before any trading code (gate). |
+## 10. Owner decision register (revised)
 
-### OPEN (need your decision)
+### 10.1 Architecture / product
+
+| ID | Decision | Recommended | Tag |
+| - | - | - | - |
+| AR1 | Stack (Next.js + TS + Tailwind + Postgres/PGlite + Drizzle + Zod + Vitest/Playwright) | Approve | RECOMMENDED |
+| AR2 | Auth model | Email + password for MVP | OPEN (OP-A) |
+| AR3 | Money model | Integer MMK; integer shares; integer price ticks | RECOMMENDED |
+| AR4 | Ledger | Append-only double-entry + maintained projection + reconciliation | RECOMMENDED |
+| AR5 | MVP market type | Binary YES/NO only; multi-outcome later | OPEN (OP-D) |
+| AR6 | Fixtures | Deterministic, idempotent, labelled SIMULATED | RECOMMENDED |
+| AR7 | i18n / theming | Key-based `en`/`my`; light-first with tested dark mode | RECOMMENDED |
+| AR8 | First PR | **PR-1 (design tokens + app shell)** | RECOMMENDED |
+| AR9 | Production DB target | Managed vs self-hosted Postgres | OPEN (OP-E) |
+| AR10 | Email provider | Choose before production | OPEN (OP-C) |
+
+### 10.2 Financial (see the Financial Spec Part F)
+
+| ID | Decision | Recommended | Tag |
+| - | - | - | - |
+| F1 | Payout per winning share | 100 MMK | OWNER DECISION |
+| F2 | Price grid | 1–99 MMK (1%) | OWNER DECISION |
+| F3 | Minimum order notional | 100 MMK | OWNER DECISION |
+| F4 | Fees | None | OWNER DECISION |
+| F5 | Quote expiry / slippage | 10 s / 3% | RECOMMENDED |
+| F6 | Order types | GTC + optional GTD | RECOMMENDED |
+| F7 | Cross-outcome matching in MVP | Defer | OPEN |
+| F8 | Market-order partial-fill policy | Fill available, return unspent | OPEN |
+| F9 | Resolution authority | Named audited operator, no UI | RECOMMENDED |
+| F10 | Pre-settlement dispute window | None (or 24 h) | OPEN |
+| F11 | New-user credit | 10,000 MMK | OWNER DECISION |
+| F12 | "To Win" display | Gross payout; profit separate | OWNER DECISION |
+
+---
+
+## 11. Unresolved technical questions (explicit)
+
 | ID | Question |
 | - | - |
-| OP1 | Email-only MVP acceptable, or is phone login required? |
-| OP2 | Approve a 10,000 MMK new-user virtual credit? If yes, define the onboarding rules. |
-| OP3 | Fees: none, or a taker fee like Polymarket's? (See financial spec.) |
-| OP4 | MVP scope: binary markets only, or include multi-outcome events? |
-| OP5 | Preferred production hosting/DB target (affects deployment tasks later). |
-| OP6 | Do you have a fluent Burmese reviewer for financial terminology? |
-| OP7 | Brand assets: do you have a logo/mark, or should I propose an original one? |
+| T1 | Exact integer price grid: 100 MMK payout/1% (recommended) vs 1,000/0.1% vs bps? (gates all arithmetic) |
+| T2 | MVP without cross-outcome matching, or with it? |
+| T3 | Market-order partial-fill policy: fill-available vs FOK? |
+| T4 | Pre-settlement dispute window: none, or a hold period? |
+| T5 | Which real-PostgreSQL environment will run concurrency tests in CI? |
+| T6 | Production email provider and whether SMS is required? |
+| T7 | Production DB hosting target and backup/restore procedure? |
+| T8 | Maximum slippage tolerance and quote window (defaults 3% / 10 s)? |
+| T9 | Do we seed a small set of "market-maker" fixtures so the book is not empty in dev? |
+| T10 | Brand assets: does a logo exist, or should one be proposed? |
 
 ---
 
-## 12. Milestone roadmap
+## 12. Milestone roadmap (unchanged)
 
 | Milestone | Scope | Gate |
 | - | - | - |
-| **0 (this report)** | Discovery & architecture | **Your approval** |
-| **1 Foundation** | App foundation, design system, nav/layout, i18n, light/dark, DB access, migrations, reusable components, tests | Approval of RC1–RC4, RC7 |
-| **2 Auth & data** | Register/login/logout, sessions, protected routes, preferences, dev fixtures | Approval of RC2, RC6, OP1, OP2 |
-| **3 Market experience** | Home, discovery, search, categories, cards, market details, outcomes, charts, rules, activity | Approval of RC5 |
-| **4 Trading** | Order book, limit, market, 1-Tap, split/merge, matching/fills, ledger, positions, settlement, cancellation, safeguards | **Financial spec approved (RC8)** |
-| **5 Portfolio** | Portfolio, positions, balances, open orders, cancellation, history, settings, refinements | Milestone 4 stable |
-| **6 QA & release readiness** | Responsive, light/dark, en/my, accessibility, security, DB integrity, financial invariants, concurrency, regression, E2E, readiness report | All prior |
+| **0 (this)** | Discovery & architecture (Rev 2) | **Your approval** |
+| 1 | Foundation (design system, shell, i18n, DB, migrations, tests) | Approval of AR1–AR8 |
+| 2 | Auth & data | Approval of AR2, AR10, OP-A, OP-C |
+| 3 | Market experience | Approval of AR5 |
+| 4 | Trading | **Financial spec approved** |
+| 5 | Portfolio | Milestone 4 stable |
+| 6 | QA & release readiness | All prior |
 
 ---
 
-## 13. Proposed first implementation PR (after your approval)
+## 13. Stop condition
 
-**Scope of the first PR (small, reviewable, no financial execution):**
-
-1. Replace the default scaffold with the Khant Hman **design system**: tokens, light/dark
-   theme, typography (incl. Myanmar font), core UI primitives.
-2. **App shell**: header nav (status tabs + category tabs + search + locale/theme toggles),
-   responsive layout, footer with the virtual-credit disclosure.
-3. **Localization skeleton**: typed `en`/`my` dictionaries with a representative key set.
-4. **Database foundation**: Drizzle config, connection (PGlite for dev/test), and the
-   **first versioned migration** for the non-financial entities (users, preferences,
-   sessions, categories, events, markets, outcomes, sources).
-5. **Tests**: design-system unit tests, an i18n key-parity test, and a migration test that
-   applies cleanly to an empty DB.
-6. **Docs**: this report + the financial specification committed under `docs/`.
-
-**Explicitly NOT in the first PR:** order book, matching, ledger, balances, split/merge,
-or any executable trading. Those wait for financial-spec approval.
-
----
-
-## 14. What I need from you to proceed
-
-1. Review the **RECOMMENDED** items (RC1–RC8) and the **OPEN** questions (OP1–OP7).
-2. Read and decide on **`docs/FINANCIAL-SPECIFICATION.md`** (Section 9) — this gates all
-   trading work.
-3. Approve (or amend) the **first PR scope** in Section 13.
-
-Once you approve, I will proceed to Milestone 1 and open the first pull request.
-
----
-
-*Sources for the UX research (fetched 2026-11-16):*
-- https://docs.polymarket.com/polymarket-101.md
-- https://docs.polymarket.com/concepts/markets-events.md
-- https://docs.polymarket.com/concepts/prices-orderbook.md
-- https://docs.polymarket.com/concepts/order-lifecycle.md
-- https://docs.polymarket.com/concepts/positions-tokens.md
-- https://docs.polymarket.com/concepts/resolution.md
-- https://docs.polymarket.com/concepts/negative-risk.md
-- https://docs.polymarket.com/market-data/market-details.md
-- https://docs.polymarket.com/trading/fees.md
-- https://polymarket.com (live homepage, for navigation/section structure)
+Per your instruction, this revision **stops here**. I have **not** started Milestone 1, added
+features, implemented auth/trading, created migrations, modified financial logic, or pushed,
+merged, or deployed. I await your review of these two revised documents.

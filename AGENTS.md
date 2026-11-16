@@ -15,10 +15,12 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) delivered in `docs/`. Awaiting owner approval.
+- Milestone 0 (Discovery & Architecture) **Revision 2** delivered in `docs/`. Awaiting owner approval.
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
 - Recommended stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle +
   Zod + Vitest/Playwright + key-based `en`/`my` i18n.
+- PGlite VERIFIED for local/test (logic + constraints); real PostgreSQL needed for concurrency tests.
+- First PR recommended: design tokens + app shell only (see architecture report Section 8).
 
 ### Commands
 - `npm run dev` / `npm run build` / `npm run lint`
