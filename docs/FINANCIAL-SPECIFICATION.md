@@ -1,16 +1,19 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 9) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 8 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 9)
+**Status:** DRAFT (Revision 10) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 9 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 10)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
+**Revision 10 is a documentation-only correction** addressing the final Milestone 0 independent
+review (defines C2/S1, clarifies E6/F28, adds F30/F31 and a coverage matrix). **No financial policy was
+changed and no alternative was selected.**
 
 ### Verification labels
 
 | Label | Meaning |
 | - | - |
-| **VERIFIED (scratch)** | A scratch model outside the repo was run; output observed (Appendix V). **Not** a product test. |
+| **VERIFIED (scratch)** | A scratch model outside the repo was run; output observed (Appendix A). **Not** a product test. |
 | **VERIFIED (PGlite)** | A scratch test ran against PGlite (PostgreSQL 18.6 WASM, **single connection**). Mechanism evidence only. |
 | **VERIFIED (real PostgreSQL)** | Ran against a real PostgreSQL **server** with multiple sessions. **NONE PERFORMED.** |
 | **DOCUMENTED** | Supported by a primary technical document (URL given). |
@@ -28,7 +31,7 @@ ledger, matching, settlement, schema, migration, or auth code exists.**
 
 ---
 
-## Part 0 — What changed in Revision 9
+## Part 0 — Change history (Revision 9 and Revision 10)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -62,13 +65,29 @@ Revision 9 corrects all three.
 - **State 4 is reconstructed** from the actual `E2 → E3 (100) → E5 (100)` sequence: before issuance,
   `recv 0, loss 100, pending 100, corr 100, units 1` (the earlier `(100, 100)` figure was unreachable
   for that sequence and is removed). The scratch test `R9-32pre` asserts these balances.
-- **Appendix V.1 selected-output block corrected** to the reproduced **105 tests / 220 assertions**.
+- **Appendix A.1 selected-output block corrected** to the reproduced **105 tests / 220 assertions**.
 - **PGlite duplicate-collection rejection is now actually exercised (`P9`)**; before this correction it
   was claimed but not tested.
 - **Explicit unresolved limitations added** (Part 12): no real-PostgreSQL multi-session verification;
   concurrent corrections; partial write-off/collection combinations; per-user allocation and
   multi-user payout; Option A demonstrated only for the supplied scenario.
 - Option A is shown to be **complete for the supplied scenario** (6.6).
+
+### Revision 10 — final-review corrections (documentation only)
+
+- **C2 and S1 are now defined** (Part 4a), with scope, sign convention, and a **reported discrepancy** in
+  the scratch model's `C2()` (sign-inverted; never exercised at non-zero share balances). **The model was
+  not modified.**
+- **E6 clarity:** the E6 table row and the 6.4 block now state that the allocation split `(a, b)` is the
+  **F28** owner decision; **loss-first and receivable-first remain distinct and neither is selected.**
+- **F30** (correction/entitlement identifier model) and **F31** (whole-Kyat unit divisibility) added as
+  **NOT APPROVED** decisions (Part 10a). **No design or policy is chosen.**
+- **Coverage claim withdrawn:** the "20 required topics — complete" phrasing is replaced by **Appendix B
+  coverage matrix**, which explicitly lists the unresolved **pricing, price-tick, minimum-notional, and
+  fee** rules. **No values invented.**
+- **Appendix numbering corrected** ("Appendix V" → **Appendix A**) with all cross-references updated.
+- **Register reference corrected:** "F1–F29" replaced by the IDs that exist (**F14, F16–F29**); F1–F13 and
+  F15 are documented as **undefined**.
 
 ---
 
@@ -125,7 +144,7 @@ returns to 0 at completion; **never negative**; always `ClaimUnitsRemaining = Un
 `PendingCorrectionClaim` and `CorrectionPayableMarket` are **control accounts**; the Option-A
 subledger is **not** separately summed. `CorrectionWriteOffLoss` is debit-normal and sits on the debit
 side. M1 is a statement of **accounting conservation**, not of economic backing. **VERIFIED
-(scratch):** M1 held after every committed journal group (Appendix V.1).
+(scratch):** M1 held after every committed journal group (Appendix A.1).
 
 ---
 
@@ -139,6 +158,41 @@ side. M1 is a statement of **accounting conservation**, not of economic backing.
 **`PendingCorrectionClaim` and `CorrectionReceivable` are never counted as funded collateral.**
 **VERIFIED (scratch):** `R9-01b` (C1 holds after issuance), `R9-18` (unfunded reopen rejected),
 `R9-12c` (realization without reopening rejected).
+
+### 4a. C2 and S1 (share-ledger invariants) — definitions
+
+These invariants are asserted by the scratch model and required by the architecture report (Section
+4.12), but were previously **undefined** here. They are now stated. Scope: **per market `{m}` and per
+outcome `{o} ∈ {YES, NO}`**, checked at **every commit boundary** together with M1/C1/C1b.
+
+**Share accounts (Part 2.2):** `SharesFree:{u}:{o}` (D, debit-normal), `SharesEscrowed:{u}:{o}` (D),
+`SharesOutstanding:{m}:{o}` (C, credit-normal).
+
+> **C2 (complementary outstanding shares):**
+> `SharesOutstanding:{m}:YES = SharesOutstanding:{m}:NO`
+> — the number of YES shares outstanding equals the number of NO shares outstanding for the same market.
+> A complete set is always created and retired as one YES + one NO, so the two sides must match.
+
+> **S1 (per-outcome share conservation):**
+> for each outcome `{o}`: `Σ_u (SharesFree:{u}:{o} + SharesEscrowed:{u}:{o}) = SharesOutstanding:{m}:{o}`
+> — every share outstanding is held by some user (free or escrowed); no share exists without a holder
+> and no holder exists without a corresponding outstanding share.
+
+**Note on sign convention.** `SharesOutstanding` is **credit-normal**, so its magnitude is
+`amt('SharesOutstanding:{m}:{o}') = −balance`. The natural statements above are in **magnitudes
+(normal-balance / `amt`)**, i.e. `amt(YES) = amt(NO)` for C2 and
+`Σ_u (SharesFree + SharesEscrowed) = amt(SharesOutstanding)` for S1.
+
+**DISCREPANCY (reported, not fixed).** The committed scratch model
+(`docs/verification/rev9/rev9.mjs` lines 43–44) implements C2 on **raw balances** as
+`bal['SharesOutstanding:M:YES'] === -bal['SharesOutstanding:M:NO']`, whereas the natural definition is
+`bal[YES] === bal[NO]` (both credit-normal) — i.e. the model's `C2()` is **sign-inverted** relative to
+this definition. S1 in the model (`Σ amt(SharesFree)+amt(SharesEscrowed) === -bal(SharesOutstanding)`)
+is **consistent** with the definition above. In addition, **C2 is only ever evaluated at zero share
+balances** in the committed run (shares are split and fully retired inside `settledWrong()` before every
+`report(...)`), so the sign error is **not detected** by the current evidence. This is a
+**verification-model defect**, not an approved financial rule; it is **reported here and left unchanged**
+(no financial logic was modified). It must be corrected in the model before C2 is relied upon.
 
 ---
 
@@ -160,7 +214,7 @@ payout keys reject duplicates and credit exactly once.
 | **E3** | Actual collection from Bob | `UserAvailable:Bob D x / CorrectionReceivable:Bob C x` | MMK |
 | **E4** | Realization of collected/issued funds | `PendingCorrectionClaim:M D x / SettlementCorrection:M C x` | MMK |
 | **E5** | Owner-approved write-off | `CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` | MMK |
-| **E6** | Owner-approved issuance | `CreditsIssued D x / (CorrectionReceivable:Bob C a + CorrectionWriteOffLoss:M C b)`, `a+b=x` | MMK |
+| **E6** | Owner-approved issuance | `CreditsIssued D x / (CorrectionReceivable:Bob C a + CorrectionWriteOffLoss:M C b)`, `a+b=x` — **how `x` is split between `a` and `b` is F28, NOT APPROVED** (see 6.4a) | MMK |
 | **E7** | Funded claim-unit reopening | `ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P` | UNIT |
 | **E8** | Payout of the corrected entitlement | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
 | **E9** | Claim-unit retirement | `UnitsControl:M D u / ClaimUnitsRemaining:M C u` | UNIT |
@@ -187,16 +241,19 @@ obligation, `SettlementCorrection = 0`, `ClaimUnitsRemaining = 0`).
 ```
 E6-issue  (MMK): CreditsIssued D x
                  / <cancel the outstanding claim: a from one component, b from the other, a+b=x>
+                   NOTE: the split (a, b) is NOT determined here — it is the F28 owner decision.
 E4-realize (MMK): PendingCorrectionClaim:M D x / SettlementCorrection:M C x
 E7-reopen (UNIT): ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P
 ```
 
-The **cancel order** — which claim component (`CorrectionReceivable:Bob` or
-`CorrectionWriteOffLoss:M`) is cancelled first when both are outstanding and the issuance is smaller
-than the claim — is **F28** and is **NOT APPROVED**. This section deliberately **does not assume an
-order**; **6.4a** states the **two alternatives** (proposed recommendation vs alternative) and the
-unresolved decision. **Neither alternative is the implemented policy.** The balance check below uses
-the Path-B case where only the receivable exists, so it is **order-independent**.
+**The allocation split `(a, b)` in E6 is an unresolved owner decision (F28).** The `a+b=x` line above
+does **not** fix how `x` is divided between the receivable and the write-off loss. When only one
+component is outstanding the split is forced; when **both** are outstanding and `x` is **smaller** than
+the claim, the split depends on the cancel order, which is **F28** and is **NOT APPROVED**. This section
+deliberately **does not assume an order**; **6.4a** states the **two alternatives** (proposed
+recommendation vs alternative) and the unresolved decision. **Neither alternative is the implemented
+policy.** The balance check below uses the Path-B case where only the receivable exists, so it is
+**order-independent**.
 
 **Why the group is correct (order-independent):**
 
@@ -473,10 +530,10 @@ and payout → funding is preserved and payout resumes; during retry → idempot
 
 ---
 
-## Part 10 — Financial decision register (Revision 9)
+## Part 10 — Financial decision register (Revision 10)
 
-All prior decisions remain **unresolved**. F14, F18, F19, F20, F21, F22, F23, F24, F25, F26 are
-**NOT APPROVED**.
+All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
+**F1–F13 and F15 are not defined in this document** (see the note after the table).
 
 | ID | Decision | Recommendation | Status |
 | - | - | - | - |
@@ -516,6 +573,29 @@ All prior decisions remain **unresolved**. F14, F18, F19, F20, F21, F22, F23, F2
   *Financial consequence:* `E6` alone breaks C1 and double-counts. *Abuse/security:* non-atomic
   issuance could create unbacked claim units. *Operational:* simpler and safer when atomic.
   *Recommendation:* **atomic**. **NOT APPROVED.**
+
+**Register-completeness note (corrected).** The register defines **F14, F16–F29**. **F1–F13 and F15 are
+not defined anywhere in this specification.** An earlier architecture-report citation of "F1–F29" was
+therefore **incorrect**; it has been corrected to the IDs that exist. **No decision has been renumbered**
+and **no missing decision has been invented**. If F1–F13/F15 were ever intended, they are **not
+documented** — recorded here as an open documentation gap for the owner.
+
+### Part 10a — Additional decisions introduced by the final-review corrections (both NOT APPROVED)
+
+These two decisions were identified during the final Milestone 0 independent review. They are recorded
+so the gaps are visible. **Neither selects an implementation or a financial policy.**
+
+| ID | Decision | Why it matters | Status |
+| - | - | - | - |
+| **F30** | **Correction-level and entitlement-level identifier model.** Multiple corrections on one market, multiple beneficiaries within one correction, and multiple corrections for one user require **immutable per-correction and per-entitlement identifiers**, plus an explicit rule reconciling the market-level aggregate accounts (`PendingCorrectionClaim:{m}`, `SettlementCorrection:{m}`) to individual correction records and individual user entitlements. Today the model uses **market-scoped aggregates only** and a **single beneficiary (Alice)**, so it cannot represent two corrections on one market distinctly. | Without it, C1 can hold at the aggregate level while individual corrections are misallocated; the correction lifecycle is **not safe for multi-user/multi-correction** use. | **NOT APPROVED** |
+| **F31** | **Whole-Kyat / unit-divisibility rule.** E7 reopens `x/P` claim units for issuance `x` at payout-per-share `P`. The specification does **not** state whether `x` must be a multiple of `P`, nor the **rejection behaviour** when `P ∤ x` (e.g. issuance 150 with `P = 100` → `1.5` units). | Integer/whole-Kyat correctness; an undefined rule can create fractional or unbacked units. | **NOT APPROVED** |
+
+**What these decisions block:** F30 and F31 must be resolved **before the ledger schema and the
+correction/trading implementation** (Milestone 6/7+). They do **not** block Milestone 1 (foundation).
+
+**What remains deliberately unselected here:** the identifier design (F30) and the divisibility policy
+(F31). This document **records the need**; it does **not** choose a design or a policy.
+
 
 ---
 
@@ -568,7 +648,7 @@ Product owner signature / date: ______________________________
 
 ---
 
-## Appendix V — Exact local verification performed
+## Appendix A — Exact local verification performed
 
 Environment: **Node.js v24.22.2**; **@electric-sql/pglite 0.5.16**; **PostgreSQL 18.6 (PGlite
 0.5.16) on wasm32**; **Linux 6.8.0-1055-gke**. The **canonical, reproducible copies** of the scripts
@@ -577,7 +657,7 @@ versions, and expected output); the originals were run from a scratch directory 
 **All three verification levels are distinct: scratch (single-process), PGlite (single-connection),
 and real PostgreSQL multi-session (not performed).**
 
-### V.1 Revision 9 scratch model — VERIFIED (scratch)
+### A.1 Revision 9 scratch model — VERIFIED (scratch)
 
 - **Command:** `node docs/verification/rev9/rev9.mjs` (reproducible; see `docs/verification/rev9/README.md`)
 - **Structure:** Section 1 = **45 Revision 8 tests (preserved)**; Section 2 = **30 Revision 9 tests**;
@@ -610,7 +690,7 @@ invariant assertions at commit boundaries: 220
 
 - **Limitations:** sequential single-process simulation; not real concurrency.
 
-### V.2 Revision 9 PGlite mechanism test — VERIFIED (PGlite)
+### A.2 Revision 9 PGlite mechanism test — VERIFIED (PGlite)
 
 - **Command:** `node docs/verification/rev9/rev9-pglite.mjs` (requires `@electric-sql/pglite@0.5.16`; see the README)
 - **Purpose:** corrected issuance atomic group (MMK+UNIT); `PendingCorrectionClaim` cleared;
@@ -641,10 +721,76 @@ P8 negative claim cancel rejected: rolled-back: ... violates check constraint "a
   a **mechanism** test (constraints, transactions, rollback), **not** application-level financial
   validation.
 
-### V.3 Real PostgreSQL — NOT VERIFIED
+### A.3 Real PostgreSQL — NOT VERIFIED
 
 **Real PostgreSQL multi-session concurrency remains unverified.**
 
-### V.4 Git state — VERIFIED
+### A.4 Git state — VERIFIED
 
 See the architecture report Section 1.
+
+### A.5 Scaffold static checks — VERIFIED (scaffold only)
+
+| Check | Command | Result |
+| - | - | - |
+| Typecheck | `npx tsc --noEmit` | exit `0` |
+| Lint | `npx eslint .` | exit `0` |
+| Build | `npm run build` | exit `0` |
+
+**Scope:** these check the **stock Next.js scaffold only**. They are **not** application-level financial
+validation (no application exists) and say nothing about the financial rules.
+
+### A.6 Application-level financial tests — NONE
+
+**No application, schema, or production ledger exists**, so there are **no** application-level financial
+tests. Scratch and PGlite results are **not** substitutes for them.
+
+---
+
+## Appendix B — Financial topic coverage matrix (final-review addition)
+
+The README previously described this specification as "the complete financial specification (20
+required topics)". That claim was **not substantiated** because the topics were never enumerated. This
+matrix enumerates the coverage instead. **No value or policy is invented here.**
+
+Status key: **S** = specified · **P** = partially specified · **M** = missing · **O** = owner decision
+required · **D** = deferred to a later milestone.
+
+| # | Topic | Status | Where / note |
+| - | - | - | - |
+| 1 | Currency (MMK only, whole Kyat) | S | Parts 1–2; README |
+| 2 | Virtual credits (non-redeemable, no cash asset) | S | Part 2; README; AGENTS |
+| 3 | Accounting domains (MMK / Share / Claim-unit) | S | Part 1 |
+| 4 | Account catalogue, normal balances | S | Part 2 |
+| 5 | M1 reconciliation | S | Part 3 (conservation only) |
+| 6 | C1 collateralization + C1b | S | Part 4 |
+| 7 | C2 / S1 share invariants | S (newly defined here) | Part 4a; model discrepancy noted |
+| 8 | Settlement lifecycle | P | Part 5 ("twelve steps" not enumerated) |
+| 9 | Correction events E1–E9 | P | Part 6.1; E1/E9 pre/post/idempotency thin |
+| 10 | Receivable recognition/collection/realization | S | Parts 6.2–6.3 |
+| 11 | Write-off | S | Part 6.5 |
+| 12 | Issuance (E6) + cancel order | S | Part 6.4 / 6.4a; F28 open |
+| 13 | Correction state model | S | Part 7 |
+| 14 | Worked scenarios | S | Part 8 |
+| 15 | Atomicity / idempotency / recovery | P | Part 9; concurrency unproven |
+| 16 | **Price grid / integer price tick** | **M** | Not defined (T1); only UX reference |
+| 17 | **Minimum order size / notional** | **M** | Not defined |
+| 18 | **Fees** | **M** | Not defined; only Polymarket UX formula quoted |
+| 19 | **Slippage tolerance unit/default** | **M** | Not defined (T4/R12) |
+| 20 | **Order types / matching / partial fills** | **M** | Deferred to M7+; not specified |
+| 21 | **Split/merge/redeem rules** | **M** | Named only |
+| 22 | **Market resolution rules / dispute window** | **M** | Not defined (T5) |
+| 23 | **Correction/entitlement identifier model** | **M / O** | **F30 (NOT APPROVED)** |
+| 24 | **Whole-Kyat unit divisibility** | **M / O** | **F31 (NOT APPROVED)** |
+| 25 | **Multi-user / multi-correction allocation** | **M** | Part 12; F30 |
+| 26 | **Real PostgreSQL concurrency behaviour** | **M / D** | Not tested (A.3) |
+| 27 | **Pricing/probability display rules** | **P** | UX reference only |
+
+**Explicitly unresolved pricing rules (no values invented):** the **price grid / integer price tick**
+(#16), the **minimum order size / notional** (#17), the **fee rule** (#18), and the **slippage unit and
+default** (#19) are **not specified** in this document and are **owner decisions** (T1, T4, R12).
+**No values or policies are chosen here.**
+
+**Conclusion:** the specification is **substantially specified for the accounting/correction model** but
+**materially incomplete for pricing, trading mechanics, and multi-user correction handling**. The
+earlier "20 required topics — complete" phrasing is **withdrawn** and replaced by this matrix.

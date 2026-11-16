@@ -34,8 +34,11 @@ original Khant Hman branding.
   and component inventory, security and testing strategy, risk register, owner decision
   register, roadmap, and the proposed first PR.
 - [`docs/FINANCIAL-SPECIFICATION.md`](docs/FINANCIAL-SPECIFICATION.md)
-  — the complete financial specification (20 required topics) that **must be approved before
-  any trading code is written**.
+  — the financial specification for the accounting and correction model that **must be approved before
+  any trading code is written**. It is **substantially specified for the accounting model** but
+  **materially incomplete for pricing, trading mechanics, and multi-user correction handling**; see its
+  **Appendix B coverage matrix** for topic-by-topic status. It is **not** a complete financial
+  specification and **no approval has been granted**.
 
 ---
 
@@ -44,8 +47,11 @@ original Khant Hman branding.
 Next.js (App Router) · React · strict TypeScript · Tailwind CSS · PostgreSQL / PGlite ·
 Drizzle ORM with versioned migrations · Zod · Vitest + Playwright · key-based `en`/`my` i18n.
 
-Verified in this environment: the Next.js scaffold builds, and PGlite runs a real PostgreSQL
-18.6 engine with working transactions and constraints.
+Verified in this environment: the Next.js **scaffold builds** (`npm run build`, `tsc --noEmit`,
+`eslint`). Separately, a **scratch** run (outside this repository) confirmed that PGlite runs a real
+PostgreSQL 18.6 engine with working transactions and constraints. **PGlite is not installed in this
+repository** — it is a proposed dependency. See the financial spec **Appendix A** for the exact
+verification evidence and its limits.
 
 ---
 

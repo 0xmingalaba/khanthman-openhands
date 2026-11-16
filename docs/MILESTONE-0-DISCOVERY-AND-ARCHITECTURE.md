@@ -1,12 +1,14 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 9)
+# Milestone 0 — Discovery & Architecture Report (Revision 10)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 9) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 8 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 9)
+**Status:** DRAFT (Revision 10) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 9 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 10)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
 features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
+**Revision 10 is a documentation-only correction** addressing the final Milestone 0 independent
+review; **no financial policy, architecture direction, or owner decision was changed.**
 
 ### Verification labels
 
@@ -38,8 +40,8 @@ is committed; the exact final commit hash is in the delivery message.
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → **this revision's commit** |
-| Commits ahead of `main` | one documentation commit per Milestone-0 revision plus small follow-ups; exact final count and hash are in the delivery message |
+| Commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → **this revision's commit** |
+| Commits ahead of `main` | **14** before this revision; one documentation commit per Milestone-0 revision plus small follow-ups. Exact final count and hash are in the delivery message |
 | Commits behind `main` | 0 |
 | Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) — **canonical repository confirmed** |
@@ -55,7 +57,7 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | Commit | Title | Files changed |
 | - | - | - |
 | `f6c7567` | Initial commit (pre-existing) | `README.md` (2 lines) |
-| `1b185f4` | Milestone 0 discovery & architecture report | 19 files (scaffold + `AGENTS.md` + both `docs/*.md`) |
+| `1b185f4` | Milestone 0 discovery & architecture report | 19 files: 15 stock `create-next-app` scaffold files + `AGENTS.md` + both `docs/*.md` |
 | `babc731` | record status + push blocker in AGENTS.md | `AGENTS.md` |
 | `30cfa08` | Milestone 0 revision 2 | `AGENTS.md`, both `docs/*.md` |
 | `8eef5e4` | Milestone 0 revision 3 | `AGENTS.md`, both `docs/*.md` |
@@ -65,16 +67,30 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | `f1557dcac345eb4700138ddc0ee580da1a0511c3` | Milestone 0 revision 6 | `AGENTS.md`, `docs/FINANCIAL-SPECIFICATION.md`, `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (3 files) |
 | `5fb6e14e74b281980c43ccb36d003aac0ac0175e` | Milestone 0 revision 7 | `AGENTS.md`, both `docs/*.md` (3 files) |
 | `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` | Milestone 0 revision 8 | `AGENTS.md`, both `docs/*.md` (3 files) |
-| *(this revision)* | Milestone 0 revision 9 | `AGENTS.md`, both `docs/*.md` |
+| `8b6e3ea` | Milestone 0 revision 9 correction accounting | `AGENTS.md`, both `docs/*.md` |
+| `a8bbb06` | Milestone 0 revision 9 review preparation | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
+| `ec59879` | Milestone 0 revision 9 independent-review corrections | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
+| *(this revision)* | Milestone 0 revision 10 (final-review corrections) | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/README.md` |
 
 **Shallow-clone limitation:** the clone is **shallow**, so historical file-change verification is
-limited to the commits present locally (all listed above are present). The exact Revision 9 hash and
+limited to the commits present locally (all listed above are present). The exact Revision 10 hash and
 counts are reported in the delivery message.
 
 ### 1.2 Direct answers
 
-- **Is the `create-next-app` scaffold committed?** **VERIFIED: yes** — all 19 scaffold files are
-  tracked, **stock/unmodified**.
+- **Is the `create-next-app` scaffold committed?** **VERIFIED: yes** — the stock scaffold is tracked
+  and **unmodified**. Exactly **15** scaffold files are tracked (counted from `git ls-files`):
+
+  `.gitignore`, `eslint.config.mjs`, `next.config.ts`, `package.json`, `package-lock.json`,
+  `tsconfig.json`, `public/file.svg`, `public/globe.svg`, `public/next.svg`, `public/vercel.svg`,
+  `public/window.svg`, `src/app/favicon.ico`, `src/app/globals.css`, `src/app/layout.tsx`,
+  `src/app/page.tsx`.
+
+  **Excluded from that count:** `AGENTS.md`, `README.md`, the two `docs/*.md` files, and the
+  `docs/verification/rev9/*` files (documentation/verification, not scaffold). **Not counted because
+  not tracked (git-ignored):** `node_modules/`, `.next/`, `next-env.d.ts`, `tsconfig.tsbuildinfo`.
+  (The "19 files" figure for commit `1b185f4` = 15 scaffold + `AGENTS.md` + 2 docs + `README.md`
+  modification, i.e. 15 scaffold files plus 4 documentation files.)
 - **Was `AGENTS.md` added or modified?** **VERIFIED: added** in `1b185f4`, then modified in later
   revisions (including this one).
 - **Unexpected generated files?** **VERIFIED: none tracked.** Only `.next/`, `node_modules/`,
@@ -85,6 +101,21 @@ counts are reported in the delivery message.
 
 **VERIFIED: local commits are NOT pushed.** `origin/main` is still `f6c7567`; the working branch does
 **not** exist remotely. **No remote operation occurred in this revision.**
+
+**Git access evidence (precise):**
+
+- **Read access — VERIFIED.** `git ls-remote --heads origin` returns
+  `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9  refs/heads/main`, and the remote references are visible
+  locally. Remote URL: `https://github.com/0xmingalaba/khanthman-openhands.git` (no embedded credentials).
+- **Write access — NOT VERIFIED.** Write access has **not** been independently established by any safe,
+  non-mutating method. Per policy, **write access is never tested by pushing.**
+- **Historical report (labelled historical, not re-verified this revision):** a prior revision
+  (`AGENTS.md`) reported that `git push` failed with **HTTP 403 "Permission … denied"**, that both the
+  credential helper and `$GITHUB_TOKEN` resolve to a GitHub App / integration token with **read-only**
+  access, and that API writes return `Resource not accessible by integration`. This is a **historical
+  report**; it was **not** re-tested in this revision (no push was attempted).
+- **Net state:** read = verified; write = **unverified**; a **historical** push failure is on record.
+  If a push is ever required, the owner must first establish write (`contents: write`) by a safe method.
 
 ---
 
@@ -118,6 +149,60 @@ only as behavioural/UX reference.
 - **Resolution rules with source, end date, edge cases.**
   — `https://docs.polymarket.com/concepts/resolution.md`
 
+### 3.1 Proposed page inventory (PROPOSED — planning artifact, not an approved specification)
+
+Every item is **PROPOSED**. This is a **planning inventory**, not a product specification, and nothing
+here is approved. Localization (EN + MY), theme (light/dark), responsive layout (desktop/tablet/mobile),
+and loading/empty/error/unavailable states are **cross-cutting requirements for every page**. The
+**Staff/Admin dashboard is explicitly excluded** from current scope.
+
+| # | Page / surface | Route (proposed) | Key content | Milestone |
+| - | - | - | - | - |
+| P1 | Home / discovery | `/` | featured + trending market cards, category chips, locale & theme toggles | M1 (shell) / M5 |
+| P2 | Categories | `/categories`, `/category/[slug]` | category grid → filtered market list | M5 |
+| P3 | Search | `/search` (or query on P1) | query box, filters (category, status, close date), results | M5 |
+| P4 | Market detail | `/market/[slug]` | question, outcome probabilities, price history chart, order book, resolution rules & source, end date | M5 |
+| P5 | Event / multi-outcome (later) | `/event/[slug]` | several binary markets under one event | later (AR5) |
+| P6 | Trading interface | within `/market/[slug]` | the four planned modes: order book, limit, market, 1-Tap; split/merge | M7+ (gated) |
+| P7 | Portfolio / positions | `/portfolio` | open positions, claim units, split/merge actions | M7+ (gated) |
+| P8 | Orders | `/orders` | open/historical orders | M7+ (gated) |
+| P9 | Activity | `/activity` | trade & settlement history (append-only view) | M7+ |
+| P10 | Authentication | `/login`, `/register` | email + password (AR2); recovery (AR10) | M4 |
+| P11 | Account settings | `/settings` | profile, locale, theme, session management | M4 |
+| P12 | Legal / disclosure | `/about`, `/terms`, `/disclosure` | "virtual credits only, no real money" disclosure | M1 (static) |
+| P13 | Not found / error | `not-found`, `error` | standard Next.js states | M1 |
+
+### 3.2 Proposed component inventory (PROPOSED — planning artifact)
+
+Reusable UI (design-system) components — **all PROPOSED**, to be built in PR-1 onward. Burmese
+terminology for user-facing strings is marked for fluent-speaker review (risk R1).
+
+| Group | Components (proposed) |
+| - | - |
+| Layout & navigation | `AppShell`, `TopNav`, `SideNav`, `Footer`, `LocaleToggle`, `ThemeToggle`, `DisclosureBanner` |
+| Market display | `MarketCard`, `MarketGrid`, `OutcomeRow`, `ProbabilityBar`, `CategoryChip`, `StatusBadge`, `CloseDate` |
+| Data viz | `PriceHistoryChart`, `OrderBookTable`, `VolumeSparkline` (all must show **real** data or a SIMULATED label) |
+| Trading (gated) | `TradePanel`, `LimitOrderForm`, `MarketOrderForm`, `OneTapTrade`, `SplitMergeControl` |
+| Portfolio | `PositionRow`, `ClaimUnitRow`, `OrderRow`, `ActivityRow` |
+| Forms & feedback | `TextInput`, `PasswordInput`, `Button`, `Dialog`, `Toast`, `EmptyState`, `ErrorState`, `LoadingSkeleton`, `UnavailableState` |
+| Primitives | `Card`, `Tabs`, `Tooltip`, `Badge`, `Icon` |
+
+### 3.3 Milestone roadmap (PROPOSED — planning artifact, not an approved plan)
+
+**Milestone 0 is complete (this document set). Milestone 1 has NOT started.** All later milestones are
+**PROPOSED** and require owner authorization. Trading is **gated** on financial-specification approval.
+
+| Milestone | Theme | Contents | Gate |
+| - | - | - | - |
+| **M0** | Discovery & architecture | this report + financial spec + verification (done) | owner review |
+| **M1** | Foundation | design tokens + app shell + EN/MY i18n + static placeholder home + disclosure (PR-1, PR-2) | **owner authorization**; AR1/AR7/AR8 |
+| **M2** | Database foundation | Drizzle config, connection, migration runner, migration 0001 (non-financial tables), test tooling (PR-3) | **F30/F31** (ledger granularity) before ledger tables |
+| **M3** | Auth | register/login/logout, sessions, guard, CSRF, rate limit, dev reset (PR-4) | AR2/AR10 |
+| **M4** | Discovery & detail (read-only) | home feed, categories, search, filters, cards, detail, states (PR-5) | — |
+| **M5** | Dev fixtures | deterministic, idempotent, labelled SIMULATED (PR-6) | AR6 |
+| **M6** | Ledger core (gated) | three-domain ledger, invariant assertion, reconciliation | **financial spec approval**; F14–F31 |
+| **M7+** | Trading & settlement (gated) | order book, limit/market/1-Tap, split/merge, positions, settlement, corrections | financial spec approval + **real-PostgreSQL concurrency tests** |
+
 ---
 
 ## 4. Architecture
@@ -126,7 +211,24 @@ only as behavioural/UX reference.
 
 Next.js (App Router) · React · strict TypeScript · Tailwind · **PostgreSQL** (PGlite for
 local/test) · **Drizzle ORM** with versioned SQL migrations · Zod · Vitest + Playwright · key-based
-`en`/`my` i18n · Noto Sans Myanmar. **VERIFIED:** the scaffold builds; `drizzle-orm/pglite` resolves.
+`en`/`my` i18n · Noto Sans Myanmar.
+
+**What is actually verified about this stack (corrected in this revision):** the **scaffold builds**
+(`npm run build`, `tsc --noEmit`, `eslint` all exit 0 in this environment). That is the **only** stack
+claim verified here. Dependency status is stated precisely below and **must not be read as "the stack
+is installed and working"**:
+
+| Category | Meaning | Current state |
+| - | - | - |
+| **Declared in `package.json`** | Listed as a direct dependency | **`next`, `react`, `react-dom`** (deps); **`@tailwindcss/turbopack`, `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`, `typescript`** (devDeps). Nothing else. |
+| **Actually installed** | Present under `node_modules/` | The declared packages and their transitive dependencies. **`drizzle-orm` is NOT installed. `@electric-sql/pglite` is NOT installed. `vitest` is NOT installed. `@playwright/test` is NOT installed. `zod` is present only as a transitive dependency of `eslint-config-next` (not a direct dependency).** |
+| **Proposed for future implementation** | Recommended, not yet added | **Drizzle ORM + `drizzle-kit` + `drizzle-orm/pglite`, PGlite, Zod (as a direct dep), Vitest, Playwright.** These are **PROPOSED**, to be added in the PR that needs them (PR-3 onward). |
+| **Scaffold build verification** | Ran and observed | `npm run build`, `npx tsc --noEmit`, `npx eslint .` — all exit `0` (see financial spec **Appendix A.5** / Section 6 static row). |
+
+> **Correction (this revision):** an earlier draft of this section stated "**VERIFIED:** … `drizzle-orm/pglite`
+> resolves." That claim was **incorrect** — `drizzle-orm` is neither declared in `package.json` nor
+> installed, so it cannot have been resolved. The claim is replaced by the table above. **No dependency
+> has been added by this correction.**
 
 ### 4.2 PGlite suitability (VERIFIED, with explicit limit)
 
@@ -155,7 +257,7 @@ committed atomically in one DB transaction (financial spec Part 1).
 **Recommended (Option B):** no separately recognized correction-payable account; realized funding in
 `SettlementCorrection:{m}` backs the reopened claim units via C1. **Alternative (Option A):** a
 market-scoped control account `CorrectionPayableMarket:{m}` in C1 with a subledger.
-**OWNER DECISION F20 / AR15 (unchanged in Revision 9).**
+**OWNER DECISION F20 / AR15 (unchanged in Revision 10).**
 
 ### 4.6 Correction lifecycle (PROPOSED, corrected in Rev 9)
 
@@ -280,7 +382,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 9)
+## 9. Risk register (Revision 10)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -297,7 +399,7 @@ No PR is created, merged, or deployed in this milestone.
 | R11 | Cross-outcome matching complexity | Med | Med | defer to a separately reviewed feature | OPEN |
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
 | R13 | Resolution correction after payout | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
-| R14 | Push blocked | Low | Med | write access verified available; nothing pushed | VERIFIED |
+| R14 | Push blocked | Low | Med | **Read access verified; write access NOT verified; a historical 403 push failure is on record (see §1.3).** Write is never tested by pushing; nothing pushed | VERIFIED (read) / NOT VERIFIED (write) |
 | R15 | Correction creates a hidden deficit | Low | High | `PendingCorrectionClaim` excluded from C1; no negative balances | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal in the same transaction; C1b asserted each commit | PROPOSED |
 | R17 | Cross-domain journal accidentally mixes units | Low | High | model + DB `CHECK` reject mixed-domain journals | PROPOSED |
@@ -319,7 +421,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 10. Owner decision register (Revision 9)
+## 10. Owner decision register (Revision 10)
 
 ### 10.1 Architecture / product
 
@@ -345,7 +447,27 @@ No PR is created, merged, or deployed in this milestone.
 | AR18 | Write-off account `CorrectionWriteOffLoss:{m}` (debit-normal) and approval gate | adopt | RECOMMENDED |
 | **AR19** | **Issuance group atomicity (E6+E4+E7) and cancellation target (receivable vs loss)** | adopt: atomic; cancellation target is F28 (NOT APPROVED) | **OWNER DECISION** |
 
-### 10.2 Financial — see the financial spec Part 10 (F1–F29).
+### 10.2 Financial — see the financial spec Part 10
+
+**Defined financial decision IDs (spec Part 10):** **F14, F16, F17, F18, F19, F20, F21, F22, F23,
+F24, F25, F26, F27, F28, F29** — plus the two IDs introduced by the final-review corrections, **F30
+and F31** (defined in the spec, both **NOT APPROVED**; see below). **All remain NOT APPROVED.**
+
+**Note (corrected):** an earlier draft cited "F1–F29". That range was **incorrect**: **F1–F13 and F15
+are not defined** anywhere in the specification (the register begins at F14). No decisions have been
+renumbered; the citation is corrected to the IDs that actually exist. If earlier revisions referenced
+F1–F13, those decisions were **never written down** and are therefore **not documented** — this is
+noted as an open documentation gap rather than fabricated.
+
+**New financial decisions introduced (documentation only — NOT APPROVED):**
+
+| ID | Decision | Status |
+| - | - | - |
+| **F30** | **Correction-level and entitlement-level identifier model.** Multiple corrections on one market and multiple beneficiaries require immutable per-correction and per-entitlement identifiers, and a rule reconciling market-level aggregate accounts to individual correction records and user entitlements. **The design is not selected.** | **NOT APPROVED** |
+| **F31** | **Whole-Kyat / unit-divisibility rule.** The issuance amount `x` must relate to the payout-per-share `P` such that reopened units `x/P` are whole; the divisibility rule and the rejection behaviour when `P ∤ x` are **not yet defined**. **No policy is chosen.** | **NOT APPROVED** |
+
+Neither F30 nor F31 selects an implementation; both are recorded so the gaps are visible in the
+register. See spec Part 10a for the full statements.
 
 ---
 
@@ -383,7 +505,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 12. Change list — Revision 8 → Revision 9
+## 12. Change list (Revision 8 → Revision 9, then Revision 9 → Revision 10)
 
 1. **E7 issuance defect corrected.** Issuance is now the atomic group **E6 (issue) + E4 (realize) +
    E7 (reopen)**: it creates funding, cancels the outstanding claim, realizes funding, and reopens the
@@ -403,7 +525,7 @@ No PR is created, merged, or deployed in this milestone.
 7. **State 4 reconstructed:** from `E2 → E3 (100) → E5 (100)` the before-issuance balances are
    `recv 0, loss 100, pending 100, corr 100, units 1`; the earlier unreachable `(100, 100)` figure is
    removed and the scratch test `R9-32pre` asserts the correct balances.
-8. **Verification-claim and Appendix corrections:** the stale Appendix V.1 block now shows the
+8. **Verification-claim and Appendix corrections:** the stale Appendix A.1 block now shows the
    reproduced **105 tests / 220 assertions**; PGlite duplicate-collection rejection is now actually
    exercised (`P9`); scratch, PGlite, and real-PostgreSQL levels are explicitly distinguished and none
    is described as application-level financial validation.
@@ -411,6 +533,35 @@ No PR is created, merged, or deployed in this milestone.
    verification; concurrent corrections; partial write-off/collection combinations; per-user allocation
    and multi-user payout; Option A demonstrated for the supplied scenario only.
 10. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
+
+### 12.1 Change list — Revision 9 → Revision 10 (final-review corrections, documentation only)
+
+11. **D1 — dependency claim corrected.** §4.1 no longer claims "`drizzle-orm/pglite` resolves". It now
+    separates **declared / installed / proposed / scaffold-build-verified** dependencies. **No dependency
+    was added.**
+12. **D2 — Git write-access contradiction reconciled.** §1.3 and risk **R14** now state: **read access
+    VERIFIED**, **write access NOT VERIFIED**, and a **historical** 403 push failure (labelled
+    historical, not re-tested). Write access is never tested by pushing.
+13. **D4 — C2 and S1 defined** (financial spec **Part 4a**), with scope, sign convention, and a
+    **reported discrepancy**: the scratch model's `C2()` is sign-inverted and is never exercised at
+    non-zero share balances. **The model was not modified.**
+14. **D5 — page/component inventory and roadmap added** (§3.1, §3.2, §3.3), labelled **PROPOSED**
+    planning artifacts. Staff/Admin dashboard remains **excluded**.
+15. **D6 — coverage claim withdrawn.** The README "20 required topics — complete" phrasing is replaced;
+    the financial spec gains an **Appendix B coverage matrix** (spec'd / partial / missing / owner
+    decision / deferred) and explicitly lists the unresolved **pricing, price-tick, minimum-notional, and
+    fee** rules. **No values invented.**
+16. **D7 — decision-register references corrected.** "F1–F29" replaced by the IDs that exist
+    (**F14, F16–F29**); the spec documents that **F1–F13/F15 are undefined**. **F30** (correction/
+    entitlement identifier model) and **F31** (whole-Kyat divisibility) added as **NOT APPROVED**
+    decisions. **No decision renumbered; none invented.**
+17. **D8 — appendix numbering corrected.** "Appendix V" → **Appendix A** (sequential from the start);
+    cross-references in the spec, the architecture report, and the verification README updated.
+18. **D10 — E6 clarity.** The E6 table row and the 6.4 code block now state that the allocation split
+    `(a, b)` is the **F28** owner decision; **loss-first and receivable-first remain distinct and
+    neither is selected.**
+19. **D11 — scaffold file count corrected.** §1.2 states **15** tracked scaffold files (exact list),
+    what is excluded, and how the "19 files" commit figure decomposes.
 
 ---
 

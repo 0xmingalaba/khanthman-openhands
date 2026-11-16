@@ -79,4 +79,4 @@ An empty diff means the committed expected output was produced by the committed 
    concurrency remains unverified.**
 
 **None of these is application-level financial validation** — there is no application, no schema, and
-no production ledger. See `docs/FINANCIAL-SPECIFICATION.md` Part 12 and Appendix V.
+no production ledger. See `docs/FINANCIAL-SPECIFICATION.md` Part 12 and Appendix A.

@@ -15,7 +15,9 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 9** delivered in `docs/`. Awaiting owner review.
+- Milestone 0 (Discovery & Architecture) **Revision 10** delivered in `docs/`. Awaiting owner review.
+  Revision 10 is a **documentation-only** correction of the final independent review (D1–D11); **no
+  financial policy, architecture direction, or owner decision changed.**
 - **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
 - **Reproducible verification** lives in `docs/verification/rev9/` (scripts + README + captured
@@ -60,9 +62,21 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 
 ### Known environment issue: pushing to GitHub
 - Repo: https://github.com/0xmingalaba/khanthman-openhands (default branch `main`, shallow clone).
-- **`git push` fails with HTTP 403** ("Permission ... denied"). Both the git credential
-  helper (`~/.openhands/git-credential-helper`) and `$GITHUB_TOKEN` resolve to a GitHub App
-  / integration token that has **read-only** access. `git ls-remote` (read) works; API writes
-  return `Resource not accessible by integration`.
-- To push, the owner must grant write (`contents: write`) to the app/integration or provide a
-  PAT with `repo` scope. Do **not** push to `main`; use a feature branch and open a PR.
+- **Read access — verified** (`git ls-remote` works; remote refs visible).
+- **Write access — NOT verified.** Write access is **never** tested by pushing.
+- **Historical report (not re-tested):** a prior session reported `git push` failing with **HTTP 403**
+  ("Permission ... denied"); both the git credential helper (`~/.openhands/git-credential-helper`) and
+  `$GITHUB_TOKEN` resolve to a GitHub App / integration token with **read-only** access, and API writes
+  return `Resource not accessible by integration`. Treat this as **historical** until re-established.
+- To push, the owner must grant write (`contents: write`) to the app/integration or provide a PAT with
+  `repo` scope. Do **not** push to `main`; use a feature branch and open a PR.
+
+### Dependency status (Revision 10 — do not overstate)
+- **Declared in `package.json`:** `next`, `react`, `react-dom` (deps); `@tailwindcss/turbopack`,
+  `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`,
+  `typescript` (devDeps). **Nothing else.**
+- **Installed:** the above and their transitive deps. **`drizzle-orm`, `@electric-sql/pglite`,
+  `vitest`, `@playwright/test` are NOT installed. `zod` is only a transitive dep of `eslint-config-next`.**
+- **Proposed (not added):** Drizzle + `drizzle-kit`, PGlite, Zod (direct), Vitest, Playwright.
+- **Verified:** the **scaffold** builds (`npm run build` / `tsc --noEmit` / `eslint` all exit 0).
+  Do **not** claim `drizzle-orm/pglite` (or any proposed dep) resolves.
