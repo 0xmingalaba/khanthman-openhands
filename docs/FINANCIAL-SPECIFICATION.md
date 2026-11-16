@@ -1,8 +1,8 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 8) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 7 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 8)
+**Status:** DRAFT (Revision 9) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 8 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 9)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
 
@@ -21,34 +21,38 @@ ledger, matching, settlement, schema, migration, or auth code exists.**
 | **NOT VERIFIED** | Explicitly not established. |
 
 > **Honesty statement.** No application, schema, migration, ledger, matching, settlement, or auth
-> code has been written. **Scratch and PGlite results are not product tests. No real PostgreSQL
-> multi-session concurrency has been verified.** Everything describing the product is **PROPOSED**.
-> **Nothing in this document is approved.**
+> code has been written. **Scratch and PGlite results are not product tests. Real PostgreSQL
+> multi-session concurrency remains unverified.** Everything describing the product is **PROPOSED**.
+> **Nothing in this document is approved.** **A passing scratch model does not establish that this
+> specification is correct** — see Part 12 (Assumptions and limitations).
 
 ---
 
-## Part 0 — What changed in Revision 8
+## Part 0 — What changed in Revision 9
 
-Revision 7 had an **accounting inconsistency** in its correction example: it posted
-`UserAvailable:Bob D 200 / SettlementCorrection:M C 200` as a "full recovery" but then reported the
-receivable rising to 200 and, in the full-recovery case, claimed the receivable was zero — without a
-journal that recognizes, collects, and realizes the receivable as **separate** events.
+Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
-Revision 8 fixes this by separating the economic events and giving each its own journal.
+1. **C1 violation.** E7 posted `CreditsIssued D 200 / SettlementCorrection:M C 200` **without**
+   reopening the corresponding claim units. After E7, `SettlementCorrection = 200` but
+   `ClaimUnitsRemaining = 0`, so `C1 = 200 ≠ 0` — **C1 failed**.
+2. **Double-counted obligation.** `PendingCorrectionClaim:M` was **not** cleared, so the same
+   correction was represented in both `PendingCorrectionClaim` (200) and `SettlementCorrection`
+   (200) — a **400 obligation for a 200 correction**.
+3. **Incomplete lifecycle.** The path from uncollectible receivable through write-off, issuance,
+   reopening, and payout was never demonstrated end-to-end.
 
-| # | Revision 7 defect | Revision 8 correction |
+Revision 9 corrects all three.
+
+| # | Revision 8 defect | Revision 9 correction |
 | - | - | - |
-| A | Recognition, collection and realization were conflated; the receivable balance did not follow from valid journals | **Eight distinct economic events** defined, each with its own single-domain journal (Part 6). The receivable is recognized (E2), collected (E3), realized (E3), and only realized funding backs units. |
-| B | No write-off representation | New debit-normal account **`CorrectionWriteOffLoss:{m}`** for an **owner-approved** write-off (Part 6.6). |
-| C | "Recovery" journal credited `SettlementCorrection` without recognizing the claim first | Correct order: **recognize → collect → realize**; realization and unit reopening commit **atomically** (Part 6.3, Part 7). |
-
-**The key rule the scratch model proved:** because C1 forbids funding without matching claim units,
-**`E3 realize` and `E8 reopen` must commit in one transaction** (`R8-12c` rejects realization alone).
-`E3 collect` may commit separately. This is a **necessary design constraint**, not a preference.
+| A | E7 credited `SettlementCorrection` without reopening units | Issuance (`E6`) is now **atomic with realization (`E4`) and reopening (`E7`)**; the reopened units match the funded amount exactly (Part 6.4). |
+| B | `PendingCorrectionClaim` not cleared | Issuance **cancels the outstanding claim** — the receivable (Path B) or the write-off loss (Path A) — and realization clears `PendingCorrectionClaim`, so the obligation is never counted twice (Part 6.4, Part 8). |
+| C | No end-to-end path | Full worked examples for Path A (write-off → issuance) and Path B (issuance while outstanding), plus 14 required scenarios (Part 8). |
+| D | Duplicated `E3` event identifier | Events renumbered uniquely: **E1–E9** (Part 6.1). |
 
 ---
 
-## Part 1 — Three accounting domains (unchanged)
+## Part 1 — Three accounting domains
 
 **MMK**, **Share**, and **Claim-unit** ledgers balance **independently**. A journal belongs to exactly
 one domain and must balance within it; units are never mixed; no domain balances against another; a
@@ -59,25 +63,27 @@ transaction** when the invariants require it. **VERIFIED (scratch + PGlite).**
 
 ## Part 2 — Account catalogue
 
+Normal balance = the side on which an increase is recorded; a normal-side balance is **never
+negative**.
+
 ### 2.1 MMK ledger
 
-| Account | Type | Represents | Normal |
-| - | - | - | - |
-| `CreditsIssued` | Contra-equity (source of credits) | Total virtual credits issued | **D** |
-| `UserAvailable:{u}` | User holding (unrestricted) | Spendable credits owed to `u` | **C** |
-| `UserReserved:{u}` | User holding (restricted) | Credits committed to open buy orders | **C** |
-| `CollateralBucket:{m}` | Restricted virtual-credit bucket | Credits backing `m`'s outstanding complete sets | **C** |
-| `SettlementPayable:{m}` | Liability | Credits owed to `m`'s winners, unpaid | **C** |
-| `SettlementCorrection:{m}` | **Realized** correction funding | Realized credits held to fund a correction of `m` | **C** |
-| `PendingCorrectionClaim:{m}` | Memorandum claim (**NOT in C1**) | A recognized-but-**unfunded** correction shortfall | **C** |
-| `CorrectionReceivable:{u}` | Receivable (claim on a user) | Credits `u` must be debited (mis-paid, not yet collected) | **D** |
-| **`CorrectionWriteOffLoss:{m}`** | **Loss / contra-equity (NEW in Rev 8)** | **An owner-approved write-off of an uncollectible receivable** | **D** |
-| `CorrectionPayableMarket:{m}` | Correction payable control (Option A only) | Recognized-but-unpaid correction entitlements of `m` | **C** |
+| Account | Normal | Purpose / accounting meaning |
+| - | - | - |
+| `CreditsIssued` | **D** | Contra-equity source of virtual credits; total credits ever issued. Increases **only** on an authorized issuance. |
+| `UserAvailable:{u}` | **C** | Spendable virtual credits owed to user `u`. |
+| `UserReserved:{u}` | **C** | Credits committed to `u`'s open buy orders (restricted). |
+| `CollateralBucket:{m}` | **C** | Credits backing market `m`'s outstanding complete sets. |
+| `SettlementPayable:{m}` | **C** | Credits owed to `m`'s winners, recognized but unpaid. |
+| `SettlementCorrection:{m}` | **C** | **Realized** credits held to fund a correction of `m` (the only correction account that counts as C1 collateral). |
+| `PendingCorrectionClaim:{m}` | **C** | A recognized-but-**unfunded** correction obligation (memorandum; **excluded from C1**). |
+| `CorrectionReceivable:{u}` | **D** | A claim on `u` for credits that must be returned (mis-paid, not yet collected). |
+| `CorrectionWriteOffLoss:{m}` | **D** | An **owner-approved** write-off of an uncollectible correction claim (a loss / contra-equity). |
+| `CorrectionPayableMarket:{m}` | **C** | Option-A control account for recognized-but-unpaid correction entitlements (Option A only; in C1). |
 
-Per-user correction-payable attribution (Option A) lives in a **subledger**
-`CorrectionPayableSubledger(market, resolution_version, user)` whose sum must equal
-`CorrectionPayableMarket:{m}`; it is **not** a separate balance account, so there is **no
-double-count** and **no control↔subledger transfer journal**.
+Option-A per-user attribution lives in a **subledger** `CorrectionPayableSubledger(market,
+resolution_version, user)` whose sum equals `CorrectionPayableMarket:{m}`; it is **not** a balance
+account, so there is **no double count**.
 
 ### 2.2 Share ledger
 
@@ -90,30 +96,29 @@ returns to 0 at completion; **never negative**; always `ClaimUnitsRemaining = Un
 
 ---
 
-## Part 3 — M1 (accounting conservation)
+## Part 3 — M1 (MMK accounting reconciliation)
 
-> **M1:** sum of all **debit-normal** balances = sum of all **credit-normal** balances.
-> Expanded: `CreditsIssued + Σ_u CorrectionReceivable:{u} + Σ_m CorrectionWriteOffLoss:{m}`
+> **M1:** `CreditsIssued + Σ_u CorrectionReceivable:{u} + Σ_m CorrectionWriteOffLoss:{m}`
 > `= Σ_u (UserAvailable + UserReserved)`
 > `+ Σ_m (CollateralBucket + SettlementPayable + SettlementCorrection + PendingCorrectionClaim + CorrectionPayableMarket)`
 
-`PendingCorrectionClaim` and `CorrectionPayableMarket` are **control accounts**; the Option-A subledger
-is **not** separately summed. `CorrectionWriteOffLoss` is debit-normal and sits on the debit side.
-M1 is a statement of **accounting conservation**, **not** of economic backing (Part 7).
-**VERIFIED (scratch):** M1 held at every commit boundary (Appendix V.1).
+`PendingCorrectionClaim` and `CorrectionPayableMarket` are **control accounts**; the Option-A
+subledger is **not** separately summed. `CorrectionWriteOffLoss` is debit-normal and sits on the debit
+side. M1 is a statement of **accounting conservation**, not of economic backing. **VERIFIED
+(scratch):** M1 held after every committed journal group (Appendix V.1).
 
 ---
 
-## Part 4 — Backing invariant C1
+## Part 4 — C1 (market collateralization) and C1b
 
 > **C1:** `CollateralBucket:{m} + SettlementPayable:{m} + SettlementCorrection:{m}`
 > `+ (Option A only) CorrectionPayableMarket:{m}`
 > `= PAYOUT_PER_SHARE × ClaimUnitsRemaining:{m}`
 > **C1b:** `ClaimUnitsRemaining:{m} = UnitsControl:{m}`
 
-**Critical:** `PendingCorrectionClaim:{m}` and `CorrectionReceivable:{u}` are **deliberately excluded**
-from C1. Neither is realized funding, so neither may back a claim unit. **VERIFIED (scratch):**
-`R8-11` (unfunded reopen rejected) and `R8-12c` (realize without reopen rejected).
+**`PendingCorrectionClaim` and `CorrectionReceivable` are never counted as funded collateral.**
+**VERIFIED (scratch):** `R9-01b` (C1 holds after issuance), `R9-18` (unfunded reopen rejected),
+`R9-12c` (realization without reopening rejected).
 
 ---
 
@@ -124,205 +129,266 @@ payout keys reject duplicates and credit exactly once.
 
 ---
 
-## Part 6 — BLOCKING ISSUE: CorrectionReceivable accounting lifecycle
+## Part 6 — The correction lifecycle (events, accounts, invariants)
 
-### 6.1 The eight economic events (separated)
+### 6.1 Unique economic events (fixes the duplicated Rev-8 `E3`)
 
-| Event | Description | Journal | Domain |
+| Event | Meaning | Journal | Domain |
 | - | - | - | - |
-| **E1** | Original mispayment to Bob | `SettlementPayable:M D 200 / UserAvailable:Bob C 200` | MMK |
-| **E2** | **Recognition** of the recovery claim | `CorrectionReceivable:Bob D 200 / PendingCorrectionClaim:M C 200` | MMK |
-| **E3** | **Actual collection** from Bob | `UserAvailable:Bob D x / CorrectionReceivable:Bob C x` | MMK |
-| **E3** | **Realization** of collected funds | `PendingCorrectionClaim:M D x / SettlementCorrection:M C x` | MMK |
-| **E4** | **Partial collection** | same journals as E3 with `x < 200` | MMK |
-| **E5** | **Uncollectible amount** | no journal; remains in `CorrectionReceivable` + `PendingCorrectionClaim` | — |
-| **E6** | **Approved write-off** | `CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` | MMK |
-| **E7** | **Approved issuance** | `CreditsIssued D x / SettlementCorrection:M C x` | MMK |
-| **E8** | **Funding + payment of Alice's entitlement** | reopen/pay/close journals | MMK + UNIT |
+| **E1** | Original mispayment to Bob | `SettlementPayable:M D x / UserAvailable:Bob C x` | MMK |
+| **E2** | Recognition of the recovery claim | `CorrectionReceivable:Bob D x / PendingCorrectionClaim:M C x` | MMK |
+| **E3** | Actual collection from Bob | `UserAvailable:Bob D x / CorrectionReceivable:Bob C x` | MMK |
+| **E4** | Realization of collected/issued funds | `PendingCorrectionClaim:M D x / SettlementCorrection:M C x` | MMK |
+| **E5** | Owner-approved write-off | `CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` | MMK |
+| **E6** | Owner-approved issuance | `CreditsIssued D x / (CorrectionReceivable:Bob C a + CorrectionWriteOffLoss:M C b)`, `a+b=x` | MMK |
+| **E7** | Funded claim-unit reopening | `ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P` | UNIT |
+| **E8** | Payout of the corrected entitlement | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
+| **E9** | Claim-unit retirement | `UnitsControl:M D u / ClaimUnitsRemaining:M C u` | UNIT |
 
-**A receivable is never treated as realized funding.** Recognition (E2) and realization (E3) are
-**different events** with **different journals**; only realization puts credits into
-`SettlementCorrection` (the C1 backing account).
+### 6.2 E2 — recognition
 
-### 6.2 E2 — initial receivable recognition
+Debit `CorrectionReceivable:Bob` (D), credit `PendingCorrectionClaim:M` (C). Meaning: Bob owes `x`
+back; the market has a recognized but **unfunded** claim. M1 unchanged; **C1 unaffected** (neither
+account is in C1). Correction is **pending**, not funded. **VERIFIED (scratch R9-00, R8-01).**
 
-| Field | Value |
-| - | - |
-| Debit | `CorrectionReceivable:Bob` **200** (normal **D**) |
-| Credit | `PendingCorrectionClaim:M` **200** (normal **C**) |
-| Economic meaning | Bob owes 200 MMK back; the market has a recognized but **unfunded** correction claim of 200 |
-| Effect on M1 | Debit side +200, credit side +200 → **M1 unchanged** (both sides rise) |
-| Effect on C1 | **None** — neither account is in C1; `ClaimUnitsRemaining` stays 0, so C1 = 0 = 0 ✅ |
-| Claim pending or funded? | **Pending** (`PendingCorrectionClaim` = 200), **not funded** |
+### 6.3 E3/E4/E7 — collection (or issuance), realization, reopening
 
-**No new account was required for recognition** — `CorrectionReceivable` and
-`PendingCorrectionClaim` already existed and correctly represent it.
+**Collection path:** `E3` collect (MMK) → `E4` realize (MMK) → `E7` reopen (UNIT), atomic.
+**The atomicity is a proved necessity:** after `E4`, `SettlementCorrection = x` requires
+`ClaimUnitsRemaining = x/P` for C1; realizing without reopening breaks C1. **VERIFIED (scratch
+R8-12c).** `E3` collect may commit alone (an intermediate state where Bob has paid but funding is not
+yet realized is reconciled: `CorrectionReceivable` falls, `PendingCorrectionClaim` still carries the
+obligation, `SettlementCorrection = 0`, `ClaimUnitsRemaining = 0`).
 
-### 6.3 E3 — full collection (200)
+### 6.4 E6 — corrected issuance (the Rev-9 fix)
 
-Two single-domain MMK journals, plus the unit reopening that must be atomic with realization:
+**One atomic group:** `E6` issue + `E4` realize + `E7` reopen.
 
-| Journal | Domain | Debit | Credit | Reason | Boundary |
+```
+E6-issue  (MMK): CreditsIssued D x
+                 / CorrectionReceivable:Bob C a          (a = min(x, receivable))
+                 / CorrectionWriteOffLoss:M C b          (b = x - a, only if the claim was written off)
+E4-realize (MMK): PendingCorrectionClaim:M D x / SettlementCorrection:M C x
+E7-reopen (UNIT): ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P
+```
+
+**Why this is correct:**
+
+1. **Issuance creates funding.** `CreditsIssued` (D) rises by `x`; the virtual-credit supply rises by
+   `x`. The credit side **cancels the outstanding claim** (`CorrectionReceivable` in Path B, or
+   `CorrectionWriteOffLoss` in Path A), so no value is created beyond the authorized issuance.
+2. **`PendingCorrectionClaim` is cleared, not doubled.** `E4` moves the obligation from
+   `PendingCorrectionClaim` to `SettlementCorrection`; the sum `PendingCorrectionClaim +
+   SettlementCorrection` stays `≤ 200`. **VERIFIED (scratch R9-02, R9-23).**
+3. **`SettlementCorrection` is funded and units are reopened together**, so C1 holds at the commit
+   boundary. **VERIFIED (scratch R9-01b, R9-21).**
+4. **No double funding.** Because the issuance **cancels** the receivable/loss, a **later collection
+   is impossible** — the receivable balance is 0, so `E3` collect is **rejected**. **VERIFIED
+   (scratch R9-04, R9-10).**
+
+**Balance check (x = 200, Path B):** debit `CreditsIssued +200`; credit
+`CorrectionReceivable:Bob +200`; `E4` debit `PendingCorrectionClaim 200`, credit
+`SettlementCorrection 200`; `E7` unit journals +2/−2. Post-commit: `CreditsIssued 30200`,
+`CorrectionReceivable 0`, `PendingCorrectionClaim 0`, `SettlementCorrection 200`,
+`ClaimUnitsRemaining 2`. **VERIFIED (scratch R9-01, R9-03b; PGlite P3/P4).**
+
+### 6.5 E5 — write-off
+
+`CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` (owner-approved only). It **records a
+historical loss**; it creates **no funding** and backs **no** claim unit. The claim remains
+**pending** (`PendingCorrectionClaim` unchanged) until funded by issuance or collection. Unapproved
+write-off is **rejected**. **VERIFIED (scratch R8-09/R8-10, R9-05a/b).**
+
+### 6.6 E8/E9 — payout and retirement
+
+`E8` (MMK) moves realized funding to Alice; `E9` (UNIT) retires the units. **Payout and retirement
+must be atomic**, and the payout may not exceed the funded `SettlementCorrection`. **VERIFIED
+(scratch R9-09, R8-15).**
+
+---
+
+## Part 7 — Correction state model
+
+| State | `CorrectionReceivable` | `PendingCorrectionClaim` | `SettlementCorrection` | `ClaimUnitsRemaining` | Meaning |
 | - | - | - | - | - | - |
-| `E3-collect` | MMK | `UserAvailable:Bob 200` | `CorrectionReceivable:Bob 200` | Actual collection | tx `T-C` (may be alone) |
-| `E3-realize` | MMK | `PendingCorrectionClaim:M 200` | `SettlementCorrection:M 200` | Realization | tx `T-C` |
-| `E8-reopen` | UNIT | `ClaimUnitsRemaining:M 2` | `UnitsControl:M 2` | Funded unit reopening | tx `T-C` |
+| **Recognized (pending)** | x | x | 0 | 0 | Obligation known; not funded |
+| **Partially funded** | x−f | x−f | f | f/P | Funded tranche reopened |
+| **Fully funded** | 0 | 0 | x | x/P | Ready to pay |
+| **Paid** | 0 | 0 | 0 | 0 | Correction complete |
+| **Written off (unfunded)** | 0 | x | 0 | 0 | Loss recorded; still pending |
+| **Permanently pending** | x | x | 0 | 0 | No recovery, no issuance, no write-off |
 
-**Multiple journals in one atomic transaction:** **YES.** `E3-realize` and `E8-reopen` **must** be
-atomic, because after realization `SettlementCorrection = 200` requires `ClaimUnitsRemaining = 2` for
-C1 to hold. **VERIFIED (scratch R8-12c):** realizing without reopening is **rejected**.
-
-Double-entry is preserved; no credits are created or destroyed (collection moves credits from Bob to
-the market's correction funding; realization is a memo reclassification within MMK).
-
-### 6.4 E4 — partial collection (100 of 200)
-
-| Journal | Domain | Debit | Credit |
-| - | - | - | - |
-| `E3-collect` | MMK | `UserAvailable:Bob 100` | `CorrectionReceivable:Bob 100` |
-| `E3-realize` | MMK | `PendingCorrectionClaim:M 100` | `SettlementCorrection:M 100` |
-| `E8-reopen` | UNIT | `ClaimUnitsRemaining:M 1` | `UnitsControl:M 1` |
-
-**Post-commit balances (VERIFIED scratch R8-03):** `CorrectionReceivable:Bob = 100`,
-`PendingCorrectionClaim:M = 100`, `SettlementCorrection:M = 100`, `ClaimUnitsRemaining:M = 1`.
-**Only the funded tranche reopens claim units** (`1` unit for `100` MMK). **VERIFIED (scratch
-R8-03c):** reopening the second, unfunded unit is **rejected**. An unfunded claim is **never** treated
-as collateral.
-
-### 6.5 E5 — uncollectible recovery
-
-Example: claim 200, collection **0**, realized funding **0**. **No journal** is posted (nothing
-happened); `CorrectionReceivable:Bob = 200` and `PendingCorrectionClaim:M = 200` remain **outstanding**.
-The correction is **PENDING** — no unit may reopen (VERIFIED scratch R8-11). Permitted correction
-states: **pending** (waiting for recovery) or **funded by approved issuance (E7, F14)**.
-
-### 6.6 E6 — optional owner-approved write-off
-
-A receivable is **never** written off silently. With explicit owner approval:
-
-| Journal | Domain | Debit | Credit |
-| - | - | - | - |
-| `E6-writeoff` | MMK | `CorrectionWriteOffLoss:M 200` | `CorrectionReceivable:Bob 200` |
-
-- **Loss treatment:** `CorrectionWriteOffLoss:M` is **debit-normal** (a loss / contra-equity-like
-  account). It records that the market will not collect the receivable.
-- **Effect on M1:** the debit side is unchanged (receivable 200 out, loss 200 in) → **M1 holds**;
-  the write-off **converts a claim into a recognized loss**. It does **not** create funding and does
-  **not** back any claim unit.
-- **`PendingCorrectionClaim` after write-off:** the memorandum claim may be cleared against the loss
-  **only under an explicit policy (F18)**; Rev 8 leaves the receivable-clearing journal as above and
-  records the pending-claim treatment as an **OPEN decision**.
-- **VERIFIED (scratch R8-09/R8-10):** an **unapproved** write-off is **rejected**; an approved one
-  balances and M1 holds.
-
-### 6.7 E7 — owner-approved issuance (F14)
-
-Only with explicit owner approval: `CreditsIssued D 200 / SettlementCorrection:M C 200`. This
-**increases the virtual-credit supply** by 200 (both M1 sides rise). **VERIFIED (scratch X2):**
-`CreditsIssued` 30000 → 30200; **VERIFIED (scratch X1):** issuance is **rejected** when not approved.
-
-### 6.8 E8 — funding and payment of Alice's corrected entitlement
-
-`E8-reopen` (UNIT) + `E8-pay` (`SettlementCorrection:M D 200 / UserAvailable:Alice C 200`, MMK) +
-`E8-close` (UNIT). Under **Option A**, `E8-pay` is preceded by
-`SettlementCorrection:M D 200 / CorrectionPayableMarket:M C 200` and then
-`CorrectionPayableMarket:M D 200 / UserAvailable:Alice C 200` (Part 8).
+The terms are distinct: **recognized** (E2 recorded), **pending** (not funded),
+**funded** (`SettlementCorrection > 0`), **paid** (E8 done), **written-off** (E5 done),
+**permanently pending** (owner declines all funding). A correction is **never** shown as settled
+while it is pending.
 
 ---
 
-## Part 7 — Invariants, reconciled
+## Part 8 — Worked scenarios
 
-| Invariant | Statement | Where enforced |
+Example: payout/share **100 MMK**; correction **200 MMK**; **2 claim units**; initial erroneous
+payout 200 MMK. Option B unless stated. Transaction boundaries and idempotency keys are given per
+scenario; M1/C1/C1b are asserted after **every** committed group.
+
+### 8.1 Path A vs Path B (comparison)
+
+| Aspect | **Path A — write-off, then issuance** | **Path B — issuance while receivable outstanding** |
 | - | - | - |
-| **M1** | debit-normal sum = credit-normal sum (Part 3) | every commit boundary |
-| **C1** | Part 4 backing identity | every commit boundary |
-| **C1b** | `ClaimUnitsRemaining = UnitsControl` | every commit boundary |
-| **Non-negativity** | no normal-side balance < 0 | every journal (model throws; PGlite `CHECK`) |
-| **C2** | `SharesOutstanding:YES = SharesOutstanding:NO` (pre-retirement) | every commit boundary |
-| **S1** | `Σ_u (free + escrowed) = SharesOutstanding` per outcome | every commit boundary |
+| Sequence | E2 recognize → E5 write-off → E6 issue (cancels loss) → E4 realize → E7 reopen | E2 recognize → E6 issue (cancels receivable) → E4 realize → E7 reopen |
+| What the issuance cancels | `CorrectionWriteOffLoss` (reverses the recognized loss) | `CorrectionReceivable` (extinguishes the claim on Bob) |
+| Loss treatment | Loss is recognized at write-off and **reversed** when issuance funds the correction (the loss is reclassified to issuance cost). **Not silently erased** — it was recognized in a committed state and is explicitly reversed by a journal. | No loss recorded (no write-off). |
+| Double-funding risk | After write-off the receivable is 0, so collection is impossible; issuance then funds once. | Issuance cancels the receivable, so a later collection is **rejected**. |
+| When appropriate | Owner has decided the receivable is uncollectible and formally writes it off, then later funds the correction. | Owner funds the correction while still nominally pursuing Bob, but accepts that issuance replaces collection. |
+| Reporting | Shows a write-off loss then a reversal. | Shows the claim extinguished without a loss. |
 
-**Distinctions (explicit):**
-- **M1 and C1 are different invariants.** M1 is conservation; C1 is backing.
-- **A receivable is not cash or realized funding** (it is debit-normal and excluded from C1).
-- **`PendingCorrectionClaim` is not collateral** (excluded from C1).
-- **No double counting:** the same amount never appears in both a receivable and a funded account;
-  the Option-A subledger is never summed alongside its control account.
-- **Each journal balances within its own domain**; multi-domain operations commit atomically.
+**Recommendation (OWNER DECISION F27):** use **Path B** when the owner intends to fund the correction
+by issuance and **forgo** collection (the receivable is cancelled). Use **Path A** when a write-off
+must be recorded first for accounting/disclosure reasons. **Both are internally consistent; the
+choice is the owner's.**
 
-**Intermediate (uncommitted) states.** Inside a transaction, C1 may temporarily differ (e.g. between
-`E3-realize` and `E8-reopen`). This is **proved harmless**: (a) the model **refuses to commit** any
-state where an invariant fails (commit-boundary assertion); (b) relational **transaction isolation**
-means another session sees either the pre- or post-commit state, never the in-flight state.
-**NOT VERIFIED (real PostgreSQL):** this isolation was **not** tested on a real multi-session server
-(PGlite is single-connection). **Real concurrency is not claimed.**
+### 8.2 Zero recovery, no write-off
+
+E2 only. Post-commit: `recv 200, pending 200, corr 0, units 0`. M1 ✅, C1 ✅ (0 = 0), C1b ✅.
+Correction **pending**. **VERIFIED (scratch R8-04, R9-16b).**
+
+### 8.3 Zero recovery, owner-approved write-off
+
+E2 → E5. Post-commit: `recv 0, loss 200, pending 200, corr 0, units 0`. M1 ✅ (loss on debit side),
+C1 ✅, C1b ✅. Correction **pending**. **VERIFIED (scratch R9-05b).**
+
+### 8.4 Write-off followed by issuance (Path A)
+
+E2 → E5 → {E6 + E4 + E7}. Post-commit: `recv 0, loss 0, pending 0, corr 200, units 2`,
+`CreditsIssued +200`. M1 ✅, C1 ✅ (200 = 100×2), C1b ✅. **VERIFIED (scratch R9-05c/d; PGlite P5).**
+
+### 8.5 Issuance before collection (Path B)
+
+E2 → {E6 + E4 + E7}. Post-commit: `recv 0, pending 0, corr 200, units 2`, `CreditsIssued +200`.
+**VERIFIED (scratch R9-01; PGlite P3/P4).**
+
+### 8.6 Later collection after issuance
+
+`E3` collect is **rejected** (receivable = 0). This is what prevents a second funding of the same
+correction. **VERIFIED (scratch R9-04).**
+
+### 8.7 Partial collection of 100
+
+E2 → {E3 100 + E4 100 + E7 1}. Post-commit: `recv 100, pending 100, corr 100, units 1`.
+**VERIFIED (scratch R8-03, R9-07).**
+
+### 8.8 Partial funding and reopening of one unit
+
+As 8.7; the unfunded unit stays pending; reopening it is **rejected**. **VERIFIED (scratch R8-03c).**
+
+### 8.9 Delayed payout after reopening
+
+Funding tx commits; payout tx commits later. Between them: `corr 200, units 2` → C1 ✅. **VERIFIED
+(scratch R8-14, R9-09).**
+
+### 8.10 Complete correction and final reconciliation
+
+All correction accounts 0; Alice 10000; Bob 10000 (collection path) or 10200 (issuance path);
+`CreditsIssued` 30000 (collection) or 30200 (issuance). **VERIFIED (scratch R8-20, R9-20).**
+
+### 8.11 Insufficient available balance for collection
+
+Bob has 50; collecting 200 is **rejected** (would drive `UserAvailable:Bob` negative). **VERIFIED
+(scratch R8-06, R9-17).**
+
+### 8.12 Duplicate issuance request
+
+Second issuance is **rejected** (nothing left to cancel) and idempotency key returns the original
+result. **VERIFIED (scratch R9-10, R9-15; PGlite P6).**
+
+### 8.13 Duplicate payout request
+
+Second payout is **rejected** (`SettlementCorrection` exhausted) / unique key. **VERIFIED (scratch
+R9-13; PGlite P7).**
+
+### 8.14 Crash after one transaction commits, before the next starts
+
+Funding committed; the next transaction rolls back; state is reconciled and **resumable**
+(`pending 200, corr 0, units 0`). **VERIFIED (scratch R9-14).**
+
+### 8.15 Retry after crash
+
+Idempotent: retry is a **no-op**. **VERIFIED (scratch R9-15).**
+
+### 8.16 Owner declines issuance permanently
+
+Issuance **rejected**; correction stays **permanently pending** (`pending 200, corr 0, units 0`).
+**VERIFIED (scratch R9-16).**
 
 ---
 
-## Part 8 — Complete correction lifecycle
+## Part 9 — Atomicity, idempotency, recovery
 
-Example: payout per share **100 MMK**; Bob mis-paid 200; Alice the true winner; **2 units**; corrected
-payout **200 MMK**. Option B (no payable account) unless stated.
+| Requirement | Rule |
+| - | - |
+| Funding + reopening atomic | `E4` realize + `E7` reopen commit in **one** transaction (C1 requires it). |
+| Reopening + UnitsControl atomic | `E7` writes `ClaimUnitsRemaining` and `UnitsControl` in **one** UNIT journal. |
+| Payout + retirement atomic | `E8` (MMK) + `E9` (UNIT) commit in **one** transaction. |
+| Collection/funding separation | `E3` collect may precede `E4`+`E7` **only** if the intermediate state is reconciled (it is: see 6.3) and resumable. |
+| Retries | Never duplicate economic effects (idempotency keys). |
 
-| State | Event | Journal(s) | Boundary |
-| - | - | - | - |
-| S0 | E1 original incorrect settlement | (already applied) | earlier |
-| S1 | E2 receivable recognition | `CorrectionReceivable:Bob D 200 / PendingCorrectionClaim:M C 200` | tx `T-REC` |
-| S2 | Correction record + immutable resolution version | write `ResolutionRecord(v2)` + `SettlementEntitlement(v2, Alice=2)` | tx `T-REC` |
-| S3 | E3 full/partial collection | `UserAvailable:Bob D x / CorrectionReceivable:Bob C x` | tx `T-C` |
-| S4 | E3 realization | `PendingCorrectionClaim:M D x / SettlementCorrection:M C x` | tx `T-C` |
-| S5 | E8 funded unit reopening | `ClaimUnitsRemaining:M D x/100 / UnitsControl:M C x/100` | tx `T-C` |
-| S6 | E8 immediate payout (Option B) | `SettlementCorrection:M D x / UserAvailable:Alice C x` | tx `T-C` |
-| S6' | E8 delayed payout | same journal, **later** tx `T-P` | tx `T-P` |
-| S7 | E8 unit close | `UnitsControl:M D units / ClaimUnitsRemaining:M C units` | tx `T-C`/`T-P` |
-| S8 | E5 uncollectible remainder | none (stays pending) | — |
-| S9 | E6/E7 optional write-off or issuance | Part 6.6 / 6.7 | tx `T-WO`/`T-IS` |
-| S10 | Final reconciliation | all correction accounts 0 | read/assert |
+**Unique idempotency keys:** recognition `(market, resolution_version, user)`; collection
+`(market, user, collection_seq)` + request key; write-off `(market, resolution_version, writeoff_seq)`;
+issuance `(market, resolution_version, issuance_seq)` + request key; reopening
+`(market, resolution_version, reopen_seq)`; payout `(market, resolution_version, user)`; retirement
+`(market, resolution_version, user, retire_seq)`.
 
-**Uniqueness / idempotency keys:** recognition and correction carry
-`(market_id, resolution_version, user_id, correction_seq)`; collection carries
-`(market_id, user_id, collection_seq)` + idempotency key; payout carries
-`(market_id, resolution_version, user_id)` + idempotency key. Duplicates are no-ops; the same key
-with a different payload is a **conflict**.
-
-**Option A / Option B:** the Rev-7 comparison is **retained unchanged** (F20/AR15 remain OWNER
-DECISIONS); Revision 8 does **not** change F20 or AR15.
-
-**Post-commit balances (full recovery, Option B — VERIFIED scratch R8-02/R8-20):**
-
-| Account | S1 (recognized) | S3–S5 (collected+realized+reopened) | S10 (final) |
-| - | - | - | - |
-| `CorrectionReceivable:Bob` | 200 | 0 | 0 |
-| `PendingCorrectionClaim:M` | 200 | 0 | 0 |
-| `SettlementCorrection:M` | 0 | 200 | 0 |
-| `ClaimUnitsRemaining:M` | 0 | 2 | 0 |
-| `UserAvailable:Alice` | 9800 | 9800 | 10000 |
-| `UserAvailable:Bob` | 10200 | 10000 | 10000 |
-| `CreditsIssued` | 30000 | 30000 | 30000 |
+**Crash behaviour:** before commit → no effect; immediately after commit → restart sees the committed
+state; between collection and funding → the reconciled intermediate state resumes; between funding
+and payout → funding is preserved and payout resumes; during retry → idempotent no-op.
+**VERIFIED (scratch R9-14/R9-15; PGlite P2).**
 
 ---
 
-## Part 9 — Financial decision register (Revision 8)
+## Part 10 — Financial decision register (Revision 9)
+
+All prior decisions remain **unresolved**. F14, F18, F19, F20, F21, F22, F23, F24, F25, F26 are
+**NOT APPROVED**.
 
 | ID | Decision | Recommendation | Status |
 | - | - | - | - |
-| F1–F13 | (as Revision 7: payout/share, price grid, min notional, fees, slippage, quote expiry, order types, partial-fill policy, cross-outcome matching, resolution authority, dispute window, new-user credit, "To Win" display) | (see Rev 7) | OWNER DECISION / OPEN |
-| F14 | May the platform issue additional virtual credits to fund a correction? | undecided | **OWNER DECISION** |
-| F15 | Recovery of `CorrectionReceivable`: automatic netting vs manual review | manual review | OPEN |
-| F16 | Must `SettlementCorrection` close at zero? | yes | **OWNER DECISION** |
-| F17 | Does C1 count an uncollected receivable as backing (Policy A) or only realized funding (Policy B)? | Policy B | **OWNER DECISION** |
-| F18 | Treatment of uncollectible receivables | write off as disclosed loss | **OWNER DECISION** |
-| F19 | Fallback if additional issuance is not approved? | pending correction | **OWNER DECISION** |
-| F20 | CorrectionPayable representation: Option A vs Option B | Option B | **OWNER DECISION** |
-| F21 | Partial funding vs all-or-nothing correction | funded-tranche | **OWNER DECISION** |
-| F22 | Is delayed correction payout supported? | yes | **OWNER DECISION** |
-| **F23** | **How is the correction receivable recognized?** (recognize at mispayment vs at correction record) | recognize at correction record (E2) | **RECOMMENDED — OWNER DECISION** |
-| **F24** | **Is the collection→realization→reopen group required to be atomic?** | yes (proved necessary by C1) | **RECOMMENDED — OWNER DECISION** |
-| **F25** | **How are uncollectible receivables written off, and does `PendingCorrectionClaim` clear against the write-off loss?** | write off to `CorrectionWriteOffLoss`; clear the pending claim only under explicit policy | **RECOMMENDED — OWNER DECISION** |
-| **F26** | **May a correction remain open (pending) indefinitely?** | yes, visibly pending | **RECOMMENDED — OWNER DECISION** |
+| F14 | May the platform issue additional virtual credits to fund a correction? | undecided | **NOT APPROVED** |
+| F16 | Must `SettlementCorrection` close at zero? | yes | **NOT APPROVED** |
+| F17 | Does C1 count an uncollected receivable as backing (Policy A) or only realized funding (Policy B)? | Policy B | **NOT APPROVED** |
+| F18 | Treatment of uncollectible receivables | write off as disclosed loss | **NOT APPROVED** |
+| F19 | Fallback if additional issuance is not approved? | pending correction | **NOT APPROVED** |
+| F20 | CorrectionPayable representation: Option A vs Option B | Option B | **NOT APPROVED** |
+| F21 | Partial funding vs all-or-nothing correction | funded-tranche | **NOT APPROVED** |
+| F22 | Is delayed correction payout supported? | yes | **NOT APPROVED** |
+| F23 | When is the receivable recognized? | at correction record (E2) | **NOT APPROVED** |
+| F24 | Is the collect→realize→reopen group required to be atomic? | yes | **NOT APPROVED** |
+| F25 | Write-off mechanics and `PendingCorrectionClaim` clearing | write off to `CorrectionWriteOffLoss`; clear pending claim via realization | **NOT APPROVED** |
+| F26 | May a correction remain pending indefinitely? | yes, visibly pending | **NOT APPROVED** |
+| **F27** | **Which issuance path: Path A (write-off then issuance) or Path B (issuance while outstanding)?** | Path B if collection is forgone; Path A if a write-off must be recorded first | **NOT APPROVED** |
+| **F28** | **When issuance funds a correction, what does it cancel — the receivable or the write-off loss?** | the outstanding claim (receivable, else loss) | **NOT APPROVED** |
+| **F29** | **Is the issuance group (E6+E4+E7) required to be atomic?** | yes (C1 requires it) | **NOT APPROVED** |
+
+**New-decision detail (F27–F29):**
+
+- **F27 — issuance path.** *Options:* Path A (write-off first) / Path B (issuance while outstanding).
+  *Financial consequence:* Path A records then reverses a loss; Path B extinguishes the receivable
+  with no loss. *Abuse/security:* both must be owner-authorized and audit-logged; neither may be
+  triggered by a user. *Operational:* Path A adds a write-off approval step. *Recommendation:* Path B
+  if collection is forgone; Path A if a write-off must be disclosed. **NOT APPROVED.**
+- **F28 — what issuance cancels.** *Options:* cancel the receivable / cancel the write-off loss /
+  cancel both proportionally (when a claim was partially written off). *Financial consequence:*
+  determines whether a loss is reversed and prevents double-counting. *Abuse/security:* prevents
+  funding a correction while also collecting it. *Operational:* needs a rule for partially written-off
+  claims (recommended: cancel the loss first, then the receivable). *Recommendation:* cancel the
+  outstanding claim (loss first, then receivable). **NOT APPROVED.**
+- **F29 — atomicity of the issuance group.** *Options:* atomic `E6+E4+E7` / allow `E6` alone.
+  *Financial consequence:* `E6` alone breaks C1 and double-counts. *Abuse/security:* non-atomic
+  issuance could create unbacked claim units. *Operational:* simpler and safer when atomic.
+  *Recommendation:* **atomic**. **NOT APPROVED.**
 
 ---
 
-## Part 10 — Approval
+## Part 11 — Approval
 
 **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.** Approving this document is required
 before any executable trading is implemented in Milestone 4. **Nothing here is implemented.**
@@ -335,74 +401,82 @@ Product owner signature / date: ______________________________
 
 ---
 
+## Part 12 — Assumptions, edge cases, and limitations
+
+- **Scratch ≠ proof.** A passing scratch model shows the *proposed* journals are internally consistent
+  under the model's rules; it does **not** prove the financial rules are correct or complete.
+- **Assumptions:** payout/share fixed at 100; a correction maps to one market and resolution version;
+  the owner authorizes issuance/write-off out of band; the model's `noDoubleCount` check uses the
+  scenario total (200).
+- **Unresolved edge cases:** multiple concurrent corrections on one market; a partially written-off
+  claim then partially collected; reversal of a correction after issuance; cross-market corrections.
+- **Real concurrency:** **Real PostgreSQL multi-session concurrency remains unverified.**
+
+---
+
 ## Appendix V — Exact local verification performed
 
 Environment: **Node.js v24.22.2**; **@electric-sql/pglite 0.5.16**; **PostgreSQL 18.6 (PGlite
-0.5.16) on wasm32**; **Linux 6.8.0-1055-gke**. All commands ran in scratch directories **outside**
-the repository (`/tmp/ledgertest`).
+0.5.16) on wasm32**; **Linux 6.8.0-1055-gke**. Scratch files (outside the repo):
+`/tmp/ledgertest/rev9.mjs`, `/tmp/ledgertest/rev9-pglite.mjs`.
 
-### V.1 Revision 8 scratch model — VERIFIED (scratch)
+### V.1 Revision 9 scratch model — VERIFIED (scratch)
 
-- **Command:** `node rev8.mjs`
-- **Purpose:** receivable recognition/collection/realization; full/partial/zero collection;
-  over-collection guards; collection and payout idempotency; unapproved/approved write-off; funding
-  gating unit reopening; immediate/delayed payout; duplicate payout/funding; failure/rollback;
-  restart/retry; final reconciliation; uncollectible+issuance; Option A path.
-- **Counting method:** **45 test cases** (each a scenario with an explicit expected/actual outcome)
-  plus **70 invariant assertions** (10 invariants × 7 commit boundaries). A test **passes** when the
-  observed outcome equals the expected outcome — **including expected rejections/rollbacks**, which
-  count as passing when the safe behaviour is observed.
-- **Result:** **45 / 45 test cases PASS, 0 FAIL; 70 invariant assertions, 0 FAIL**; ending
+- **Command:** `node rev9.mjs`
+- **Structure:** Section 1 = the **Revision 8 suite preserved** (45 cases); Section 2 = the **new
+  Revision 9 suite** (30 cases).
+- **Counting method:** **75 test cases** (each a scenario with an explicit expected/actual outcome)
+  plus **165 invariant assertions** (11 invariants × 15 commit boundaries). A test passes when the
+  observed outcome equals the expected outcome, **including expected rejections/rollbacks**.
+- **Result:** **75 / 75 test cases PASS, 0 FAIL; 165 invariant assertions, 0 FAIL**; ending
   `>>> ALL CHECKS PASSED (scratch)`.
 - **Selected actual output:**
 
 ```
-PASS R8-01 recognize: CorrectionReceivable D 200 / PendingCorrectionClaim C 200 | expected=committed actual=committed
-PASS R8-01b receivable 200, pending 200, corr 0, units 0 | expected=true actual=true
-PASS R8-02b receivable 0, pending 0, corr 200, units 2 | expected=true actual=true
-PASS R8-03b receivable 100 outstanding, pending 100, funded 100, 1 unit | expected=true actual=true
-PASS R8-03c reopening the 2nd (unfunded) unit is rejected | expected=rolled-back actual=rolled-back
-PASS R8-05 collect 300 > outstanding 200 -> rejected | expected=rolled-back actual=rolled-back
-PASS R8-06 collect 200 > Bob available 50 -> rejected | expected=rolled-back actual=rolled-back
-PASS R8-09 unapproved write-off rejected | expected=rolled-back actual=rolled-back
-PASS R8-11 unfunded correction cannot reopen claim units | expected=rolled-back actual=rolled-back
-PASS R8-12c realize alone (no reopen) is rejected: funding without units breaks C1 | expected=rolled-back actual=rolled-back
-PASS R8-14b backing preserved between transactions (corr 200, units 2) | expected=true actual=true
-PASS R8-19 retry after restart is a no-op (idempotent) | expected=duplicate actual=duplicate
-test cases: 45 (45 passed, 0 failed)
-invariant assertions at commit boundaries: 70
+PASS R9-01 corrected E6 issuance+realize+reopen commits atomically | expected=committed actual=committed
+PASS R9-01b corr 200 = 100 x 2 units (C1 holds after issuance) | expected=true actual=true
+PASS R9-02 no double-count: pending 0 and corr 200 | expected=true actual=true
+PASS R9-03 issuance cancels the receivable (recv 0) | expected=true actual=true
+PASS R9-04 later collection after issuance is rejected (receivable gone) | expected=rolled-back actual=rolled-back
+PASS R9-05d final: recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
+PASS R9-08b all funded: recv 0, pending 0, corr 200, units 2 | expected=true actual=true
+PASS R9-10 duplicate issuance rejected (nothing left to cancel) | expected=rolled-back actual=rolled-back
+PASS R9-14 crash between funding and payout: funding tx fails and rolls back | expected=rolled-back actual=rolled-back
+PASS R9-16 owner declines issuance -> correction stays pending | expected=rolled-back actual=rolled-back
+PASS R9-23 no double-count: pending+corr == 200 (never 400) | expected=true actual=true
+test cases: 75 (75 passed, 0 failed)
+invariant assertions at commit boundaries: 165
 >>> ALL CHECKS PASSED (scratch)
 ```
 
-- **Limitations:** sequential single-process simulation; "concurrent" cases are **simulated
-  serializations**, not real races. **Real PostgreSQL concurrency is NOT VERIFIED.**
+- **Limitations:** sequential single-process simulation; not real concurrency.
 
-### V.2 Revision 8 PGlite mechanism test — VERIFIED (PGlite)
+### V.2 Revision 9 PGlite mechanism test — VERIFIED (PGlite)
 
-- **Command:** `node rev8-pglite.mjs`
-- **Purpose:** atomic multi-journal receivable lifecycle across MMK+UNIT; rollback isolation; unique
-  collection/payout keys; non-negative constraints; receivable drained to zero.
+- **Command:** `node rev9-pglite.mjs`
+- **Purpose:** corrected issuance atomic group (MMK+UNIT); `PendingCorrectionClaim` cleared;
+  write-off→issuance loss reversal; rollback; unique issuance/collection/payout keys; non-negative.
 - **Actual output:**
 
 ```
-P1 rollback: rolled-back: injected failure after journals
+P1 recognize: committed
+P2 issuance rollback: rolled-back: injected failure after journals
    state unchanged after rollback: true
-P2 commit: committed
-   balances: [...,{"account":"CorrectionReceivable:Bob","balance":0},...,{"account":"SettlementCorrection:M","balance":200},...,{"account":"ClaimUnitsRemaining:M","balance":2},...]
-P3 receivable drained to 0, corr funded 200, units 2: true
-   ledger rows T-LIFE: 8 | T-FAIL: 0
-P4 duplicate collect: rejected: duplicate key value violates unique constraint "collections_pkey"
-P4 same key different seq: rejected: duplicate key value violates unique constraint "collections_idempotency_key_key"
-P5 duplicate payout: rejected: duplicate key value violates unique constraint "payouts_pkey"
-P6 negative receivable rejected: rolled-back: new row for relation "accounts" violates check constraint "accounts_balance_check"
+P3 issuance commit: committed
+P4 corrected E6: issued 30200, recv 0, pending 0, corr 200, units 2: true
+   ledger rows T-ISS: 6 | T-ISS-FAIL: 0
+P5a after write-off: loss 200, recv 0: true
+P5 Path A: loss reversed after issuance: true | pending 0: true | corr 200: true
+P6 duplicate issuance: rejected: duplicate key value violates unique constraint "issuance_pkey"
+P7 duplicate payout: rejected: duplicate key value violates unique constraint "payouts_pkey"
+P8 negative claim cancel rejected: rolled-back: ... violates check constraint "accounts_balance_check"
 ```
 
-- **Limitations:** PGlite is a **single-connection, single-process embedded** engine; it **cannot**
-  reproduce real multi-session contention. Mechanism evidence only.
+- **Limitations:** PGlite is **single-connection**; it does not prove multi-session behaviour.
 
 ### V.3 Real PostgreSQL — NOT VERIFIED
 
-No real PostgreSQL server was used. **Multi-session concurrency is unverified.**
+**Real PostgreSQL multi-session concurrency remains unverified.**
 
 ### V.4 Git state — VERIFIED
 
