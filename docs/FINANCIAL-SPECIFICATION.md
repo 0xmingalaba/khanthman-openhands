@@ -49,15 +49,26 @@ Revision 9 corrects all three.
 | B | `PendingCorrectionClaim` not cleared | Issuance **cancels the outstanding claim** — the receivable (Path B) or the write-off loss (Path A) — and realization clears `PendingCorrectionClaim`, so the obligation is never counted twice (Part 6.4, Part 8). |
 | C | No end-to-end path | Full worked examples for Path A (write-off → issuance) and Path B (issuance while outstanding), plus 14 required scenarios (Part 8). |
 | D | Duplicated `E3` event identifier | Events renumbered uniquely: **E1–E9** (Part 6.1). |
-| E | **F28 inconsistency** (E6 cancels receivable-first vs F28 recommends loss-first) | Derivation added in **6.4a** for all claim states; **loss-first** recommended; **F28 left unapproved**. |
-| F | **Option A completeness** unproven | Option A lifecycle + **no-double-count proof** added (6.6); Option A is complete; adoption is F20. |
+| E | **F28 inconsistency** (E6 implied receivable-first vs F28 recommended loss-first) | **6.4a** now states **two explicit alternatives** (proposed recommendation vs alternative) for all claim states; **neither is selected as policy** and **F28 stays NOT APPROVED**. |
+| F | **Option A completeness** unproven | Option A lifecycle + **no-double-count proof** added (6.6), complete **for the supplied scenario only**; adoption is F20. |
 
-### Revision 9 review preparation (this commit)
+### Revision 9 review preparation and independent-review corrections
 
-- The scratch scripts are now **in the repository** at `docs/verification/rev9/` with a README,
-  captured outputs, and exact commands — so a reviewer can reproduce the results.
-- The F28 cancel-order question is derived (6.4a) and left **unresolved**.
-- Option A is shown to be complete (6.6).
+- The scratch scripts are **in the repository** at `docs/verification/rev9/` with a README, captured
+  outputs, and exact commands — so a reviewer can reproduce the results.
+- **F28 is stated as two explicit alternatives** (proposed recommendation vs alternative) in **6.4a**;
+  **neither is selected as policy** and **F28 remains NOT APPROVED**. The E6 body no longer implies an
+  order.
+- **State 4 is reconstructed** from the actual `E2 → E3 (100) → E5 (100)` sequence: before issuance,
+  `recv 0, loss 100, pending 100, corr 100, units 1` (the earlier `(100, 100)` figure was unreachable
+  for that sequence and is removed). The scratch test `R9-32pre` asserts these balances.
+- **Appendix V.1 selected-output block corrected** to the reproduced **105 tests / 220 assertions**.
+- **PGlite duplicate-collection rejection is now actually exercised (`P9`)**; before this correction it
+  was claimed but not tested.
+- **Explicit unresolved limitations added** (Part 12): no real-PostgreSQL multi-session verification;
+  concurrent corrections; partial write-off/collection combinations; per-user allocation and
+  multi-user payout; Option A demonstrated only for the supplied scenario.
+- Option A is shown to be **complete for the supplied scenario** (6.6).
 
 ---
 
@@ -180,9 +191,12 @@ E4-realize (MMK): PendingCorrectionClaim:M D x / SettlementCorrection:M C x
 E7-reopen (UNIT): ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P
 ```
 
-The **cancel order** (which claim component is cancelled first) is **F28** and is **not yet
-approved** — see 6.4a, which derives both orders for every claim state. This section deliberately
-does **not** assume an order.
+The **cancel order** — which claim component (`CorrectionReceivable:Bob` or
+`CorrectionWriteOffLoss:M`) is cancelled first when both are outstanding and the issuance is smaller
+than the claim — is **F28** and is **NOT APPROVED**. This section deliberately **does not assume an
+order**; **6.4a** states the **two alternatives** (proposed recommendation vs alternative) and the
+unresolved decision. **Neither alternative is the implemented policy.** The balance check below uses
+the Path-B case where only the receivable exists, so it is **order-independent**.
 
 **Why the group is correct (order-independent):**
 
@@ -205,48 +219,67 @@ does **not** assume an order.
 `CorrectionReceivable 0`, `PendingCorrectionClaim 0`, `SettlementCorrection 200`,
 `ClaimUnitsRemaining 2`. **VERIFIED (scratch R9-01, R9-03b; PGlite P3/P4).**
 
-### 6.4a E6 cancel order — derivation for every claim state (F28, unresolved)
+### 6.4a E6 cancel order — the two alternatives (F28, NOT APPROVED)
 
-When a claim has been **partly written off** (some of it is a receivable, some is a
-`CorrectionWriteOffLoss`) and the issuance is **smaller** than the outstanding claim, the two cancel
-orders give **different residuals**. This is the F28 inconsistency: the E6 formula above cancels the
-**receivable first**, while the F28 recommendation cancels the **loss first**. **Neither is approved.**
-Both are shown; **both preserve M1, C1, and C1b** — they differ only in *which residual claim remains*.
+**Status of this decision.** **F28 is NOT APPROVED.** No order is selected as implemented policy. The
+two mathematically-correct alternatives are stated below with their full journals, before/after
+balances, and M1 results. **Both preserve M1, C1, and C1b.** They differ **only** in *which residual
+claim remains* when a claim is **partly written off** and the issuance is **smaller** than the
+outstanding claim. The **proposed recommendation** is *loss-first*; the **alternative** is
+*recv-first*.
 
 Notation: outstanding claim `C = recv + loss`; issuance `x ≤ C`; `recv` = `CorrectionReceivable:Bob`,
-`loss` = `CorrectionWriteOffLoss:M`.
+`loss` = `CorrectionWriteOffLoss:M`. `E4` (`PendingCorrectionClaim:M D x / SettlementCorrection:M C x`)
+and `E7` (reopen `x/P` units) are identical in both alternatives.
 
-| State | Before (`recv`, `loss`) | Issuance `x` | **recv-first** residual (`recv`, `loss`) | **loss-first** residual (`recv`, `loss`) | Journals (E6-issue) | M1 |
-| - | - | - | - | - | - | - |
-| **1. Fully outstanding** | (200, 0) | 200 | (0, 0) | (0, 0) | `CreditsIssued D 200 / CorrectionReceivable C 200` | ✅ |
-| **2. Fully written-off** | (0, 200) | 200 | (0, 0) | (0, 0) | `CreditsIssued D 200 / CorrectionWriteOffLoss C 200` | ✅ |
-| **3. Partially written-off, full issuance** | (100, 100) | 200 | (0, 0) | (0, 0) | `CreditsIssued D 200 / CorrectionReceivable C 100 / CorrectionWriteOffLoss C 100` | ✅ |
-| **3b. Partially written-off, partial issuance** | (100, 100) | 100 | (**0, 100**) | (**100, 0**) | recv-first: `CreditsIssued D 100 / CorrectionReceivable C 100`; loss-first: `CreditsIssued D 100 / CorrectionWriteOffLoss C 100` | ✅ |
-| **4. Partly collected AND partly written-off** | (100, 100) with 1 unit already funded | 100 | (0, 100) | (100, 0) | as 3b | ✅ |
+**The two alternatives (complete journals):**
 
-In every state, `E4` also posts `PendingCorrectionClaim:M D x / SettlementCorrection:M C x`, and `E7`
-reopens `x/P` units. M1 holds in every case because the issuance debit (`CreditsIssued`) is matched by
-credits to claim accounts of exactly `x`; no value is created or destroyed.
+| Alternative | `E6-issue` (MMK) | First-cancelled component | Residual when `x < C` |
+| - | - | - | - |
+| **Alternative A — loss-first** (**proposed recommendation**) | `CreditsIssued D x / CorrectionWriteOffLoss:M C min(x,loss) / CorrectionReceivable:Bob C (x−min(x,loss))` | write-off loss | the **receivable** stays outstanding (still collectible) |
+| **Alternative B — recv-first** | `CreditsIssued D x / CorrectionReceivable:Bob C min(x,recv) / CorrectionWriteOffLoss:M C (x−min(x,recv))` | receivable | the **write-off loss** stays outstanding |
 
-**Interpretation and the unresolved choice (F28):**
+**All five states, both alternatives (before → after; M1 checked at each commit):**
 
-- **States 1, 2, 3:** both orders agree (only one component exists, or the issuance covers the whole
-  claim). No decision needed.
-- **State 3b (the only divergent case):** **recv-first** leaves the **write-off loss** outstanding
-  (`loss 100`); **loss-first** leaves the **receivable** outstanding (`recv 100`).
-  - **loss-first (the F28 recommendation):** reverses the recorded loss first, so the historical loss
-    is extinguished as early as possible, and the residual is a still-collectible receivable. This
-    matches the accounting intuition "issuance replaces the loss, not the debt".
-  - **recv-first (the E6 formula as written):** cancels the debt first, leaving the loss on the books
-    until a later issuance/collection.
-- **State 4:** the earlier collection already funded 1 unit; the residual `(100, 100)` behaves as 3b.
+| State | Before (`recv`, `loss`) | Issuance `x` | **Alt A (loss-first)** residual | **Alt B (recv-first)** residual | M1 |
+| - | - | - | - | - | - |
+| **1. Fully outstanding** | (200, 0) | 200 | (0, 0) | (0, 0) | ✅ |
+| **2. Fully written-off** | (0, 200) | 200 | (0, 0) | (0, 0) | ✅ |
+| **3. Partially written-off, full issuance** | (100, 100) | 200 | (0, 0) | (0, 0) | ✅ |
+| **3b. Partially written-off, partial issuance** | (100, 100) | 100 | (**100, 0**) | (**0, 100**) | ✅ |
+| **4. Partly collected AND partly written-off** | (0, 100) | 100 | (0, 0) | (0, 0) | ✅ |
 
-**Recommendation:** **loss-first** (extinguish the recorded loss before the receivable). **NOT
-APPROVED** — F28 remains open, and the E6 body must not be read as having chosen an order.
+**Per-state journals and balances:**
 
-**VERIFIED (scratch, review-prep suite):** R9-24…R9-27 (states 1–2, both orders), R9-28/R9-29
-(state 3, both orders), R9-30/R9-31 (state 3b — the divergence), R9-32 (state 4), R9-33 (M1 for both
-orders).
+- **State 1 — (200, 0), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionReceivable:Bob C 200`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (only a receivable exists). *Meaning:* Bob's whole debt is extinguished; the funded units back the payout.
+- **State 2 — (0, 200), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionWriteOffLoss:M C 200`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (only a loss exists). *Meaning:* the recorded loss is reversed (reclassified to issuance cost).
+- **State 3 — (100, 100), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionReceivable:Bob C 100 / CorrectionWriteOffLoss:M C 100`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (issuance covers the whole claim). *Meaning:* both the residual debt and the residual loss are cleared.
+- **State 3b — (100, 100), x = 100 (the only divergent state).**
+  - **Alt A (loss-first):** `CreditsIssued D 100 / CorrectionWriteOffLoss:M C 100`. After: **recv 100**, loss 0, pending 100, corr 100, units 1. *Meaning:* the recorded loss is reversed first; the **residual receivable (100) remains collectible** from Bob.
+  - **Alt B (recv-first):** `CreditsIssued D 100 / CorrectionReceivable:Bob C 100`. After: recv 0, **loss 100**, pending 100, corr 100, units 1. *Meaning:* the debt is cancelled first; the **write-off loss (100) stays on the books** until a later issuance.
+- **State 4 — E2 recognize 200 → E3 collect 100 (funds 1 unit) → E5 write off the remaining 100.** Resulting before-issuance balances: **recv 0, loss 100, pending 100, corr 100, units 1** (the receivable is fully consumed by the collection; the write-off consumes the rest of the claim). Issuance `x = 100`: both alternatives `CreditsIssued D 100 / CorrectionWriteOffLoss:M C 100`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (no receivable remains). *Meaning:* the remaining loss is reversed; the correction is fully funded (100 collected + 100 issued).
+
+**Interpretation.**
+
+- **States 1, 2, 3, 4:** both alternatives agree; no decision is needed for these states.
+- **State 3b (the only divergent state):** Alt A (loss-first) leaves the **receivable** outstanding; Alt B (recv-first) leaves the **write-off loss** outstanding.
+
+**The unresolved owner decision (F28).**
+
+- **Proposed recommendation — Alt A (loss-first):** reverse the recorded loss first, so the historical
+  loss is extinguished as early as possible and the residual is a still-collectible receivable. This
+  matches the accounting intuition "issuance replaces the loss, not the debt". **RECOMMENDED — NOT
+  APPROVED.**
+- **Alternative — Alt B (recv-first):** cancel the debt first, leaving the loss on the books until a
+  later issuance. **NOT APPROVED.**
+
+**Neither alternative is selected as policy.** **F28 remains NOT APPROVED.** The E6 body in 6.4 must
+not be read as having chosen an order.
+
+**VERIFIED (scratch, review-prep suite):** R9-24/R9-25 (state 1, both orders), R9-26/R9-27 (state 2,
+both orders), R9-28/R9-29 (state 3, both orders), R9-30/R9-31 (state 3b — the divergence, both
+orders), R9-32/R9-32c (state 4, both orders), R9-32pre (state-4 before-issuance balances), R9-33
+(M1/C1/C1b for both orders).
 
 ### 6.5 E5 — write-off
 
@@ -289,8 +322,10 @@ positive for the same entitlement**:
 - The **subledger** is a *detail* of `CorrectionPayableMarket`, never added to it, so there is **no
   control↔subledger double count**. **VERIFIED (scratch R9-37: `subTie` holds at every boundary).**
 
-**Conclusion:** Option A is **complete** and internally consistent, and it cannot double-count the same
-entitlement. Whether to adopt it remains **OWNER DECISION F20 / AR15** (recommendation: Option B).
+**Conclusion:** Option A is **internally consistent and complete for the supplied scenario**, and it
+cannot double-count the same entitlement. This is **not** a claim of production-completeness —
+concurrency, multi-user allocation, and crash/retry for Option A are **not verified** (Part 12).
+Whether to adopt Option A remains **OWNER DECISION F20 / AR15** (recommendation: Option B).
 
 ### 6.7 E8/E9 — payout and retirement
 
@@ -458,7 +493,7 @@ All prior decisions remain **unresolved**. F14, F18, F19, F20, F21, F22, F23, F2
 | F25 | Write-off mechanics and `PendingCorrectionClaim` clearing | write off to `CorrectionWriteOffLoss`; clear pending claim via realization | **NOT APPROVED** |
 | F26 | May a correction remain pending indefinitely? | yes, visibly pending | **NOT APPROVED** |
 | **F27** | **Which issuance path: Path A (write-off then issuance) or Path B (issuance while outstanding)?** | Path B if collection is forgone; Path A if a write-off must be recorded first | **NOT APPROVED** |
-| **F28** | **When issuance funds a correction, what does it cancel — the receivable or the write-off loss?** | **loss-first** (see 6.4a) | **NOT APPROVED** |
+| **F28** | **When issuance funds a correction, what does it cancel first — the receivable (Alternative B) or the write-off loss (Alternative A)?** | **Alternative A (loss-first)** (see 6.4a) | **NOT APPROVED** |
 | **F29** | **Is the issuance group (E6+E4+E7) required to be atomic?** | yes (C1 requires it) | **NOT APPROVED** |
 
 **New-decision detail (F27–F29):**
@@ -468,15 +503,15 @@ All prior decisions remain **unresolved**. F14, F18, F19, F20, F21, F22, F23, F2
   with no loss. *Abuse/security:* both must be owner-authorized and audit-logged; neither may be
   triggered by a user. *Operational:* Path A adds a write-off approval step. *Recommendation:* Path B
   if collection is forgone; Path A if a write-off must be disclosed. **NOT APPROVED.**
-- **F28 — what issuance cancels.** *Options:* cancel the receivable first / cancel the write-off loss
-  first / cancel both proportionally (when a claim was partially written off). *Financial consequence:*
-  the two orders agree for states 1–3 but **diverge only in state 3b** (partially written-off claim,
-  partial issuance): **recv-first** leaves the write-off loss outstanding; **loss-first** leaves the
-  receivable outstanding (see 6.4a). Both preserve M1/C1/C1b. *Abuse/security:* prevents funding a
-  correction while also collecting the same amount (only the residual receivable stays collectible).
-  *Operational:* loss-first needs a rule that reverses the recorded loss before the debt.
-  *Recommendation:* **loss-first** (extinguish the recorded loss first, leaving a still-collectible
-  receivable). **NOT APPROVED.**
+- **F28 — what issuance cancels first.** *Options:* **Alternative A (loss-first)** — cancel the
+  write-off loss first, then the receivable; **Alternative B (recv-first)** — cancel the receivable
+  first, then the loss. *Financial consequence:* the alternatives agree in states 1, 2, 3 and 4 but
+  **diverge only in state 3b** (partially written-off claim, partial issuance): **Alt A** leaves the
+  **receivable** outstanding; **Alt B** leaves the **write-off loss** outstanding (see 6.4a). Both
+  preserve M1/C1/C1b. *Abuse/security:* prevents funding a correction while also collecting the same
+  amount (only the residual receivable stays collectible). *Operational:* Alt A needs a rule that
+  reverses the recorded loss before the debt. *Recommendation:* **Alternative A (loss-first)**.
+  **NOT APPROVED — neither alternative is selected as policy.**
 - **F29 — atomicity of the issuance group.** *Options:* atomic `E6+E4+E7` / allow `E6` alone.
   *Financial consequence:* `E6` alone breaks C1 and double-counts. *Abuse/security:* non-atomic
   issuance could create unbacked claim units. *Operational:* simpler and safer when atomic.
@@ -500,13 +535,36 @@ Product owner signature / date: ______________________________
 ## Part 12 — Assumptions, edge cases, and limitations
 
 - **Scratch ≠ proof.** A passing scratch model shows the *proposed* journals are internally consistent
-  under the model's rules; it does **not** prove the financial rules are correct or complete.
+  under the model's rules; it does **not** prove the financial rules are correct or complete. **None of
+  the scratch or PGlite checks is application-level financial validation** — there is no application,
+  no schema, and no production ledger.
+- **Three distinct verification levels (do not conflate):**
+  1. **Scratch-model tests** — a single-process in-memory model (`rev9.mjs`). Sequential only; no real
+     concurrency; **not** a product test.
+  2. **PGlite mechanism tests** — a **single-connection** PostgreSQL 18.6 (WASM) engine
+     (`rev9-pglite.mjs`). They verify transactions, `CHECK` constraints, unique keys, rollback, and the
+     atomic issuance group. They **cannot** reproduce multi-session contention.
+  3. **Real PostgreSQL multi-session tests** — **NONE PERFORMED.** **Real PostgreSQL multi-session
+     concurrency remains unverified.**
 - **Assumptions:** payout/share fixed at 100; a correction maps to one market and resolution version;
   the owner authorizes issuance/write-off out of band; the model's `noDoubleCount` check uses the
   scenario total (200).
-- **Unresolved edge cases:** multiple concurrent corrections on one market; a partially written-off
-  claim then partially collected; reversal of a correction after issuance; cross-market corrections.
-- **Real concurrency:** **Real PostgreSQL multi-session concurrency remains unverified.**
+- **Explicit unresolved limitations (disclosed, not resolved):**
+  - **No real PostgreSQL multi-session concurrency verification.** Every isolation/race claim is
+    PROPOSED only.
+  - **Multiple concurrent corrections on one market are unresolved** — the model handles one
+    correction at a time; concurrent corrections on the same market (and their interaction with C1 and
+    `PendingCorrectionClaim`) are not specified.
+  - **Partial write-off and collection combinations require further verification** — State 4 (partly
+    collected + partly written off) is derived and asserted, but richer interleavings (e.g. partial
+    collection *after* a partial write-off, or repeated partial tranches) are not exhaustively covered.
+  - **Per-user correction allocation and multi-user payout handling require further specification** —
+    the worked examples use a single beneficiary (Alice); how a correction is allocated across several
+    affected users, and how multi-user payout is scheduled, is not yet specified.
+  - **Option A is demonstrated for the supplied scenario only** — 6.6 shows one issuance-funded
+    scenario; it is **not** established as production-complete (concurrency, multi-user allocation, and
+    crash/retry for Option A are not verified).
+  - **Correction reversal after issuance and cross-market corrections** remain unspecified.
 
 ---
 
@@ -516,16 +574,18 @@ Environment: **Node.js v24.22.2**; **@electric-sql/pglite 0.5.16**; **PostgreSQL
 0.5.16) on wasm32**; **Linux 6.8.0-1055-gke**. The **canonical, reproducible copies** of the scripts
 live in the repository at **`docs/verification/rev9/`** (see its `README.md` for exact commands,
 versions, and expected output); the originals were run from a scratch directory (`/tmp/ledgertest`).
+**All three verification levels are distinct: scratch (single-process), PGlite (single-connection),
+and real PostgreSQL multi-session (not performed).**
 
 ### V.1 Revision 9 scratch model — VERIFIED (scratch)
 
 - **Command:** `node docs/verification/rev9/rev9.mjs` (reproducible; see `docs/verification/rev9/README.md`)
 - **Structure:** Section 1 = **45 Revision 8 tests (preserved)**; Section 2 = **30 Revision 9 tests**;
-  Section 3 = **27 review-prep tests** (F28 cancel-order, Option A).
-- **Counting method:** **102 test cases** (each a scenario with an explicit expected/actual outcome)
+  Section 3 = **30 review-prep tests** (F28 cancel-order, both alternatives, Option A).
+- **Counting method:** **105 test cases** (each a scenario with an explicit expected/actual outcome)
   plus **220 invariant assertions** (11 invariants × 20 commit boundaries). A test passes when the
   observed outcome equals the expected outcome, **including expected rejections/rollbacks**.
-- **Result:** **102 / 102 test cases PASS, 0 FAIL; 220 invariant assertions, 0 FAIL**; ending
+- **Result:** **105 / 105 test cases PASS, 0 FAIL; 220 invariant assertions, 0 FAIL**; ending
   `>>> ALL CHECKS PASSED (scratch)`. Captured output: `docs/verification/rev9/rev9.expected.out`.
 - **Selected actual output:**
 
@@ -536,13 +596,15 @@ PASS R9-02 no double-count: pending 0 and corr 200 | expected=true actual=true
 PASS R9-03 issuance cancels the receivable (recv 0) | expected=true actual=true
 PASS R9-04 later collection after issuance is rejected (receivable gone) | expected=rolled-back actual=rolled-back
 PASS R9-05d final: recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
-PASS R9-08b all funded: recv 0, pending 0, corr 200, units 2 | expected=true actual=true
 PASS R9-10 duplicate issuance rejected (nothing left to cancel) | expected=rolled-back actual=rolled-back
 PASS R9-14 crash between funding and payout: funding tx fails and rolls back | expected=rolled-back actual=rolled-back
 PASS R9-16 owner declines issuance -> correction stays pending | expected=rolled-back actual=rolled-back
 PASS R9-23 no double-count: pending+corr == 200 (never 400) | expected=true actual=true
-test cases: 75 (75 passed, 0 failed)
-invariant assertions at commit boundaries: 165
+PASS R9-30b recv-first residual: recv 0, loss 100 (loss stays outstanding) | expected=true actual=true
+PASS R9-31b loss-first residual: loss 0, recv 100 (receivable stays outstanding) | expected=true actual=true
+PASS R9-32pre collected+written-off before issuance: recv 0, loss 100, pending 100, corr 100, units 1 | expected=true actual=true
+test cases: 105 (105 passed, 0 failed)
+invariant assertions at commit boundaries: 220
 >>> ALL CHECKS PASSED (scratch)
 ```
 
@@ -553,6 +615,8 @@ invariant assertions at commit boundaries: 165
 - **Command:** `node docs/verification/rev9/rev9-pglite.mjs` (requires `@electric-sql/pglite@0.5.16`; see the README)
 - **Purpose:** corrected issuance atomic group (MMK+UNIT); `PendingCorrectionClaim` cleared;
   write-off→issuance loss reversal; rollback; unique issuance/collection/payout keys; non-negative.
+  **Duplicate collection is exercised at `P9` (it was only claimed, not tested, before this
+  correction).**
 - **Actual output:**
 
 ```
@@ -564,12 +628,18 @@ P4 corrected E6: issued 30200, recv 0, pending 0, corr 200, units 2: true
    ledger rows T-ISS: 6 | T-ISS-FAIL: 0
 P5a after write-off: loss 200, recv 0: true
 P5 Path A: loss reversed after issuance: true | pending 0: true | corr 200: true
+P6 issuance: committed
 P6 duplicate issuance: rejected: duplicate key value violates unique constraint "issuance_pkey"
+P9 collection: committed
+P9 duplicate collection: rejected: duplicate key value violates unique constraint "collections_pkey"
+P7 payout: committed
 P7 duplicate payout: rejected: duplicate key value violates unique constraint "payouts_pkey"
 P8 negative claim cancel rejected: rolled-back: ... violates check constraint "accounts_balance_check"
 ```
 
-- **Limitations:** PGlite is **single-connection**; it does not prove multi-session behaviour.
+- **Limitations:** PGlite is **single-connection**; it does not prove multi-session behaviour. This is
+  a **mechanism** test (constraints, transactions, rollback), **not** application-level financial
+  validation.
 
 ### V.3 Real PostgreSQL — NOT VERIFIED
 

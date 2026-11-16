@@ -201,7 +201,7 @@ PASS R9-22b byte-identical after rollback | expected=true actual=true
 PASS R9-23 no double-count: pending+corr == 200 (never 400) | expected=true actual=true
 
 ############ SECTION 3 — Revision 9 review-prep suite (new) ############
---- R9-24..R9-29: F28 cancel-order — four claim states, both orders ---
+--- R9-24..R9-33: F28 cancel-order — claim states, both orders ---
    [E2] COMMITTED (all invariants hold at boundary)
    [R9-24] COMMITTED (all invariants hold at boundary)
 PASS R9-24 fully outstanding, recv-first: recv 0, loss 0, corr 200 | expected=committed actual=committed
@@ -246,11 +246,18 @@ PASS R9-31 partial write-off, loss-first, partial issuance (orders differ) MMK=t
    [E2] COMMITTED (all invariants hold at boundary)
    [E3] COMMITTED (all invariants hold at boundary)
    [E5] COMMITTED (all invariants hold at boundary)
+PASS R9-32pre collected+written-off before issuance: recv 0, loss 100, pending 100, corr 100, units 1 | expected=true actual=true
    [R9-32] COMMITTED (all invariants hold at boundary)
-PASS R9-32 collected+written-off, loss-first: issuance 100 for the remainder | expected=committed actual=committed
+PASS R9-32 collected+written-off, recv-first: issuance 100 for the remainder | expected=committed actual=committed
 PASS R9-32b all funded: recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
-PASS R9-32 collected+written-off, loss-first        MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+PASS R9-32 collected+written-off, recv-first        MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
      : recv=0 pending=0 corr=200 loss=0 units=2 | AvA=9800 AvB=0 AvC=20100 issued=30100
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E3] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-32c] COMMITTED (all invariants hold at boundary)
+PASS R9-32c collected+written-off, loss-first: same final result (recv 0, loss 0, corr 200, units 2) | expected=committed actual=committed
+PASS R9-32d all funded (loss-first): recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
    [E2] COMMITTED (all invariants hold at boundary)
    [E5] COMMITTED (all invariants hold at boundary)
    [x] COMMITTED (all invariants hold at boundary)
@@ -274,6 +281,6 @@ PASS R9-37 Option A reconciliation                  MMK=true SH=true UN=true C1=
 PASS R9-38 Option A: double recognition rejected (corr already 0) | expected=rolled-back actual=rolled-back
 
 ================ SUMMARY ================
-test cases: 102 (102 passed, 0 failed)
+test cases: 105 (105 passed, 0 failed)
 invariant assertions at commit boundaries: 220
 >>> ALL CHECKS PASSED (scratch)

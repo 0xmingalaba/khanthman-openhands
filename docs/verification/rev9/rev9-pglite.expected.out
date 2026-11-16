@@ -10,6 +10,8 @@ P5a after write-off: loss 200, recv 0: true
 P5 Path A: loss reversed after issuance: true | pending 0: true | corr 200: true
 P6 issuance: committed
 P6 duplicate issuance: rejected: duplicate key value violates unique constraint "issuance_pkey"
+P9 collection: committed
+P9 duplicate collection: rejected: duplicate key value violates unique constraint "collections_pkey"
 P7 payout: committed
 P7 duplicate payout: rejected: duplicate key value violates unique constraint "payouts_pkey"
 P8 negative claim cancel rejected: rolled-back: new row for relation "accounts" violates check constraint "accounts_balance_check"

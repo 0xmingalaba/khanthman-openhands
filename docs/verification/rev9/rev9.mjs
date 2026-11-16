@@ -18,7 +18,7 @@ let bal = {}, dom = {}, norm = {}, sub = {};
 let PAYABLE = 'B';
 let WRITEOFF_APPROVED = false;
 let ISSUANCE_APPROVED = false;
-let CANCEL_ORDER = 'recv-first';   // 'recv-first' (spec E6 body) or 'loss-first' (F28 recommendation)
+let CANCEL_ORDER = 'recv-first';   // 'recv-first' = Alternative B; 'loss-first' = Alternative A (proposed recommendation). F28 NOT APPROVED.
 let failures = 0, asserts = 0, tests = 0, testFails = 0;
 
 const acct = (n, d, s) => { bal[n] = 0; dom[n] = d; norm[n] = s; };
@@ -98,9 +98,9 @@ function jWriteOff(x) { if (!WRITEOFF_APPROVED) throw new Error('WRITE-OFF NOT A
 function jIssue(x) {
   if (!ISSUANCE_APPROVED) throw new Error('ISSUANCE NOT APPROVED');
   const recv = amt('CorrectionReceivable:Bob'), loss = amt('CorrectionWriteOffLoss:M');
-  // CANCEL_ORDER selects which outstanding claim component issuance cancels first.
-  // 'recv-first': cancel the receivable first, then the write-off loss (spec E6 body).
-  // 'loss-first': cancel the write-off loss first, then the receivable (F28 recommendation).
+  // CANCEL_ORDER selects which outstanding claim component issuance cancels first (F28, NOT APPROVED).
+  // 'recv-first': cancel the receivable first, then the write-off loss (Alternative B).
+  // 'loss-first': cancel the write-off loss first, then the receivable (Alternative A, proposed recommendation).
   let fromRecv, fromLoss;
   if (CANCEL_ORDER === 'recv-first') { fromRecv = Math.min(x, recv); fromLoss = x - fromRecv; }
   else { fromLoss = Math.min(x, loss); fromRecv = x - fromLoss; }
@@ -304,14 +304,16 @@ ISSUANCE_APPROVED = false;
 // ================= SECTION 3 — REVISION 9 REVIEW-PREP SUITE (NEW) =================
 // F28 cancel-order comparison and Option A completeness.
 console.log('\n############ SECTION 3 — Revision 9 review-prep suite (new) ############');
-console.log('--- R9-24..R9-29: F28 cancel-order — four claim states, both orders ---');
+console.log('--- R9-24..R9-33: F28 cancel-order — claim states, both orders ---');
 // State 1: fully outstanding receivable (recv 200, loss 0)
 function stateFullyOutstanding() { settledWrong(); tx('E2', () => { jRecognize(200); }); }
 // State 2: fully written-off (recv 0, loss 200)
 function stateFullyWrittenOff() { settledWrong(); tx('E2', () => { jRecognize(200); }); WRITEOFF_APPROVED = true; tx('E5', () => { jWriteOff(200); }); WRITEOFF_APPROVED = false; }
 // State 3: partially written-off (recv 100, loss 100)
 function statePartiallyWrittenOff() { settledWrong(); tx('E2', () => { jRecognize(200); }); WRITEOFF_APPROVED = true; tx('E5', () => { jWriteOff(100); }); WRITEOFF_APPROVED = false; }
-// State 4: partially collected and partially written-off (recv 100, loss 100, 1 unit already funded)
+// State 4: partly collected (E3 100) then the remainder written off (E5 100).
+// After E2 -> E3 100 -> E5 100 the balances are: recv 0, loss 100, pending 100, corr 100, units 1.
+// (The receivable is fully consumed by the collection; the write-off consumes the rest of the claim.)
 function stateCollectedAndWrittenOff() { settledWrong(); tx('E2', () => { jRecognize(200); }); postJournal('spend', [['UserAvailable:Bob', 'D', 10100], ['UserAvailable:Carol', 'C', 10100]]); tx('E3', () => { collectGroup(100); }); WRITEOFF_APPROVED = true; tx('E5', () => { jWriteOff(100); }); WRITEOFF_APPROVED = false; }
 
 ISSUANCE_APPROVED = true;
@@ -346,11 +348,18 @@ CANCEL_ORDER = 'loss-first'; statePartiallyWrittenOff();
 test('R9-31', 'partial write-off, loss-first, issuance 100: cancels loss first', 'committed', tx('R9-31', () => { issueGroup(100); }));
 test('R9-31b', 'loss-first residual: loss 0, recv 100 (receivable stays outstanding)', true, amt('CorrectionWriteOffLoss:M') === 0 && amt('CorrectionReceivable:Bob') === 100 && amt('SettlementCorrection:M') === 100);
 report('R9-31 partial write-off, loss-first, partial issuance (orders differ)');
-// State 4: partially collected AND partially written-off (recv 100, loss 100, 1 unit funded)
-CANCEL_ORDER = 'loss-first'; stateCollectedAndWrittenOff();
-test('R9-32', 'collected+written-off, loss-first: issuance 100 for the remainder', 'committed', tx('R9-32', () => { issueGroup(100); }));
+// State 4: partly collected (E3 100) then remainder written off (E5 100). Before issuance the
+// balances MUST be recv 0, loss 100, pending 100, corr 100, units 1 (receivable fully consumed).
+stateCollectedAndWrittenOff();
+test('R9-32pre', 'collected+written-off before issuance: recv 0, loss 100, pending 100, corr 100, units 1', true,
+  amt('CorrectionReceivable:Bob') === 0 && amt('CorrectionWriteOffLoss:M') === 100 && amt('PendingCorrectionClaim:M') === 100 && amt('SettlementCorrection:M') === 100 && amt('ClaimUnitsRemaining:M') === 1);
+CANCEL_ORDER = 'recv-first';
+test('R9-32', 'collected+written-off, recv-first: issuance 100 for the remainder', 'committed', tx('R9-32', () => { issueGroup(100); }));
 test('R9-32b', 'all funded: recv 0, loss 0, pending 0, corr 200, units 2', true, amt('CorrectionReceivable:Bob') === 0 && amt('CorrectionWriteOffLoss:M') === 0 && amt('PendingCorrectionClaim:M') === 0 && amt('SettlementCorrection:M') === 200 && amt('ClaimUnitsRemaining:M') === 2);
-report('R9-32 collected+written-off, loss-first'); console.log('   ' + line('  '));
+report('R9-32 collected+written-off, recv-first'); console.log('   ' + line('  '));
+CANCEL_ORDER = 'loss-first'; stateCollectedAndWrittenOff();
+test('R9-32c', 'collected+written-off, loss-first: same final result (recv 0, loss 0, corr 200, units 2)', 'committed', tx('R9-32c', () => { issueGroup(100); }));
+test('R9-32d', 'all funded (loss-first): recv 0, loss 0, pending 0, corr 200, units 2', true, amt('CorrectionReceivable:Bob') === 0 && amt('CorrectionWriteOffLoss:M') === 0 && amt('PendingCorrectionClaim:M') === 0 && amt('SettlementCorrection:M') === 200 && amt('ClaimUnitsRemaining:M') === 2);
 // M1 check for each F28 state
 CANCEL_ORDER = 'recv-first'; statePartiallyWrittenOff(); tx('x', () => { issueGroup(100); });
 test('R9-33', 'M1 holds after partial-write-off issuance (recv-first)', true, M1() && C1() && C1b());

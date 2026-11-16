@@ -89,6 +89,9 @@ console.log('P5 Path A: loss reversed after issuance:', get(await bal(), 'Correc
 async function ins(key) { try { await db.query(`insert into issuance(market_id,resolution_version,seq,idempotency_key) values ('M',2,1,$1)`, [key]); return 'committed'; } catch (e) { return 'rejected: ' + e.message.split('\n')[0]; } }
 console.log('P6 issuance:', await ins('I:1'));
 console.log('P6 duplicate issuance:', await ins('I:1'));
+async function col(key) { try { await db.query(`insert into collections(market_id,user_id,seq,idempotency_key) values ('M','Bob',1,$1)`, [key]); return 'committed'; } catch (e) { return 'rejected: ' + e.message.split('\n')[0]; } }
+console.log('P9 collection:', await col('C:1'));
+console.log('P9 duplicate collection:', await col('C:1'));
 async function pay(key) { try { await db.query(`insert into payouts(market_id,resolution_version,user_id,idempotency_key) values ('M',2,'Alice',$1)`, [key]); return 'committed'; } catch (e) { return 'rejected: ' + e.message.split('\n')[0]; } }
 console.log('P7 payout:', await pay('P:1'));
 console.log('P7 duplicate payout:', await pay('P:1'));

@@ -343,7 +343,7 @@ No PR is created, merged, or deployed in this milestone.
 | AR16 | Delayed correction payout as a separate transaction | supported | OWNER DECISION |
 | AR17 | Receivable lifecycle: recognize → collect → realize as separate events | adopt | RECOMMENDED |
 | AR18 | Write-off account `CorrectionWriteOffLoss:{m}` (debit-normal) and approval gate | adopt | RECOMMENDED |
-| **AR19** | **Issuance group atomicity (E6+E4+E7) and cancellation target (receivable vs loss)** | adopt: atomic; cancel the outstanding claim | **OWNER DECISION** |
+| **AR19** | **Issuance group atomicity (E6+E4+E7) and cancellation target (receivable vs loss)** | adopt: atomic; cancellation target is F28 (NOT APPROVED) | **OWNER DECISION** |
 
 ### 10.2 Financial — see the financial spec Part 10 (F1–F29).
 
@@ -393,19 +393,40 @@ No PR is created, merged, or deployed in this milestone.
 3. **Duplicate `E3` event identifier fixed:** events renumbered uniquely **E1–E9**.
 4. **Two issuance paths analysed** (Path A write-off→issuance, Path B issuance while outstanding) with
    complete journals and post-commit balances; **F27/F28/F29**, **AR19**, **R29–R32**, **T25–T27**.
-5. **Verification extended and made reproducible:** the Revision 9 scratch model (**102 test cases,
+5. **Verification extended and made reproducible:** the Revision 9 scratch model (**105 test cases,
    220 invariant assertions**; the 45 Rev-8 tests are preserved) is now committed in the repository at
    **`docs/verification/rev9/`** with a README, captured outputs, and exact commands; a PGlite
    mechanism test accompanies it.
-6. **F28 resolved in derivation, not in policy:** the E6 cancel order is derived for every claim state
-   (financial spec 6.4a); **loss-first** is recommended and **F28 remains unapproved**.
-7. **Option A completeness established:** the Option A lifecycle and a no-double-count proof are added
-   (financial spec 6.6); adoption remains F20 / AR15.
-8. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
+6. **F28 stated as two explicit alternatives, not selected:** financial spec 6.4a gives the **proposed
+   recommendation (loss-first)** and the **alternative (recv-first)** for every claim state; **neither
+   is selected as policy** and **F28 remains unapproved**.
+7. **State 4 reconstructed:** from `E2 → E3 (100) → E5 (100)` the before-issuance balances are
+   `recv 0, loss 100, pending 100, corr 100, units 1`; the earlier unreachable `(100, 100)` figure is
+   removed and the scratch test `R9-32pre` asserts the correct balances.
+8. **Verification-claim and Appendix corrections:** the stale Appendix V.1 block now shows the
+   reproduced **105 tests / 220 assertions**; PGlite duplicate-collection rejection is now actually
+   exercised (`P9`); scratch, PGlite, and real-PostgreSQL levels are explicitly distinguished and none
+   is described as application-level financial validation.
+9. **Unresolved limitations disclosed** (financial spec Part 12): no real-PostgreSQL multi-session
+   verification; concurrent corrections; partial write-off/collection combinations; per-user allocation
+   and multi-user payout; Option A demonstrated for the supplied scenario only.
+10. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
 
 ---
 
-## 13. Stop condition
+## 13. Unresolved limitations and stop condition
+
+**Explicit unresolved limitations (disclosed, not resolved):**
+
+- **No real PostgreSQL multi-session concurrency verification.** Scratch (`rev9.mjs`) and PGlite
+  (`rev9-pglite.mjs`) checks are single-process / single-connection. **None of the verification is
+  application-level financial validation** — there is no application, schema, or production ledger.
+- **Multiple concurrent corrections on one market remain unresolved.**
+- **Partial write-off and collection combinations require further verification** (e.g. a partial
+  collection *after* a partial write-off, or repeated partial tranches).
+- **Per-user correction allocation and multi-user payout handling require further specification** (the
+  worked examples use a single beneficiary).
+- **Option A is demonstrated for the supplied scenario only**, not established as production-complete.
 
 Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
 implemented auth/trading/ledger/settlement, created schemas or migrations, modified financial logic,
