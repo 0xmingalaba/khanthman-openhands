@@ -7,3 +7,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Project: Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
+
+Polymarket-inspired prediction market for Myanmar. **MMK only, whole Kyat, virtual credits
+only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fixtures must be
+labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
+
+### Build status
+- Milestone 0 (Discovery & Architecture) delivered in `docs/`. Awaiting owner approval.
+- Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
+- Recommended stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle +
+  Zod + Vitest/Playwright + key-based `en`/`my` i18n.
+
+### Commands
+- `npm run dev` / `npm run build` / `npm run lint`
+
+### Known environment issue: pushing to GitHub
+- Repo: https://github.com/0xmingalaba/khanthman-openhands (default branch `main`, shallow clone).
+- **`git push` fails with HTTP 403** ("Permission ... denied"). Both the git credential
+  helper (`~/.openhands/git-credential-helper`) and `$GITHUB_TOKEN` resolve to a GitHub App
+  / integration token that has **read-only** access. `git ls-remote` (read) works; API writes
+  return `Resource not accessible by integration`.
+- To push, the owner must grant write (`contents: write`) to the app/integration or provide a
+  PAT with `repo` scope. Do **not** push to `main`; use a feature branch and open a PR.
