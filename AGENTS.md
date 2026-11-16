@@ -15,17 +15,20 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 7** delivered in `docs/`. Awaiting owner review.
+- Milestone 0 (Discovery & Architecture) **Revision 8** delivered in `docs/`. Awaiting owner review.
 - **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
-- Accounting model (Rev 7): three **independently balanced domains** — MMK, Share, Claim-unit.
+- Accounting model (Rev 8): three **independently balanced domains** — MMK, Share, Claim-unit.
   Single-domain journals; no domain balances against another; committed atomically together.
+- Receivable lifecycle (Rev 8): recognize (`CorrectionReceivable D / PendingCorrectionClaim C`) ->
+  collect (`UserAvailable:Bob D / CorrectionReceivable:Bob C`) -> realize
+  (`PendingCorrectionClaim D / SettlementCorrection C`). Only **realized** funding backs units.
+  **Realization and unit reopening MUST be atomic** (C1 forbids funding without matching units).
+- Write-off: owner-approved only, `CorrectionWriteOffLoss:M D / CorrectionReceivable:Bob C`
+  (debit-normal loss). Unapproved write-off is rejected.
 - C1 backing = `CollateralBucket + SettlementPayable + SettlementCorrection
   (+ CorrectionPayableMarket under Option A) = payout_per_share x ClaimUnitsRemaining`.
-  `PendingCorrectionClaim` is deliberately **EXCLUDED** from C1 (an unfunded shortfall must never
-  back a claim unit).
-- CorrectionPayable defect (Rev 6) fixed: **Option A** market-scoped control account in C1 +
-  subledger vs **Option B** no payable account (recommend Option B). OWNER DECISION F20 / AR15.
+  `PendingCorrectionClaim` and `CorrectionReceivable` are **EXCLUDED** from C1.
 - Non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued` contra-equity.
 - Issuance to fund a correction remains an **OWNER DECISION (F14)**; not implemented.
 - Verification labels: VERIFIED (scratch) / VERIFIED (PGlite) / VERIFIED (real PostgreSQL) /
