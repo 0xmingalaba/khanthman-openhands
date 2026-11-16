@@ -1,10 +1,10 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 6)
+# Milestone 0 — Discovery & Architecture Report (Revision 7)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 6) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 5 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 6)
+**Status:** DRAFT (Revision 7) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 6 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 7)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
 features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
 
@@ -38,13 +38,13 @@ is committed; the exact final commit hash is in the delivery message.
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → **this revision's commit** |
+| Commit sequence (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → **this revision's commit** |
 | Commits ahead of `main` | one documentation commit per Milestone-0 revision plus small follow-ups; exact final count and hash are in the delivery message |
 | Commits behind `main` | 0 |
 | Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) |
 | `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` — **nothing pushed** |
-| Branches | only `main` and `milestone-0-discovery-architecture` |
+| Branches | only `main` and `milestone-0-discovery-architecture` (the working branch does **not** exist remotely) |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
 
@@ -60,23 +60,23 @@ is committed; the exact final commit hash is in the delivery message.
 | `1d408bf` | Milestone 0 revision 4 | `AGENTS.md`, both `docs/*.md` |
 | `502fda3`, `c2ea388` | revision-4 self-consistency fixes | `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` |
 | `61a3f99` | Milestone 0 revision 5 | `AGENTS.md`, both `docs/*.md` |
+| `f1557dc` | Milestone 0 revision 6 | `AGENTS.md`, both `docs/*.md` |
 
 ### 1.2 Direct answers
 
 - **Is the `create-next-app` scaffold committed?** **VERIFIED: yes** — all 19 scaffold files are
   tracked, **stock/unmodified**.
 - **Was `AGENTS.md` added or modified?** **VERIFIED: added** in `1b185f4`, then **modified** in
-  `babc731`, `30cfa08`, `8eef5e4`, `1d408bf`, `61a3f99`, and this revision.
+  `babc731`, `30cfa08`, `8eef5e4`, `1d408bf`, `61a3f99`, `f1557dc`, and this revision.
 - **Unexpected generated files?** **VERIFIED: none tracked.** Only `.next/`, `node_modules/`,
   `next-env.d.ts` exist and are git-ignored; **zero** untracked non-ignored files.
 
 ### 1.3 Push status — not assumed
 
-**VERIFIED: local commits are NOT pushed.** `origin/main` is still `f6c7567`; no remote branch
-`milestone-0-discovery-architecture` exists. A read-only access check on 2026-11-16 found the repo
-**grants Contents write and Pull Requests write** (app `openhands-ai` installation), verified
-without modifying the remote (`git push --dry-run`). **Nothing was pushed.** I am **not** asking you
-to paste a PAT into chat.
+**VERIFIED: local commits are NOT pushed.** `origin/main` is still `f6c7567`; the working branch does
+**not** exist remotely. A read-only access check on 2026-11-16 found the repo **grants Contents write
+and Pull Requests write** (app `openhands-ai` installation), verified without modifying the remote
+(`git push --dry-run`). **Nothing was pushed.** I am **not** asking you to paste a PAT into chat.
 
 ---
 
@@ -123,9 +123,9 @@ local/test) · **Drizzle ORM** with versioned SQL migrations · Zod · Vitest + 
 ### 4.2 PGlite suitability (VERIFIED, with explicit limit)
 
 **VERIFIED (scratch):** engine PostgreSQL 18.6 (PGlite 0.5.16); transactions, `CHECK` constraints,
-and unique constraints work; a multi-journal correction committed atomically and rolled back cleanly.
-**DOCUMENTED:** PGlite is intended for unit/CI testing and local development
-(`https://pglite.dev/docs/about`).
+and unique constraints work; a multi-journal correction committed atomically and rolled back cleanly;
+market-scoped payable attribution grouped correctly. **DOCUMENTED:** PGlite is intended for unit/CI
+testing and local development (`https://pglite.dev/docs/about`).
 
 **Limit (explicit):** PGlite is **single-connection, single-process** and **cannot** reproduce real
 multi-session contention. **PGlite evidence is never presented as proof of real PostgreSQL
@@ -140,24 +140,29 @@ migrations + integration tests against **both** PGlite and a real PostgreSQL ser
 ### 4.4 Three accounting domains (PROPOSED)
 
 Three independently balanced domains — MMK, Share, Claim-unit — with single-domain journals
-committed atomically in one DB transaction (financial spec Part 1). Balance projection and
-reconciliation apply per domain; the **ledger is the source of truth**.
+committed atomically in one DB transaction (financial spec Part 1).
 
-### 4.5 Atomic multi-journal correction (PROPOSED)
+### 4.5 Correction architecture (PROPOSED)
+
+**Recommended (Option B):** no separately recognized correction-payable account; realized funding in
+`SettlementCorrection:{m}` backs the reopened claim units via C1, and payment is the journal that
+moves funding to the user. **Alternative (Option A):** a market-scoped control account
+`CorrectionPayableMarket:{m}` in C1 with a `(market, resolution_version, user)` subledger.
+**OWNER DECISION F20 / AR15.** See financial spec Parts 6–10.
+
+### 4.6 Atomic multi-journal correction (PROPOSED)
 
 A correction is **one transaction** of several single-domain journals, asserted at its **commit
-boundary**. Intermediate uncommitted states are **never observable** (transaction isolation) and
-the application **must never commit a partial, invariant-breaking correction**. See financial spec
-Part 6.6.
+boundary**. Intermediate uncommitted states are **never observable** (transaction isolation) and the
+application **must never commit a partial, invariant-breaking correction**.
 
-### 4.6 Locking and concurrency (RECOMMENDED)
+### 4.7 Locking and concurrency (RECOMMENDED)
 
-One DB transaction per financial mutation; consistent lock order; `SELECT … FOR UPDATE` on
-balance/order rows; `pg_advisory_xact_lock(market_id)` around matching; optimistic guards; idempotency
-keys; unique payout/correction keys. **Concurrency tests run on real PostgreSQL** (PROPOSED, NOT
-VERIFIED).
+One DB transaction per financial mutation; consistent lock order; `SELECT … FOR UPDATE`; advisory
+locks around matching; optimistic guards; idempotency keys; unique payout/correction keys.
+**Concurrency tests run on real PostgreSQL** (PROPOSED, NOT VERIFIED).
 
-### 4.7 Market closure and cancellation races (RECOMMENDED)
+### 4.8 Market closure and cancellation races (RECOMMENDED)
 
 | Race | Solution |
 | - | - |
@@ -166,28 +171,29 @@ VERIFIED).
 | Close vs close | guarded transition (`WHERE status='open'`) so exactly one wins |
 | Release vs release | release bounded by unfilled qty, under lock; a second release is a no-op |
 
-### 4.8 Authentication and production email recovery (RECOMMENDED)
+### 4.9 Authentication and production email recovery (RECOMMENDED)
 
 Email + password, Argon2id, server-side sessions (`HttpOnly`+`Secure`+`SameSite`), CSRF, rate
 limiting. Recovery: **development** surfaces reset tokens in the UI/log; **production** requires a
 transactional email provider behind a small interface (OWNER DECISION). *(OPEN: provider; SMS.)*
 
-### 4.9 Migration recovery strategy (RECOMMENDED)
+### 4.10 Migration recovery strategy (RECOMMENDED)
 
 Versioned **forward-only** SQL migrations, recorded in a migration table, run transactionally.
 Recovery = a **new** migration. Tests: apply to empty **and** populated DBs. Backups/restore before
 production (OWNER DECISION).
 
-### 4.10 Testing of constraints and financial invariants (RECOMMENDED)
+### 4.11 Testing of constraints and financial invariants (RECOMMENDED)
 
 - **Constraint tests:** violate `CHECK (>= 0)`, `CHECK (price BETWEEN 1 AND 99)`, unique keys, FKs —
   each **must fail**. **VERIFIED (PGlite)** for the mechanism; **PROPOSED** for the real schema.
 - **Invariant tests:** assert C1, C1b, C2, S1, M1, and non-negativity at **every commit boundary**.
-- **Correction tests:** Cases B–F with before/after balances; atomicity; rollback.
+- **Correction tests:** full lifecycle; immediate and delayed payout; full/insufficient/uncollectible
+  recovery; atomicity; rollback; no double-spend.
 - **Settlement failure tests:** six modes, run on **real PostgreSQL** for the concurrency ones.
 - **Property-style tests:** randomized sequences asserting all invariants after every step.
 
-### 4.11 Module map (RECOMMENDED)
+### 4.12 Module map (RECOMMENDED)
 
 ```
 src/app/ (thin routes)   src/components/ (design system)   src/features/ (feature UI)
@@ -202,17 +208,18 @@ The UI is never authoritative for balances, prices, or calculations.
 ## 5. Database design (PROPOSED)
 
 Entities (no schema exists): users, user_preferences, sessions, categories, events, markets,
-outcomes, market_sources, resolution_records, **settlement_entitlements** (immutable),
-orders, trades, positions, balances (projection), **ledger_accounts, ledger_journals,
-ledger_entries** (tagged with **domain**), **settlement_payouts** (unique key), **corrections**
-(unique key + `correction_seq`), idempotency_keys, audit_logs.
+outcomes, market_sources, resolution_records, **settlement_entitlements** (immutable), orders,
+trades, positions, balances (projection), **ledger_accounts, ledger_journals, ledger_entries**
+(tagged with **domain**), **settlement_payouts** (unique key), **corrections** (unique key +
+`correction_seq`), **correction_payables** (Option A; key `(market_id, resolution_version, user_id)`),
+idempotency_keys, audit_logs.
 
 Integrity (PROPOSED): integer MMK `BIGINT` with `CHECK (>= 0)`; shares `BIGINT` with `CHECK (>= 0)`;
 price `INT` with `CHECK (price BETWEEN 1 AND 99)`; claim units `INT` with `CHECK (>= 0)`;
 **`CHECK (balance >= 0)` on every account balance** (verified in PGlite); a `CHECK`/trigger that a
 journal's entries share **one domain**; append-only ledger/entitlement/audit tables; unique keys for
-positions, idempotency, payouts, corrections; unique slugs; FKs with explicit `ON DELETE`; indexes;
-**one financial mutation = one transaction**.
+positions, idempotency, payouts, corrections, correction payables; unique slugs; FKs with explicit
+`ON DELETE`; indexes; **one financial mutation = one transaction**.
 
 ---
 
@@ -221,7 +228,7 @@ positions, idempotency, payouts, corrections; unique slugs; FKs with explicit `O
 | Level | Tool | Runs against | Covers |
 | - | - | - | - |
 | Unit | Vitest | n/a | money math, ticks, quote/slippage, validation, i18n keys |
-| Integration (logic/constraints) | Vitest + **PGlite** | PGlite | auth, sessions, retrieval, orders, matching logic, partial fills, positions, split/merge, ledger, idempotency, audit, constraint tests, payout/correction key uniqueness, atomic multi-journal corrections |
+| Integration (logic/constraints) | Vitest + **PGlite** | PGlite | auth, sessions, retrieval, orders, matching logic, partial fills, positions, split/merge, ledger, idempotency, audit, constraint tests, payout/correction key uniqueness, atomic multi-journal corrections, payable attribution |
 | Integration (concurrency) | Vitest + **real PostgreSQL** | Postgres server | row-lock races, closure/cancel races, simultaneous fills, concurrent settlement workers, double-spend attempts |
 | Migration | dedicated | PGlite + Postgres | migrations on empty and populated DBs |
 | E2E | Playwright | running app | navigation, search, filters, market detail, trading UI, portfolio, locale/theme, responsive, accessibility |
@@ -238,11 +245,11 @@ Argon2id; server-side sessions; CSRF; rate limiting; Zod validation at every bou
 no account enumeration; secrets in env only; audit logging; idempotency and concurrency protection;
 resolution as a **named, audited operator action**; **append-only ledger and entitlement snapshot**;
 **collateralization asserted and reconciled** (C1) at commit boundaries; **no unfunded deficit
-disguised as collateral** (financial spec Part 7).
+disguised as collateral** (financial spec Parts 7, 9, 11).
 
 ---
 
-## 8. First PR scope (RECOMMENDED — unchanged from Rev 2–5)
+## 8. First PR scope (RECOMMENDED — unchanged from Rev 2–6)
 
 | PR | Title | Scope | Tests |
 | - | - | - | - |
@@ -258,7 +265,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 6)
+## 9. Risk register (Revision 7)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -276,17 +283,20 @@ No PR is created, merged, or deployed in this milestone.
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
 | R13 | Resolution correction after payout | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
 | R14 | Push blocked | Low | Med | write access verified available (contents + PR write) | VERIFIED |
-| R15 | Correction creates a hidden deficit | Low | High | `CorrectionReceivable` makes the deficit explicit; no negative balances | PROPOSED |
+| R15 | Correction creates a hidden deficit | Low | High | `PendingCorrectionClaim` excluded from C1; no negative balances | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal in the same transaction; C1b asserted each commit | PROPOSED |
 | R17 | Cross-domain journal accidentally mixes units | Low | High | model + DB `CHECK` reject mixed-domain journals | PROPOSED |
 | R18 | Real concurrency of settlement workers unproven | High | High | explicitly unverified; must run on real PostgreSQL before release | OPEN |
-| **R19** | **C1 counts an uncollected receivable as backing, so an unfunded deficit looks collateralized** | Med | Critical | Policy A/B choice (F17); WARN + disclosure under Policy A; recommend Policy B | **OWNER DECISION** |
-| **R20** | **Correction never completes because funding is never recoverable** | Med | Med | pending-correction state; reserve or disclosed loss (F18/F19) | **OWNER DECISION** |
-| **R21** | **Additional issuance increases virtual-credit supply without owner approval** | Low | High | issuance strictly gated on F14; not implemented | **OWNER DECISION** |
+| R19 | C1 counts an uncollected receivable as backing (Policy A) | Med | Critical | Policy A/B choice (F17); disclosed under Policy A; recommend Policy B | OWNER DECISION |
+| R20 | Correction never completes because funding is never recoverable | Med | Med | pending-correction state; reserve or disclosed loss (F18/F19) | OWNER DECISION |
+| R21 | Additional issuance increases virtual-credit supply without approval | Low | High | issuance strictly gated on F14; not implemented | OWNER DECISION |
+| **R22** | **Option A control account and its subledger drift apart, silently breaking C1** | Low | Critical | tie-out assertion `Σ subledger == CorrectionPayableMarket` each commit; recommend Option B (F20) | **OWNER DECISION** |
+| **R23** | **A correction payable is recognized but its backing is spent elsewhere** | Low | High | Option B has no payable account; Option A keeps the control inside C1; funding exhaustion blocks a second spend | PROPOSED |
+| **R24** | **Partial correction reopens an unfunded claim unit** | Low | High | unfunded shortfall sits in `PendingCorrectionClaim` (excluded from C1); reopen only funded units (F21) | PROPOSED |
 
 ---
 
-## 10. Owner decision register (Revision 6)
+## 10. Owner decision register (Revision 7)
 
 ### 10.1 Architecture / product
 
@@ -304,10 +314,12 @@ No PR is created, merged, or deployed in this milestone.
 | AR10 | Email provider | choose before production | OPEN |
 | AR11 | Entitlement snapshot retention | keep forever (append-only) | RECOMMENDED |
 | AR12 | Domain tagging on ledger entries | store a `domain` column per entry | RECOMMENDED |
-| **AR13** | **Correction funding policy (Policy A receivable-backed vs Policy B realized-funding-only)** | **Policy B** | **OWNER DECISION** |
-| **AR14** | **`CHECK (balance >= 0)` on every account balance** | **adopt** | RECOMMENDED |
+| AR13 | Correction funding policy (Policy A receivable-backed vs Policy B realized-funding-only) | Policy B | OWNER DECISION |
+| AR14 | `CHECK (balance >= 0)` on every account balance | adopt | RECOMMENDED |
+| **AR15** | **Correction-payable representation: Option A (market control account in C1 + subledger) vs Option B (no payable account)** | **Option B** | **OWNER DECISION** |
+| **AR16** | **Delayed correction payout as a separate transaction** | supported | **OWNER DECISION** |
 
-### 10.2 Financial — see the financial spec Part 10 (F1–F19).
+### 10.2 Financial — see the financial spec Part 12 (F1–F22).
 
 ---
 
@@ -328,28 +340,33 @@ No PR is created, merged, or deployed in this milestone.
 | T11 | Brand assets: does a logo exist, or should one be proposed? | OPEN |
 | T12 | Settlement batch size / concurrency limit for the payout phase? | OPEN |
 | T13 | `CorrectionReceivable` recovery: automatic netting vs manual review? | OWNER DECISION |
-| T14 | Must `SettlementCorrection` close at 0? | OWNER DECISION |
-| **T15** | **Does C1 count an uncollected receivable as backing (F17)?** | **OWNER DECISION** |
-| **T16** | **Treatment of an uncollectible receivable (F18)?** | **OWNER DECISION** |
-| **T17** | **Fallback if issuance is not approved (F19)?** | **OWNER DECISION** |
+| T14 | Must `SettlementCorrection` close at zero? | OWNER DECISION |
+| T15 | Does C1 count an uncollected receivable as backing (F17)? | OWNER DECISION |
+| T16 | Treatment of an uncollectible receivable (F18)? | OWNER DECISION |
+| T17 | Fallback if issuance is not approved (F19)? | OWNER DECISION |
+| **T18** | **Which correction-payable design (Option A or B, F20)?** | **OWNER DECISION** |
+| **T19** | **Are partial funding and partial claim-unit reopening permitted (F21)?** | **OWNER DECISION** |
+| **T20** | **Is delayed correction payout supported (F22)?** | **OWNER DECISION** |
 
 ---
 
-## 12. Change list — Revision 5 → Revision 6
+## 12. Change list — Revision 6 → Revision 7
 
-1. **Case F corrected**: one atomic transaction (establish funding → recover receivable → re-open
-   units), with before/after balances, uncommitted intermediate states shown for explanation only,
-   rollback, and C1/C1b/M1 at every commit boundary. Negative receivable now **forbidden** (scratch
-   rejects; PGlite `CHECK`).
-2. **Case F-issue corrected**: issuance + unit reopening atomic; `CreditsIssued` and supply increase
-   shown; issuance kept as **OWNER DECISION (F14)**; alternative outcome documented.
-3. **C1 clarification**: separated accounting balance, correction receivable, recoverable funding,
-   additional issuance, and uncollectible receivable; answered the owner's eight questions; two
-   policy alternatives (A/B) recorded as **F17 / AR13**.
-4. **Market-buy example corrected**: explicit requested quantity; all ten quantities defined; the
-   "not a partial fill" claim removed; policy remains **OPEN/OWNER DECISION**.
-5. **Verification extended**: Revision 6 scratch model (22 checks) + PGlite mechanism test;
-   registers updated (F1–F19, AR1–AR14, R1–R21, T1–T17).
+1. **CorrectionPayable / C1 defect corrected.** Two alternatives defined and tested: **Option A**
+   (market-scoped control account `CorrectionPayableMarket:{m}` included in C1/M1 with a
+   `(market, resolution_version, user)` subledger) and **Option B** (no separately recognized
+   payable; realized funding backs units). Recommended **Option B** (**F20 / AR15**, OWNER DECISION).
+2. **C1 redefined** with a precise account set and market-level aggregation; `PendingCorrectionClaim`
+   explicitly **excluded** from C1 so an unfunded shortfall can never back a claim unit.
+3. **Complete correction lifecycle** (10 states) with every journal (ID/domain/entries/reason/boundary)
+   and C1/C1b/M1/non-negativity at every committed boundary.
+4. **Recovery scenarios** C1 (full), C2 (insufficient, with funded-tranche vs all-or-nothing), C3
+   (uncollectible, with issuance alternative); recorded as **F21**.
+5. **Immediate and delayed payout** lifecycles both verified; the five prohibited states are each
+   shown to be prevented; **F22**.
+6. **Policy A/B clarified**; F17 updated and **not** silently approved.
+7. **Verification extended:** Revision 7 scratch model (29 test cases, 210 assertions) + PGlite
+   mechanism test. Registers updated (F1–F22, AR1–AR16, R1–R24, T1–T20).
 
 ---
 
@@ -358,4 +375,4 @@ No PR is created, merged, or deployed in this milestone.
 Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
 implemented auth/trading/ledger/settlement, created schemas or migrations, modified financial logic,
 or pushed/merged/deployed. **No financial specification approval is assumed.** I await your
-independent review and explicit decisions on F14, F17, F18, and F19.
+independent review and explicit decisions on F14, F16–F22, AR13, AR15, and AR16.
