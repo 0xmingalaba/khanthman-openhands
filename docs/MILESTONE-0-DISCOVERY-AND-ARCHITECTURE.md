@@ -29,19 +29,19 @@ matching, settlement, schema, or migrations have been implemented.**
 ## 1. Repository and Git verification (VERIFIED)
 
 Run against the live local clone on 2026-11-16. **No secrets, tokens, or credential contents are
-included.** This section reflects the state **at the time of writing**, immediately before
-committing Revision 4; the final HEAD after committing this revision is reported in the delivery
-message and is one commit ahead of the value below.
+included.** To avoid a self-referential stale hash, this section states the facts that are true
+of the branch **after** this revision is committed; the exact final commit hash is given in the
+delivery message that accompanies this revision.
 
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| HEAD before this commit | `8eef5e4ce2b2e99efe6274ff1e0a5dde810d1abf` (`8eef5e4`) |
-| Commits ahead of `main` | **4** (`git rev-list --left-right --count main...HEAD` → `0 4`) |
+| Commit sequence on this branch (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → **this revision's commit** |
+| Commits ahead of `main` | **5** — i.e. the five Milestone-0 documentation commits above; the final HEAD is this revision's commit |
 | Commits behind `main` | 0 |
-| Working tree | **clean** before this revision's edits |
+| Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) |
-| `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`, the initial commit) |
+| `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`, the initial commit) — **nothing has been pushed** |
 | Branches | only `main` and `milestone-0-discovery-architecture` |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
