@@ -15,8 +15,12 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 2** delivered in `docs/`. Awaiting owner approval.
+- Milestone 0 (Discovery & Architecture) **Revision 3** delivered in `docs/`. Awaiting owner approval.
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
+- Accounting model (Rev 3): non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued`
+  contra-equity; `CollateralBucket` = restricted virtual-credit bucket (not a real asset).
+- Verification labels: VERIFIED / DOCUMENTED / RECOMMENDED / PROPOSED / OPEN / OWNER DECISION.
+  Do not mark designs VERIFIED without executed evidence.
 - Recommended stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle +
   Zod + Vitest/Playwright + key-based `en`/`my` i18n.
 - PGlite VERIFIED for local/test (logic + constraints); real PostgreSQL needed for concurrency tests.

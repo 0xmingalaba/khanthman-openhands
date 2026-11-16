@@ -1,697 +1,696 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 2) — **requires explicit product owner approval before any trading code is written**
-**Supersedes:** Revision 1 (2026-11-16)
-**Companion document:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md`
-**Milestone:** still Milestone 0 — planning only. **No trading code exists.**
+**Status:** DRAFT (Revision 3) — **requires explicit product owner approval before any trading code is written**
+**Supersedes:** Revision 2 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md`
+**Milestone:** still Milestone 0 — planning only. **No trading, ledger, matching, or settlement
+code exists.** Everything here is a design.
 
-Every finding is tagged:
+### Verification labels used in this document
 
-- **VERIFIED** — confirmed by a command run or a primary source.
-- **RECOMMENDED** — my professional recommendation; needs approval.
-- **OPEN** — needs your input; I have not decided.
-- **OWNER DECISION** — a product/financial choice only you can make.
+| Label | Meaning |
+| - | - |
+| **VERIFIED** | An actual command/test was run and its output observed (evidence quoted). |
+| **DOCUMENTED** | Supported by a primary technical document (URL given). |
+| **RECOMMENDED** | My professional recommendation. |
+| **PROPOSED** | A design that is **not implemented and not tested**. |
+| **OPEN** | Requires further investigation or an owner decision. |
+| **OWNER DECISION** | Requires explicit product-owner approval. |
 
-> All amounts are **whole Myanmar Kyat (MMK)**; all share quantities are **integers**.
-> **No floating-point arithmetic is used anywhere in the money path.** Every price, balance,
-> and total is an integer; where a quotient is needed for *display* only, it is rendered as a
-> rounded string and never stored or used for further arithmetic.
-
----
-
-## Part A — Collateral, accounting, and worked examples
-
-This part replaces the earlier one-paragraph treatment of collateral. It defines the accounts,
-then walks through **ten operations** showing before-state, the operation, after-state, the
-ledger accounts affected, the debit/credit entries, and the conservation invariants. It ends
-with the backing proof and an explicit warning about the limits of double-entry bookkeeping.
-
-### A.1 The five things that must not be confused
-
-| Concept | What it is | Where it lives |
-| - | - | - |
-| **User credits** | MMK the platform owes a user. Split into *available* and *reserved*. | Liability accounts `UserAvailable:{user}`, `UserReserved:{user}` |
-| **Reserved credits** | MMK a user has committed to an open **buy** order; still theirs, not yet spent. | Liability account `UserReserved:{user}` |
-| **Escrowed shares** | Outcome shares a user has committed to an open **sell** order; still theirs. | Share accounts `EscrowedShares:{user}:{outcome}` |
-| **Market collateral** | MMK the platform holds to back the outstanding complete sets of one market. | Asset account `MarketCollateral:{market}` |
-| **Settlement liability** | MMK owed to winners during resolution, before payout completes. | Liability account `SettlementPayable:{market}` |
-
-### A.2 Accounts and the two ledgers
-
-The system keeps **two independent double-entry ledgers**, each of which must balance on its
-own:
-
-**1. MMK ledger** (unit: MMK)
-
-| Account | Type | Meaning |
-| - | - | - |
-| `Cash` | Asset | The platform's operating pool of MMK |
-| `MarketCollateral:{market}` | Asset | MMK backing that market's outstanding sets |
-| `UserAvailable:{user}` | Liability | Spendable user credit |
-| `UserReserved:{user}` | Liability | Credit reserved by open buy orders |
-| `SettlementPayable:{market}` | Liability | Owed to winners during settlement |
-| `CreditsIssued` | Equity (contra) | Source of virtual credit (mirrors `Cash` for grants) |
-
-**2. Share ledger** (unit: shares of a specific outcome)
-
-| Account | Type | Meaning |
-| - | - | - |
-| `SharesFree:{user}:{outcome}` | User holding | Free shares |
-| `EscrowedShares:{user}:{outcome}` | User holding | Shares locked by open sell orders |
-| `SharesOutstanding:{market}:{outcome}` | Control | Total shares of that outcome in existence |
-
-**Sign convention:** debit increases assets; credit increases liabilities/equity. Every journal
-below balances (sum of debits = sum of credits) **within each ledger**.
-
-### A.3 Base parameters used in the examples
-
-These are the **RECOMMENDED** defaults (see Part C for the precision choice):
-
-- Winning share payout: **100 MMK** (so a complete YES+NO set is backed by **100 MMK**).
-- Price grid: integer MMK **1–99** per share (1 MMK = 1% implied probability).
-- New-user virtual credit: **10,000 MMK** (OWNER DECISION; see the decision register).
-
-### A.4 The ten worked examples
-
-Throughout, `→` shows the operation. Each example lists the **MMK journal** and the **share
-journal** separately.
+> **Important honesty statement.** No application, schema, migration, ledger service, matching
+> engine, or settlement code has been written. **Nothing in this document is "verified" merely
+> because an equation appears in it.** The only VERIFIED items are the local scratch
+> experiments listed in Appendix V (a scratch ledger model and scratch constraint tests) and
+> the primary sources cited. Everything else is PROPOSED.
 
 ---
 
-#### Example 1 — Initial virtual credit allocation
+## Part 0 — Scope and the central correction
 
-**Operation:** Grant Alice 10,000 MMK (virtual, non-redeemable).
+Revision 2 described `MarketCollateral` as an **asset** while writing journals that treated it
+inconsistently, and it implied virtual credits were backed by a `Cash` balance that had no
+corresponding journal entry. **Revision 3 removes all of that.**
 
-**Before:** everything zero.
+**Core principle:** these are **non-redeemable virtual credits**. They are not money, not
+deposits, and are backed by **nothing** outside the platform's own books. Therefore:
 
-**MMK journal**
-
-| Account | Debit | Credit |
-| - | - | - |
-| `Cash` | 10,000 | |
-| `CreditsIssued` | | 10,000 |
-
-Wait — the grant creates a user liability, not directly equity. The correct entry credits the
-user's liability and debits the issuance equity, with `Cash` tracking the operating pool:
-
-| Account | Debit | Credit |
-| - | - | - |
-| `CreditsIssued` (equity, contra) | 10,000 | |
-| `UserAvailable:Alice` (liability) | | 10,000 |
-
-`Cash` is maintained as an asset equal to the total user liability that is *not* held as
-market collateral. After this grant: `Cash` = 10,000; `UserAvailable:Alice` = 10,000.
-
-**After:** Alice available = 10,000. **MMK total in system = 10,000.**
-
-**Conservation:** Σ(all MMK accounts) is unchanged by any later transfer; only issuance (this
-entry) changes it, and only through `CreditsIssued`.
+- There is **no `Cash` account** and **no real asset** anywhere in this model.
+- The only "source" of virtual credits is the issuance event, recorded against a contra-equity
+  account `CreditsIssued`. It is **not** an asset.
+- Market collateral is **not** a real asset; it is a **restricted virtual-credit bucket** — a
+  labeled, restricted *liability/equity* holding of already-issued credits.
+- The model is self-contained: it tracks **who holds credits and shares**, and enforces
+  **conservation**, without ever claiming external backing.
 
 ---
 
-#### Example 2 — Split
+## Part 1 — The virtual-credit accounting model (PROPOSED)
 
-**Operation:** Alice splits **100 MMK** into **1 YES + 1 NO**.
+### 1.1 The two independent ledgers
 
-**Before:** Alice available = 10,000; MarketCollateral = 0; outstanding YES = 0, NO = 0.
+1. **MMK ledger** — unit: whole MMK. Tracks the distribution of issued virtual credits.
+2. **Share ledger** — unit: integer shares of a specific outcome. Tracks who owns shares.
 
-**MMK journal**
+Each ledger **balances independently**. A journal must balance **within its own ledger**;
+MMK entries never mix with share entries in one journal.
 
-| Account | Debit | Credit |
+### 1.2 Account catalogue (MMK ledger)
+
+Sign convention: **debit (D)** and **credit (C)**. Each account has a **normal side**. An entry
+on the normal side **increases** the account; an entry on the opposite side **decreases** it.
+
+| Account | Type | Represents | Normal side | A debit… | A credit… |
+| - | - | - | - | - | - |
+| `CreditsIssued` | Contra-equity (source of credits) | Total virtual credits ever issued | **D** | Increases total issued | Decreases total issued (only via controlled withdrawal of credits) |
+| `UserAvailable:{u}` | User credit balance (unrestricted) | Spendable credits owed to user `u` | **C** | Decreases user's spendable credits | Increases user's spendable credits |
+| `UserReserved:{u}` | User credit balance (restricted) | Credits `u` committed to open **buy** orders | **C** | Decreases the reserved amount (fill/cancel/release) | Increases the reserved amount (placing a buy order) |
+| `CollateralBucket:{m}` | Restricted virtual-credit bucket | Credits locked to back market `m`'s outstanding sets | **C** | Releases credits out of the bucket (merge, settlement) | Moves credits into the bucket (split) |
+| `SettlementPayable:{m}` | Settlement liability | Credits owed to winners of `m` before payout | **C** | Pays out (reduces what is owed) | Recognizes what is owed at settlement |
+
+**Explicitly excluded:** there is **no** `Cash` account, no bank account, no external asset.
+`CreditsIssued` is a contra-equity that *mirrors* the credits in circulation; it is not an asset.
+
+### 1.3 Account catalogue (share ledger)
+
+| Account | Type | Represents | Normal side | A debit… | A credit… |
+| - | - | - | - | - | - |
+| `SharesFree:{u}:{o}` | User share holding (unrestricted) | Free shares of outcome `o` owned by `u` | **D** | Increases `u`'s free shares | Decreases `u`'s free shares |
+| `SharesEscrowed:{u}:{o}` | User share holding (restricted) | Shares `u` locked in open **sell** orders | **D** | Increases escrowed shares | Decreases escrowed shares (fill/cancel/release) |
+| `SharesOutstanding:{m}:{o}` | Control account | Total shares of outcome `o` in existence for `m` | **C** | Decreases total shares (merge/settlement retire) | Increases total shares (split creates) |
+
+**Ownership rule:** a user's true ownership of outcome `o` is
+`SharesFree:{u}:{o} + SharesEscrowed:{u}:{o}`. These are two *buckets of the same ownership*,
+never a double count — a share is in exactly one of them at any time.
+
+### 1.4 The global MMK identity
+
+**Identity M1 (credit conservation):**
+
+> `CreditsIssued` = Σ_users (`UserAvailable` + `UserReserved`) + Σ_markets `CollateralBucket`
+> + Σ_markets `SettlementPayable`
+
+Read in debit/credit terms: the debit-normal `CreditsIssued` (increased by issuance) equals the
+sum of the credit-normal holding accounts. **No journal may create or destroy a credit except a
+controlled issuance/withdrawal against `CreditsIssued`.**
+
+### 1.5 Parameter used in all examples
+
+`PAYOUT_PER_SHARE = 100 MMK` (so one complete YES+NO set is backed by 100 MMK). *(OWNER
+DECISION — see Part 8. Chosen here only to make the examples concrete.)*
+
+### 1.6 Executed evidence for this model
+
+**VERIFIED (scratch).** I wrote a scratch program implementing exactly this account model
+(dual-normal-side posting, a hard `debits == credits` check, and automatic invariant checks)
+and executed a sequence of operations covering grants, splits, buys, escrow, partial fill,
+cancel, merge, and settlement for **both** outcomes. Command and result are in **Appendix V**.
+Summary: **all invariant checks passed** for both a YES-winning and a NO-winning settlement.
+
+This verifies the **arithmetic of the model as designed**. It does **not** verify any product
+code (none exists) and does **not** verify multi-session database concurrency.
+
+---
+
+## Part 2 — Worked MMK journal entries (PROPOSED)
+
+Notation: `D` = debit, `C` = credit. Each journal balances (Σ debits = Σ credits). After each
+step I show the **check** performed by the scratch model.
+
+### 2.1 Initial virtual-credit issuance
+
+Grant Alice 10,000 MMK of virtual credit.
+
+| Account | D | C |
 | - | - | - |
-| `MarketCollateral:M` | 100 | |
-| `UserAvailable:Alice` | | 100 |
+| `CreditsIssued` | 10,000 | |
+| `UserAvailable:Alice` | | 10,000 |
 
-**Share journal**
+**Correction vs Rev 2:** no `Cash` debit. The credit comes from `CreditsIssued` (contra-equity),
+**not** from a cash asset. M1 holds: issued 10,000 = available 10,000. ✅
 
-| Account | Debit | Credit |
+### 2.2 Split (create a complete set)
+
+Alice splits 100 MMK → 1 YES + 1 NO.
+
+| Account | D | C |
+| - | - | - |
+| `UserAvailable:Alice` | 100 | |
+| `CollateralBucket:M` | | 100 |
+
+| Account | D | C |
 | - | - | - |
 | `SharesFree:Alice:YES` | 1 | |
 | `SharesOutstanding:M:YES` | | 1 |
 | `SharesFree:Alice:NO` | 1 | |
 | `SharesOutstanding:M:NO` | | 1 |
 
-**After:** Alice available = 9,900; Alice holds 1 YES + 1 NO; MarketCollateral = 100;
-outstanding YES = NO = 1.
+Credits move **available → restricted bucket** (not destroyed). Shares increase in equal pairs.
+Backing: bucket +100, outstanding +1 each → C1 preserved. ✅
 
-**Conservation:** MMK total unchanged; **YES_out = NO_out = 1**; **MarketCollateral = 100 =
-100 × 1**. ✅
+### 2.3 Buying YES from another user (transfer)
 
----
+Alice buys Bob's 1 YES at 60 MMK.
 
-#### Example 3 — Buying YES from another user (same-outcome match)
-
-**Setup:** Bob split 100 MMK earlier, so Bob holds 1 YES + 1 NO. Alice buys Bob's 1 YES at
-**60 MMK**.
-
-**Before:** Alice available = 9,900; Bob available = 9,900 (after his own grant+split);
-MarketCollateral = 200; YES_out = NO_out = 2.
-
-**MMK journal**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `UserAvailable:Alice` | 60 | |
 | `UserAvailable:Bob` | | 60 |
 
-**Share journal**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `SharesFree:Alice:YES` | 1 | |
 | `SharesFree:Bob:YES` | | 1 |
 
-**After:** Alice available = 9,840 and holds 1 YES; Bob available = 9,960 and holds 1 NO;
-MarketCollateral = 200; YES_out = NO_out = 2.
+Pure transfer within the MMK ledger and within the share ledger. No creation/destruction. ✅
 
-**Conservation:** MMK total unchanged (transfer); share totals unchanged (transfer);
-**MarketCollateral still = 100 × 2 = 200**; the 2 YES and 2 NO remain fully backed. ✅
+### 2.4 Buying NO from another user (transfer)
 
----
+Alice buys Carol's 1 NO at 40 MMK — structurally identical to 2.3. ✅
 
-#### Example 4 — Buying NO from another user (same-outcome match)
+### 2.5 Selling shares
 
-**Setup:** Carol holds 1 NO (from a split) and sells it to Alice at **40 MMK**.
+Alice sells her 1 YES to Bob at 55 MMK — same structure as 2.3 (mirrored). ✅
 
-**MMK journal**
+### 2.6 Reservation for an open buy order
 
-| Account | Debit | Credit |
-| - | - | - |
-| `UserAvailable:Alice` | 40 | |
-| `UserAvailable:Carol` | | 40 |
+Alice places a buy limit: 10 YES @ 60 → reserve 600 MMK.
 
-**Share journal**
-
-| Account | Debit | Credit |
-| - | - | - |
-| `SharesFree:Alice:NO` | 1 | |
-| `SharesFree:Carol:NO` | | 1 |
-
-**Conservation:** identical structure to Example 3. ✅
-
-> **Note on complementary prices:** Alice paid 60 for YES (Ex. 3) and 40 for NO (Ex. 4); 60 +
-> 40 = 100. This is the *economically expected* relationship but is **not enforced** when the
-> two books are independent — see Part B.
-
----
-
-#### Example 5 — Selling shares
-
-**Operation:** Alice sells her 1 YES to Bob at **55 MMK** (a within-book transfer).
-
-**MMK journal**
-
-| Account | Debit | Credit |
-| - | - | - |
-| `UserAvailable:Bob` | 55 | |
-| `UserAvailable:Alice` | | 55 |
-
-**Share journal**
-
-| Account | Debit | Credit |
-| - | - | - |
-| `SharesFree:Bob:YES` | 1 | |
-| `SharesFree:Alice:YES` | | 1 |
-
-**Conservation:** MMK and share totals unchanged. A sale moves value and shares; it does not
-create or destroy either. ✅
-
----
-
-#### Example 6 — Partial fills
-
-**Operation:** Alice places a **buy limit** for **10 YES @ 60**. This first **reserves 600
-MMK**. The order then fills **4 shares** against Bob's resting sell, and 6 remain open.
-
-**(6a) Reservation on placement**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `UserReserved:Alice` | 600 | |
 | `UserAvailable:Alice` | | 600 |
 
-Alice's *total* credit is unchanged; 600 moves from available to reserved.
+Wait — direction. Placing a buy order **increases** the reserved amount. `UserReserved` is
+credit-normal, so increasing it is a **credit**; the matching debit reduces `UserAvailable`
+(debit-normal decrease). Corrected entry:
 
-**(6b) Fill of 4 shares @ 60 = 240 MMK**
+| Account | D | C |
+| - | - | - |
+| `UserAvailable:Alice` | 600 | |
+| `UserReserved:Alice` | | 600 |
 
-| Account | Debit | Credit |
+Alice's total credit is unchanged; 600 moves available → reserved. ✅
+
+### 2.7 Fill of a reserved buy (partial)
+
+4 of the 10 reserved shares fill @ 60 = 240 MMK.
+
+| Account | D | C |
 | - | - | - |
 | `UserReserved:Alice` | 240 | |
 | `UserAvailable:Bob` | | 240 |
 
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `SharesFree:Alice:YES` | 4 | |
 | `SharesFree:Bob:YES` | | 4 |
 
-Remaining reservation = 600 − 240 = **360 MMK**, still in `UserReserved:Alice`.
+Remaining reservation = 360 MMK. ✅
 
-**Conservation:** total Alice credit (available + reserved) unchanged by (6a); (6b) is a
-transfer between Alice and Bob; **Σ reserved = Σ open buy orders' (price × unfilled qty)**. ✅
+### 2.8 Cancellation and reservation release
 
----
+Cancel the remaining 6 shares → release 360 MMK.
 
-#### Example 7 — Cancellation and reservation release
-
-**Operation:** Alice cancels the remaining 6 shares of her order. Release 360 MMK.
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `UserReserved:Alice` | 360 | |
 | `UserAvailable:Alice` | | 360 |
 
-**After:** Alice's reservation = 0 for this order; available restored by 360.
+Release is bounded by `price × unfilled qty`. ✅
 
-**Conservation:** released amount is exactly `price × unfilled qty`; it can never exceed the
-original reservation (guarded by the unfilled-quantity check). ✅
+### 2.9 Merge (destroy a complete set)
 
----
+Alice merges 1 YES + 1 NO → 100 MMK.
 
-#### Example 8 — Merge
-
-**Operation:** Alice holds 1 YES + 1 NO and merges them into **100 MMK**.
-
-**Before:** MarketCollateral = 100 × k for the current outstanding k sets.
-
-**MMK journal**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
-| `UserAvailable:Alice` | 100 | |
-| `MarketCollateral:M` | | 100 |
+| `CollateralBucket:M` | 100 | |
+| `UserAvailable:Alice` | | 100 |
 
-**Share journal**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `SharesOutstanding:M:YES` | 1 | |
 | `SharesFree:Alice:YES` | | 1 |
 | `SharesOutstanding:M:NO` | 1 | |
 | `SharesFree:Alice:NO` | | 1 |
 
-**Conservation:** outstanding YES and NO each decrease by 1 (they stay equal);
-**MarketCollateral decreases by exactly 100**, keeping `MarketCollateral = 100 × outstanding`.
-✅
+Credits move **restricted bucket → available**. Bucket and outstanding each decrease by one set.
+C1 preserved. ✅
 
----
+### 2.10 Winning settlement (market resolves YES)
 
-#### Example 9 — Winning resolution
+Suppose outstanding = 2 YES / 2 NO, bucket = 200; Alice holds 2 YES (winner).
 
-**Setup:** Market resolves **YES**. Suppose outstanding = 2 YES / 2 NO, MarketCollateral = 200.
-Winners: Alice holds 2 YES. Losers: Bob holds 2 NO.
+**(a) Recognize liability**
 
-**(9a) Recognize settlement liability**
-
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
-| `MarketCollateral:M` | 200 | |
+| `CollateralBucket:M` | 200 | |
 | `SettlementPayable:M` | | 200 |
 
-**(9b) Pay each winner 100 MMK per winning share**
+**(b) Pay winners**
 
-| Account | Debit | Credit |
+| Account | D | C |
 | - | - | - |
 | `SettlementPayable:M` | 200 | |
 | `UserAvailable:Alice` | | 200 |
 
-Losing NO shares are retired (share ledger: `SharesOutstanding:M:NO` 2 → 0), with no MMK
-payout to their holders.
+**(c) Retire all shares**
 
-**Conservation:** `MarketCollateral` reaches 0; `SettlementPayable` reaches 0; the 200 MMK
-that was collateral is now user credit. **Every winning share was paid in full because
-`MarketCollateral` equalled `100 × outstanding`.** ✅
+| Account | D | C |
+| - | - | - |
+| `SharesOutstanding:M:YES` | 2 | |
+| `SharesFree:Alice:YES` | | 2 |
+
+(NO shares retired against their holders' `SharesFree:…:NO` accounts, with no MMK payout.)
+
+After: bucket = 0, payable = 0, outstanding = 0. ✅
+
+### 2.11 Losing settlement (market resolves NO)
+
+Mirror of 2.10: the NO holder is paid, YES shares are retired with no payout. ✅
+
+### 2.12 Conservation checks after every step
+
+After each journal above, the scratch model asserted: M1 (credit conservation), C1 (backing),
+C2 (YES count = NO count), C3 (Σ user shares = outstanding). **All passed** (Appendix V).
 
 ---
 
-#### Example 10 — Losing resolution
+## Part 3 — Share accounting (PROPOSED)
 
-**Setup:** Same as Example 9 but the market resolves **NO**.
+### 3.1 Rules
 
-**(10a) Recognize settlement liability**
+- Shares exist **only** in integer amounts.
+- A share is created **only** by Split (and, if enabled, cross-outcome minting — Part 6.4), and
+  **always** as an equal YES+NO pair.
+- A share is destroyed **only** by Merge or by settlement retirement.
+- **Transfers** move shares between users' free/escrow buckets without changing totals.
+- A user's ownership of an outcome = `SharesFree + SharesEscrowed` for that user/outcome.
 
-| Account | Debit | Credit |
-| - | - | - |
-| `MarketCollateral:M` | 200 | |
-| `SettlementPayable:M` | | 200 |
+### 3.2 Worked share examples
 
-**(10b) Pay Bob 200 MMK (2 NO × 100)**
+**S1 — Creation via Split.** Alice splits 2 sets:
+`SharesFree:Alice:YES +2` / `SharesOutstanding:M:YES +2`; same for NO. Ownership: Alice 2/2.
 
-| Account | Debit | Credit |
-| - | - | - |
-| `SettlementPayable:M` | 200 | |
-| `UserAvailable:Bob` | | 200 |
+**S2 — Sell-order escrow.** Alice escrows 2 YES:
+`SharesEscrowed:Alice:YES +2` / `SharesFree:Alice:YES −2`. Total ownership unchanged (2 YES);
+2 of them are now restricted.
 
-Alice's YES shares are retired with no payout.
+**S3 — Partial sell-order fill.** 1 of the 2 escrowed YES sells to Bob @55:
+MMK: `UserAvailable:Bob D 55` / `UserAvailable:Alice C 55`.
+Shares: `SharesFree:Bob:YES +1` / `SharesEscrowed:Alice:YES −1`.
+Alice ownership = 1 free YES + 1 escrowed YES = 2 (correct, not double-counted); Bob = 1 free YES.
 
-**Conservation:** identical structure to Example 9, mirrored. ✅
+**S4 — Sell-order cancellation and release.** Cancel the remaining 1 escrowed YES:
+`SharesFree:Alice:YES +1` / `SharesEscrowed:Alice:YES −1`. Alice = 2 free YES.
 
-### A.5 Why winning claims are fully backed
+**S5 — Merge.** Alice merges 2 YES + 2 NO:
+`SharesOutstanding:M:YES −2` / `SharesFree:Alice:YES −2`; same for NO. Ownership 0/0; bucket −200.
 
-**VERIFIED (by the invariants above):** the design maintains, at all times, for every market:
+**S6 — Share transfer.** Bob sells 1 YES to Carol: `SharesFree:Carol:YES +1` /
+`SharesFree:Bob:YES −1`. Totals unchanged.
 
-> **Invariant C1 (backing):** `MarketCollateral = 100 × SharesOutstanding(YES)
-> = 100 × SharesOutstanding(NO)`, and `SharesOutstanding(YES) = SharesOutstanding(NO)`.
+**S7 — Winning settlement.** Winners' shares are retired against `SharesOutstanding` after
+payout (2.10c). Losing shares retired with no payout.
 
-This holds because **every share is created in equal YES/NO pairs and only ever by Split** (and,
-if enabled, by cross-outcome minting, which also creates an equal pair — see Part B), and
-**every destruction is by Merge or settlement**, which removes equal pairs and releases
-exactly 100 MMK per set. Transfers (Examples 3–5) never change the totals.
+**S8 — Losing settlement.** Mirror of S7.
 
-Therefore, whichever outcome wins, the total payout owed (`100 × winning shares outstanding`)
-is exactly equal to the collateral held. No scenario can leave winners under-funded, provided
-the invariant is enforced (not merely assumed) — see A.6.
+### 3.3 No double-counting (PROPOSED invariant)
 
-### A.6 Double-entry is not, by itself, proof of collateralization
-
-**RECOMMENDED — and a direct response to your review.** A double-entry ledger guarantees only
-that **every journal balances** (Σ debits = Σ credits). It does **not** guarantee that shares
-are backed:
-
-- A bug could mint shares (`SharesOutstanding` +1) while writing a *balanced but wrong* MMK
-  entry, or none at all, leaving the MMK ledger balanced while `MarketCollateral ≠ 100 ×
-  outstanding`.
-- A bug could double-credit a user's available balance while still balancing some other pair
-  of accounts.
-- `Cash` could be spent twice across two markets while each individual journal balanced.
-
-So we treat collateralization as a **separately asserted and separately tested** property:
-
-1. **Runtime assertions:** after every financial mutation, inside the same transaction, the
-   service re-computes C1 and the conservation invariants (A.7) and **aborts the transaction**
-   if any fails.
-2. **Database constraints:** `CHECK` constraints enforce non-negative balances, non-negative
-   shares, and `price BETWEEN 1 AND 99` at the storage layer (VERIFIED working in PGlite:
-   a `CHECK (bal >= 0)` rejected a negative update).
-3. **Scheduled reconciliation:** a job recomputes, per market, `Σ user shares` vs
-   `SharesOutstanding` and `MarketCollateral` vs `100 × outstanding`, and raises an alert on
-   any drift.
-4. **Tests:** dedicated invariant tests (see the architecture report) that attempt to violate
-   C1 and must fail.
-
-In short: **the ledger proves the accounting identity; the invariants prove the backing.**
-They are different guarantees and both are required.
-
-### A.7 Conservation invariants (must hold after every committed transaction)
-
-| ID | Invariant |
-| - | - |
-| **C1** | `MarketCollateral:{m} = 100 × SharesOutstanding:{m}:YES = 100 × SharesOutstanding:{m}:NO` |
-| **C2** | `SharesOutstanding:{m}:YES = SharesOutstanding:{m}:NO` |
-| **C3** | For each user/outcome: `Σ (SharesFree + EscrowedShares) = SharesOutstanding` (summed over users) |
-| **C4** | `Σ_users (UserAvailable + UserReserved) + Σ_m MarketCollateral + SettlementPayable = CreditsIssued` |
-| **C5** | `Σ_users UserReserved:{u} = Σ open buy orders (price × unfilled qty)` |
-| **C6** | `Σ_users EscrowedShares:{u}:{o} = Σ open sell orders unfilled qty` (per outcome) |
-| **C7** | Every account is non-negative for assets/liabilities of this kind (no negative balances/shares) |
-| **C8** | Every MMK journal and every share journal balances (Σ debits = Σ credits) |
+**Identity S1:** for each outcome `o`, `Σ_users (SharesFree:{u}:{o} + SharesEscrowed:{u}:{o})
+= SharesOutstanding:{m}:{o}`. Because escrow is a **move** between the two user buckets (never
+a copy), ownership is counted exactly once. The scratch model checked S1 after every step (C3).
 
 ---
 
-## Part B — YES/NO pricing
+## Part 4 — Settlement and market closure lifecycle (PROPOSED)
 
-### B.1 Bid, ask, and spread
+Revision 2 was inconsistent: it called settlement "a single atomic job per market" *and* "a
+separate, atomic transaction per user". **Revision 3 resolves this** with an explicit two-phase
+model (4.2) plus a resumable batch worker (4.3).
 
-- **Bid** — the highest price a buyer will pay for a given outcome.
-- **Ask** — the lowest price a seller will accept for that outcome.
-- **Spread** — `ask − bid`; tighter = more liquid. Each outcome (YES, NO) has its own book
-  with its own bid/ask/spread.
+### 4.1 The ten-step lifecycle
 
-### B.2 The complementarity relationship (and its limits)
-
-**RECOMMENDED / clarification.** In theory a complete set is worth 100 MMK, so a fair market
-has `yesPrice + noPrice = 100`. **But this is a property of the relationship between the two
-books, not a constraint that either book must satisfy at all times.** Independent books can be
-inconsistent. Concretely:
-
-| Book | Best bid | Best ask |
+| # | Step | Effect |
 | - | - | - |
-| YES | 58 | 62 |
-| NO | 40 | 44 |
+| 1 | **Stop accepting orders** | Market → `closing`; new orders rejected; **matching disabled** (matching transaction re-checks status and aborts) |
+| 2 | **Cancel/expire open orders** | Every open order → `cancelled`/`expired` |
+| 3 | **Release remaining buy reservations** | `UserReserved → UserAvailable` for every unfilled buy remainder |
+| 4 | **Return escrowed sell shares** | `SharesEscrowed → SharesFree` for every unfilled sell remainder |
+| 5 | **Record final resolution + evidence** | Write immutable `ResolutionRecord` (outcome, source, evidence, resolver, time) |
+| 6 | **Calculate winning claims** | Compute `100 × winning shares` per holder from the frozen book |
+| 7 | **Settle winners** | Pay each winner (batched, resumable — 4.3) |
+| 8 | **Retire both winning and losing shares** | `SharesOutstanding` and holders' buckets → 0 |
+| 9 | **Confirm market collateral is zero** | Assert `CollateralBucket = 0` |
+| 10 | **Mark fully settled** | Market → `settled`; only after reconciliation succeeds |
 
-Here `58 + 40 = 98` and `62 + 44 = 106`. Neither pair sums to 100. This is normal and expected
-with **independent order books**. A gap where `yesBid + noBid < 100` (here 98) is a *risk-free
-profit* for anyone who buys both sides and merges a set: pay 98, receive 100 on merge. This is
-an **arbitrage**, and in a mature market arbitrageurs close it — but the system must not
-*assume* it is closed.
+Steps 1–4 close the market *cleanly* (no reservations or escrow left dangling). Steps 5–10
+perform resolution and settlement.
 
-**VERIFIED:** Polymarket's own documentation confirms the displayed price is the midpoint of
-the spread, falling back to the last traded price when the spread is wide — i.e. the two books
-are quoted independently and are not forced to sum to a fixed value:
+### 4.2 Resolving "atomic vs per-user"
 
-> "The displayed price is the **midpoint** of the bid-ask spread. If the spread is wider than
-> $0.10, the last traded price is shown instead."
-> — https://docs.polymarket.com/concepts/prices-orderbook.md
+**Design (PROPOSED):** settlement is **two phases**.
 
-### B.3 Complementary order representation
+- **Phase A — Recognition (one atomic transaction per market).** Steps 5 and the *recognition*
+  journal of 6: move the market's whole collateral from `CollateralBucket` to
+  `SettlementPayable`, and freeze the resolution record. This is atomic and market-wide.
+- **Phase B — Payout (many atomic transactions, one per user, resumable).** Step 7: for each
+  winner, one transaction moves `100 × shares` from `SettlementPayable` to `UserAvailable:{u}`
+  and records a unique payout key. Steps 8–10 run after all payouts are confirmed.
 
-A **buy of YES at price p** is economically equivalent to a **sell of NO at price 100 − p**
-(both pay p now for a claim worth 100 if YES wins). Some engines store orders in one canonical
-form and *derive* the other. **RECOMMENDED for MVP:** store each order against its **own
-outcome** (do not derive), so the order book is simple and each order is unambiguous. The
-equivalence is then available as an *optional matching rule*, not as a data model.
+This removes the Rev 2 contradiction: **recognition is market-atomic; payout is per-user and
+resumable.** `SettlementPayable` is the intermediate state that makes the batch safe.
 
-### B.4 Cross-outcome matching
+### 4.3 Resumability, idempotency, duplicate prevention
 
-Cross-outcome matching means matching orders from **different** outcomes:
+- Each payout carries a **unique payout key** `(market_id, user_id, resolution_version)`.
+  Inserting the key and crediting the user happen in **one transaction**; a duplicate insert
+  fails on the unique constraint, so a retry is a **no-op**.
+- The batch worker records progress; a crash resumes by **skipping keys already present**.
+- The market is marked `settled` **only after** a reconciliation query confirms
+  `SettlementPayable = 0` and `CollateralBucket = 0` and every winner has a payout key.
+- A guarded state transition (`UPDATE … WHERE status = 'resolving'`) ensures exactly one worker
+  drives the batch.
 
-- **YES-buy at p** against **NO-buy at (100 − p)** → **mint** a complete set: the two buyers'
-  cash funds 100 MMK of collateral, and the market issues 1 YES to the first and 1 NO to the
-  second.
-- **YES-sell at p** against **NO-sell at (100 − p)** → **merge** a complete set: the two
-  sellers deliver one share each, the set is merged, and 100 MMK is paid out.
+### 4.4 Worked settlement example — YES wins
 
-This is the mechanism that keeps the two books mutually consistent and is capital-efficient.
+State at closure: outstanding 2 YES / 2 NO, bucket 200. Alice 2 YES; Bob 2 NO.
 
-### B.5 Displayed probability
+1. Stop orders; cancel; release; return escrow (no-ops if none).
+2. Record resolution = YES.
+3. Phase A: `CollateralBucket D 200` / `SettlementPayable C 200`.
+4. Phase B: payout key (M, Alice, v1): `SettlementPayable D 200` / `UserAvailable:Alice C 200`.
+5. Retire: `SharesOutstanding:YES D 2` / `SharesFree:Alice:YES C 2`;
+   `SharesOutstanding:NO D 2` / `SharesFree:Bob:NO C 2`.
+6. Reconcile: bucket 0, payable 0, outstanding 0 → mark `settled`. ✅
 
-**RECOMMENDED rule (mirrors Polymarket):**
+### 4.5 Worked settlement example — NO wins
 
-1. If the outcome has both a best bid and a best ask: **displayed price = floor((bid + ask) /
-   2)** (integer MMK), i.e. the midpoint. Probability = that number as a percentage.
-2. Else if there is only one side: display that side, clearly labelled (e.g. "bid only").
-3. Else if there is a last traded price: display it, labelled "last trade".
-4. Else: display **"—"** and the label **"No price yet"**. **We must never invent a price**
-   (this directly satisfies the "no fabricated information" rule).
+Identical structure with Bob (2 NO) paid and Alice's YES retired without payout. ✅
 
-### B.6 Is cross-outcome matching necessary for the MVP?
-
-**RECOMMENDED: defer it; it is *not* strictly necessary for a correct MVP — but it has a UX
-cost.** Analysis:
-
-| | Same-outcome matching only (recommended for MVP) | With cross-outcome matching |
-| - | - | - |
-| Share creation | Only via **Split** | Via Split **and** YES-buy/NO-buy matches |
-| Books | Independent; arbitrage can persist | Mutually consistent; arbitrage closed by matching |
-| Correctness | Simpler; easier to prove invariants | More complex; more invariants to test |
-| Liquidity | Requires makers to Split to create inventory | Buyers on opposite sides meet directly |
-| "Polymarket feel" | Slightly reduced (needs seeded makers) | Closer to Polymarket |
-
-**Recommendation:** implement **Split/Merge + same-outcome matching** first (so inventory can
-always be created), and add cross-outcome matching as a **separately reviewed, later** feature.
-Note that C1/C2 still hold without cross-outcome matching (all creation is by Split), so the
-backing proof is unaffected.
-
-**OPEN / OWNER DECISION:** include cross-outcome matching in the MVP, or defer it?
+Both examples were executed in the scratch model with all invariants passing (Appendix V).
 
 ---
 
-## Part C — Price precision
+## Part 5 — Collateralization re-proof (PROPOSED)
 
-### C.1 The real design axis is payout-per-share
+### 5.1 The invariant
 
-Because MMK is whole-Kyat and we forbid fractional MMK, the price *tick* in MMK determines the
-probability grid only in relation to the **payout per share**. Three coherent options:
+**C1 (backing):** for each market `m`,
+`CollateralBucket:{m} = PAYOUT_PER_SHARE × SharesOutstanding:{m}:YES
+= PAYOUT_PER_SHARE × SharesOutstanding:{m}:NO`
+and **C2:** `SharesOutstanding:YES = SharesOutstanding:NO`.
 
-| Option | Winning payout / share | Price grid (MMK) | Tick | Implied-probability step |
-| - | - | - | - | - |
-| **A — 1%** | 100 MMK | 1–99 | 1 MMK | 1% |
-| **B — 0.1%** | 1,000 MMK | 1–999 | 1 MMK | 0.1% |
-| **C — basis points** | 10,000 MMK | 1–9,999 | 1 MMK = 1 bp | 0.01% |
+### 5.2 Assumptions (must all hold)
 
-(One could also keep a 100 MMK payout and use sub-MMK price units, but that **requires
-fractional MMK / Pya**, which the product rules forbid — so it is excluded.)
+1. **A1:** Shares are created **only** in equal YES/NO pairs, **only** by Split (and, if enabled,
+   cross-outcome minting, which also creates an equal pair). No other path mints shares.
+2. **A2:** Each split locks exactly `PAYOUT_PER_SHARE` credits per set into `CollateralBucket`.
+3. **A3:** Each merge/settlement removes an equal YES/NO pair and releases exactly
+   `PAYOUT_PER_SHARE` per set.
+4. **A4:** Transfers move shares between user buckets and credits between user accounts without
+   changing any total.
+5. **A5:** `PAYOUT_PER_SHARE` is constant for the life of a market.
+6. **A6:** No admin/direct SQL path can create shares or move `CollateralBucket` outside these
+   operations (enforced by control-account discipline and, at runtime, by the assertion in 5.5).
 
-### C.2 Implications
+### 5.3 Preservation argument (permitted operation → C1 preserved)
 
-| Dimension | A (1%) | B (0.1%) | C (bps) |
+| Operation | Effect on `CollateralBucket` | Effect on outstanding YES/NO | C1 preserved? |
 | - | - | - | - |
-| **MMK arithmetic** | Smallest integers; trivially safe | Integers still exact; larger magnitudes | Integers exact; largest magnitudes |
-| **Winning payout** | 100 MMK/share (matches "thousand-Kyat" presets) | 1,000 MMK/share | 10,000 MMK/share |
-| **Min order (1 share)** | ~tens of MMK | ~hundreds of MMK | ~thousands of MMK |
-| **User experience** | Coarse but intuitive ("60% = 60 MMK") | Fine, less intuitive pricing | Finest; least intuitive |
-| **Capital per share** | Lowest | 10× higher | 100× higher |
-| **Storage** | `INT` suffices | `INT` suffices | `INT` suffices (all integer) |
-| **Matching complexity** | Lowest | Moderate | Moderate (same code path) |
-| **Preset fit** (500/1,000/5,000/10,000 MMK) | Excellent | Good | Awkward (few shares per preset) |
+| Grant | none | none | trivially yes |
+| Split of n sets | +`P×n` | +n / +n | yes (both sides scale by n) |
+| Transfer (buy/sell) | none | none | yes |
+| Reserve / release (buy) | none | none | yes |
+| Escrow / release (sell) | none | none | yes |
+| Merge of n sets | −`P×n` | −n / −n | yes |
+| Settlement recognition | −`P×N` (to payable) | unchanged until step 8 | yes for the phase; payable = `P×N` |
+| Settlement retire | none | −N / −N (both → 0) | yes (bucket already 0) |
 
-### C.3 Recommendation
+Because every operation changes the bucket and the outstanding counts **by the same multiple**,
+the ratio `bucket / outstanding = P` is invariant. This is a **mathematical design argument**,
+not a test result.
 
-**RECOMMENDED: Option A (100 MMK payout, 1–99 grid, 1% steps)** for the MVP. It is the only
-option that is simultaneously (a) integer-safe with the smallest numbers, (b) intuitive in the
-"price = probability %" sense, and (c) well-matched to the required MMK presets. Finer grids
-(B, C) multiply the capital per share and the UX complexity without changing correctness.
+### 5.4 What each claim actually is
 
-**OWNER DECISION:** approve Option A, or choose B/C. **I have not selected the final option.**
-
----
-
-## Part D — Market-order execution (worked example)
-
-A **market order** is a limit order priced to execute immediately against resting orders (this
-is Polymarket's own model — VERIFIED: "All orders on Polymarket are technically limit orders. A
-'market order' is simply a limit order priced to execute immediately." —
-https://docs.polymarket.com/concepts/prices-orderbook.md). A **market buy** specifies **MMK to
-spend**; a **market sell** specifies **shares**.
-
-### D.1 Definitions
-
-| Term | Definition |
+| Claim | Status |
 | - | - |
-| **Maximum spend** | The MMK cap the user authorizes for a market buy. |
-| **Actual spend** | Σ (fill price × fill qty) over all fills — integer MMK. |
-| **Average price** | `actualSpend / filledQty` — a **display-only** quotient; the authoritative facts are integer `actualSpend` and integer `filledQty`. |
-| **Partial fill** | Some, but not all, of the requested size executed. |
-| **Unspent balance** | `maximumSpend − actualSpend`; returned to the user's available credit. |
-| **Slippage** | `averagePrice − bestPrice` (or relative), the cost of walking the book. |
-| **Quote expiry** | The quote is valid for a fixed window (recommended 10 s); after it, a fresh quote is required. |
-| **Insufficient liquidity** | The book cannot absorb the full request. |
-| **Idempotent retry** | Re-sending the same request (same idempotency key) returns the original result and never executes twice. |
+| The invariant equation C1/C2 | **PROPOSED** design |
+| The per-operation preservation argument | **PROPOSED** (hand proof) |
+| The arithmetic of the model on a scripted sequence | **VERIFIED** (scratch model, Appendix V) |
+| Database `CHECK`/unique constraints enforcing non-negativity, price range, payout uniqueness | **PROPOSED** as DDL; the *constraint mechanism* is **VERIFIED** in PGlite (Appendix V) |
+| Constraints applied to the real schema | **Does not exist yet** (no schema/migrations) |
+| Product ledger/matching/settlement code | **Does not exist yet** |
+| Multi-session concurrency correctness | **Does not exist yet and is NOT proven by PGlite** (see Appendix V note) |
 
-### D.2 Worked example — market buy YES, maximum spend 2,000 MMK
+### 5.5 Enforcement (PROPOSED, beyond double-entry)
 
-Resting **asks** for YES:
-
-| Level | Price (MMK) | Available shares |
-| - | - | - |
-| 1 | 60 | 5 |
-| 2 | 62 | 10 |
-| 3 | 65 | 20 |
-
-Walking the book with a 2,000 MMK budget:
-
-| Step | Level | Price | Qty filled | Cost | Budget remaining |
-| - | - | - | - | - | - |
-| 1 | L1 | 60 | 5 | 300 | 1,700 |
-| 2 | L2 | 62 | 10 | 620 | 1,080 |
-| 3 | L3 | 65 | floor(1,080 / 65) = **16** | 1,040 | 40 |
-
-- **Actual spend** = 300 + 620 + 1,040 = **1,960 MMK**
-- **Filled quantity** = 5 + 10 + 16 = **31 shares**
-- **Average price** = 1,960 / 31 = 63.2258… → **displayed as "63.2 MMK"** (display only)
-- **Unspent balance** = 2,000 − 1,960 = **40 MMK** (returned to available)
-- **Best price** = 60; **slippage** ≈ 63.2 − 60 = **3.2 MMK/share** (≈ 5.4%)
-- **Partial fill?** No — the budget was fully consumed by available liquidity.
-
-### D.3 The same request if the book were thinner
-
-Suppose only L1 (5 @ 60) and L2 (10 @ 62) existed: 15 shares cost 920 MMK, leaving 1,080 MMK
-unspent → **insufficient liquidity** for the intended spend. Policy (RECOMMENDED): for a
-market order, execute the available portion and **return the unspent 1,080 MMK** to the user,
-reporting a partial fill. (A stricter alternative is **FOK**: reject entirely if it cannot be
-filled — OWNER DECISION.)
-
-### D.4 Slippage protection and quote expiry
-
-**RECOMMENDED:** the client receives a **quote** with an id, the estimated average price, and
-an expiry (10 s). On submit, the server revalidates against the **live** book. If the new
-average price is worse than the quote by more than the **max slippage (recommended 3%)**, the
-server refuses and re-quotes instead of silently executing worse. Market mode requires an
-explicit confirmation step; 1-Tap re-quotes and executes immediately if within tolerance.
-
-### D.5 Idempotent retries
-
-Every mutating request carries a client-generated **idempotency key**. The server stores the
-key with the result in `IdempotencyKey`. A retry with the same key:
-
-- returns the **original** result, and
-- **never** executes a second time.
-
-The key is bound to the user and the operation payload; conflicting reuse of a key with a
-different payload is rejected.
+Double-entry proves journals balance; it does **not** prove backing (see Part 7 and Appendix V).
+Backing is enforced by: (1) runtime assertions of C1/C2/C3 inside the same transaction, aborting
+on failure; (2) `CHECK` constraints (non-negative, price range); (3) a unique payout key per
+`(market, user, resolution_version)`; (4) scheduled reconciliation recomputing
+`Σ user shares` vs `SharesOutstanding` and `bucket` vs `P × outstanding`, alerting on drift;
+(5) tests that attempt to violate C1 and must fail. None of (1)–(5) is implemented.
 
 ---
 
-## Part E — Resolution and settlement
+## Part 6 — Market orders, pricing, and slippage
 
-### E.1 Authority to resolve
+### 6.1 Market-buy amount is a maximum, not a guarantee
 
-**RECOMMENDED (no admin dashboard required):** resolution is performed by a **designated
-resolver identity** — for the MVP, the **platform owner/operator**. There is **no** user-facing
-resolution UI and no staff dashboard. Resolution is executed through a **controlled, audited
-operation** (e.g. a signed, single-purpose CLI/script that requires the operator's credentials
-and a market in the correct pre-resolution state). The prompt forbids an admin dashboard, but
-it does **not** permit leaving resolution authority undefined — so authority is defined here as
-a named, authenticated operator action.
+A market buy of "2,000 MMK" means **maximum spend = 2,000 MMK**, not a promise to spend 2,000.
+The engine buys whole shares while the running cost stays within budget; **any remaining MMK is
+returned** to `UserAvailable`.
 
-### E.2 Evidence and sources
+### 6.2 Worked example — market buy YES, maximum spend 2,000 MMK
 
-Each market stores its **resolution rules** and **resolution source(s)** as data (shown to
-users before trading). At resolution, a **`ResolutionRecord`** is written capturing: the chosen
-outcome, the source reference(s) and evidence used, the resolver identity, the timestamp, and
-a short rationale note. This record is what makes the decision reviewable after the fact.
+Resting asks: L1 5@60, L2 10@62, L3 20@65.
 
-### E.3 Auditing
+| Level | Price | Qty | Cost | Remaining budget |
+| - | - | - | - | - |
+| L1 | 60 | 5 | 300 | 1,700 |
+| L2 | 62 | 10 | 620 | 1,080 |
+| L3 | 65 | floor(1,080/65) = 16 | 1,040 | 40 |
 
-Every resolution and settlement step writes **append-only `AuditLog`** entries (who, what,
-when, why, before/after state). Audit rows are never updated or deleted.
+- **Maximum spend** = 2,000 MMK (authorized cap)
+- **Actual spend** = 1,960 MMK
+- **Filled quantity** = 31 shares
+- **Average price** = 1,960 / 31 = 63.2258 MMK (display-only quotient; authoritative facts are
+  integer `1,960` and integer `31`)
+- **Unspent balance returned** = 40 MMK
+- **Partial fill?** No — the full budget was consumable.
 
-### E.4 Mistakes and disputes
+### 6.3 Partial-fill semantics (PROPOSED)
 
-**RECOMMENDED:** once written, a `ResolutionRecord` is **immutable**. A correction is made by
-writing a **new superseding record** that references the old one and states the reason; if
-settlement already occurred, the correction is applied as **compensating ledger entries**
-(never edits). For the MVP there is **no user-facing dispute UI**; disputes are handled by the
-operator with a full audit trail. **OPEN:** whether to define a formal pre-settlement dispute
-window (e.g. a 24-hour hold between resolution and payout).
+- A **limit** order may rest and partially fill; the unfilled remainder stays on the book (GTC)
+  or is cancelled (FAK/FOK as configured).
+- A **market** order: policy **fill-available and return the unspent balance** (PROPOSED
+  default). If liquidity runs out before the budget is used, the order is a **partial fill**,
+  the unspent MMK is returned, and the result is reported as partial. A stricter alternative is
+  **FOK** (reject entirely). *(OPEN — Part 8.)*
 
-### E.5 Settlement execution
+### 6.4 Slippage: relative vs percentage points
 
-Settlement is a single **atomic job per market** that: (1) moves `MarketCollateral` to
-`SettlementPayable`; (2) for each holder of the winning outcome, credits `100 × shares`; (3)
-retires all shares (winning and losing); (4) closes the market. Each user's payout is a
-separate, atomic transaction keyed by `(market, user)`.
+Slippage can be expressed two ways and they are **not** interchangeable:
 
-### E.6 Preventing duplicate settlement
+- **Relative (percentage) slippage** = `(avgPrice − bestPrice) / bestPrice × 100%`.
+- **Percentage-point slippage** = `avgPrice − bestPrice` (in MMK, where 1 MMK = 1 point = 1%).
 
-Settlement is **idempotent and state-guarded**: the market transitions to a terminal `settled`
-state exactly once via a **guarded state transition** (`WHERE status = 'resolving'`), and each
-`(market, user)` payout carries a unique key. A re-run finds the market already `settled` and
-each payout already recorded, so it performs **no** further mutation. This prevents double
-payouts even under retries or crashes.
+For the 6.2 example (best ask 60, avg 63.2258):
 
-### E.7 Immutable financial history
+**VERIFIED (computed):**
 
-The ledger is **append-only**: entries are only ever inserted, never updated or deleted.
-Corrections are **compensating entries**. Combined with the audit log, the full financial
-history remains reconstructable and immutable.
+- Relative slippage = **5.376%**
+- Point slippage = **3.2258 points**
+- A **3% relative** tolerance **would REJECT** this fill (5.376% > 3%).
+- A **3-point** tolerance **would also reject** it (3.2258 > 3).
+
+**Conclusion:** the earlier "3%" figure was underspecified and, applied to this example, would
+block a legitimate multi-level fill. **Recommendation:** express the tolerance in **relative
+percent** and set the default **higher** (e.g. 10% relative) **or** expose it per-order and show
+the user the exact estimated average price before confirming. **OWNER DECISION** on the number
+and on the unit.
+
+### 6.5 Quote expiry and slippage protection interaction (PROPOSED)
+
+A quote carries an id, an estimated average price, and an expiry (e.g. 10 s). On submit:
+
+1. The server revalidates against the **live** book.
+2. If the fresh average price is within tolerance of the quote → execute.
+3. If it is **worse** than tolerance → **do not execute**; return a re-quote and require
+   confirmation (Market mode) or re-quote silently and execute (1-Tap, if still within tolerance).
+4. If the quote has **expired** → the client must fetch a fresh quote; an expired quote is never
+   executed.
+
+So quote expiry bounds *staleness in time*; slippage tolerance bounds *price movement*. Both
+are needed.
+
+### 6.6 Cross-outcome matching
+
+**OPEN / OWNER DECISION.** As in Revision 2: same-outcome matching plus Split/Merge is a
+correct MVP without it; cross-outcome matching (YES-buy against NO-buy minting a set, and the
+reverse) improves liquidity and consistency but adds complexity. Not decided here.
 
 ---
 
-## Part F — Revised decision summary (financial)
+## Part 7 — Resolution correction policy (PROPOSED)
 
-| ID | Decision | Recommended default | Tag |
+The ledger is **append-only**; it is never "reversed" or rewritten. Corrections are made with
+**compensating entries** and new records. Three cases:
+
+### 7.1 Mistake found *after resolution but before settlement*
+
+- No payout has occurred; `SettlementPayable` may or may not be recognized yet.
+- **Action:** write a **new `ResolutionRecord`** superseding the old one (the old record is kept,
+  never edited), stating the reason and evidence. If Phase A recognition already ran, post a
+  **compensating journal** to move `SettlementPayable` back to `CollateralBucket`
+  (`SettlementPayable D` / `CollateralBucket C`), then re-run settlement with the corrected
+  outcome.
+- **User impact:** none yet (no credits moved). **Funding:** none required.
+
+### 7.2 Mistake found during *partial settlement*
+
+- Some winners already paid; the market is mid-Phase-B.
+- **Action:** **stop** the batch. Write a superseding resolution record. For each user already
+  paid **incorrectly**, post a **compensating entry** to reverse their credit
+  (`UserAvailable:{u} D` / `SettlementPayable C`) — only if the user's balance is sufficient;
+  otherwise record the reversal as a **receivable/deficit** and flag the account (do **not**
+  force a negative balance). Then recompute claims under the corrected outcome and resume the
+  batch for the remaining users.
+- **Funding:** if a wrongly-paid user has already spent the credits, the correction may need the
+  platform to absorb a deficit (since credits are virtual, this is an accounting adjustment, not
+  a real-money shortfall) — but it must be **explicitly recorded and reviewed**, never hidden.
+- **User impact:** affected users see a correcting transaction in their history with a clear
+  reason.
+
+### 7.3 Mistake found *after full settlement*
+
+- All winners paid; shares retired; market `settled`.
+- **Action:** the market stays `settled`; write a superseding resolution record and post
+  **compensating journals** to move credits between affected users. Because the ledger is
+  append-only, the original payout and the correction **both** remain visible.
+- **Funding:** the platform funds any net deficit via a controlled `CreditsIssued` adjustment
+  (issuance of additional virtual credits) that is **explicitly logged and reviewed**. This is
+  an accounting event, not a cash transaction.
+- **User impact:** each affected user receives a compensating credit/debit with an audit-linked
+  reason; totals are reconciled and re-asserted (Part 5).
+
+### 7.4 Audit and evidence
+
+Every correction writes an **append-only `AuditLog`** entry (who, what, when, why, before/after)
+and references the superseded record. Corrections never delete history.
+
+---
+
+## Part 8 — Revised financial decision register
+
+| ID | Decision | Recommended | Tag |
 | - | - | - | - |
 | F1 | Payout per winning share | 100 MMK | OWNER DECISION |
-| F2 | Price grid | 1–99 MMK (1% steps) | OWNER DECISION |
-| F3 | Minimum order notional | 100 MMK (≈1 share) | OWNER DECISION |
+| F2 | Price grid | 1–99 MMK (1%) | OWNER DECISION |
+| F3 | Minimum order notional | 100 MMK | OWNER DECISION |
 | F4 | Fees | None | OWNER DECISION |
-| F5 | Quote expiry / max slippage | 10 s / 3% | RECOMMENDED |
-| F6 | Order types | GTC + optional GTD; market = immediate limit | RECOMMENDED |
-| F7 | Cross-outcome matching in MVP | Defer | OPEN |
-| F8 | Market-order partial-fill policy | Fill available, return unspent | OPEN |
-| F9 | Resolution authority | Named operator, audited, no UI | RECOMMENDED |
-| F10 | Pre-settlement dispute window | None for MVP (or 24 h) | OPEN |
-| F11 | New-user virtual credit | 10,000 MMK | OWNER DECISION |
-| F12 | "To Win" display | Gross payout; profit shown separately | OWNER DECISION |
+| F5 | Slippage unit + default | **relative %**, default ~10% (not 3%) | OWNER DECISION |
+| F6 | Quote expiry | 10 s | RECOMMENDED |
+| F7 | Order types | GTC + optional GTD | RECOMMENDED |
+| F8 | Market-order partial-fill policy | fill-available, return unspent | OPEN |
+| F9 | Cross-outcome matching in MVP | defer | OPEN |
+| F10 | Resolution authority | named audited operator, no UI | RECOMMENDED |
+| F11 | Pre-settlement dispute window | none (or 24 h) | OPEN |
+| F12 | New-user credit | 10,000 MMK | OWNER DECISION |
+| F13 | "To Win" display | gross payout; profit separate | OWNER DECISION |
+| F14 | Correction funding source | controlled `CreditsIssued` adjustment, audited | OPEN |
 
 ---
 
-## Part G — Approval
+## Part 9 — Approval
 
 Approving this document confirms the financial rules and authorizes implementation of
-executable trading in Milestone 4. Nothing here is implemented yet.
+executable trading in Milestone 4. **Nothing here is implemented.**
 
 - ☐ **Approved as written**
 - ☐ **Approved with changes:** ______________________________
 - ☐ **Rejected (reasons):** ______________________________
 
 Product owner signature / date: ______________________________
+
+---
+
+## Appendix V — Exact local verification performed
+
+All experiments ran in scratch directories **outside** the repository (no repo files created).
+Commands and observed output:
+
+### V.1 Scratch ledger model (PROPOSED model arithmetic)
+
+Command: `node model.mjs` (scratch file implementing the account model of Part 1 with dual
+normal sides, a hard `debits == credits` check, and automatic invariant checks; sequence:
+3 grants → 3 splits → buy YES → buy NO → escrow 2 YES → partial fill 1 → cancel → merge 2 sets →
+settle).
+
+Observed output (abridged):
+
+```
+=== RUN 1: settle YES ===
+PASS [1 grants]        mmkBalanced=true backing=true yesEqNo=true sharesSum=true
+PASS [2 splits (4 sets)] mmkBalanced=true backing=true yesEqNo=true sharesSum=true | coll=400 yOut=4 nOut=4
+PASS [3 buy YES]       ...
+PASS [4 buy NO]        ...
+PASS [5 escrow 2 YES]  ...
+PASS [6 partial fill 1 of 2] ...
+PASS [7 cancel release] ...
+PASS [8 merge 2 sets]  ... | coll=200 yOut=2 nOut=2
+   ownership -> Alice Y0/N1  Bob Y1/N1  Carol Y1/N0
+PASS [9/10 settle YES] ... | coll=0 yOut=0 nOut=0
+   final MMK: CreditsIssued=30000 Alice=9955 Bob=10005 Carol=10040 Coll=0 Pay=0
+=== RUN 2: settle NO ===
+... PASS [9/10 settle NO] ...
+   final MMK: CreditsIssued=30000 Alice=10055 Bob=10005 Carol=9940 Coll=0 Pay=0
+>>> ALL INVARIANT CHECKS PASSED
+```
+
+**Interpretation:** the *arithmetic of the proposed model* is internally consistent for a
+scripted sequence, for both settlement outcomes. This is **not** a product test and **not** a
+concurrency test.
+
+### V.2 Scratch constraint tests (PROPOSED constraints, PGlite)
+
+Command: `node constraints.mjs` (PGlite; tables with `CHECK (available >= 0)`,
+`CHECK (reserved >= 0)`, `CHECK (price BETWEEN 1 AND 99)`, `CHECK (qty >= 0)`).
+
+Observed output:
+
+```
+PASS (rejected): negative available balance
+PASS (rejected): negative reserved balance
+PASS (rejected): price above 99
+PASS (rejected): price below 1
+PASS (rejected): negative qty
+valid insert accepted: 1 row(s)
+>>> ALL PROPOSED CONSTRAINTS ENFORCED
+```
+
+**Interpretation:** the *constraint mechanism* works in PGlite (PostgreSQL 18.6). The **real
+schema does not exist yet**; this only shows the constraints are expressible and enforced.
+
+### V.3 Slippage computation
+
+Command: `python3` arithmetic for the 6.2 example. Output: actual spend 1,960 MMK; qty 31;
+avg 63.2258 MMK; **relative slippage 5.376%**; **point slippage 3.2258**; a 3% tolerance
+**rejects** the fill.
+
+### V.4 PGlite concurrency limitation (VERIFIED)
+
+**VERIFIED:** PGlite is a single-connection, single-process embedded engine. Earlier scratch
+tests confirmed `SELECT … FOR UPDATE`, `pg_advisory_xact_lock`, and `SERIALIZABLE` are
+*supported syntax*, but a single embedded instance **cannot reproduce real multi-session
+contention**. Therefore **PGlite evidence must never be presented as proof of real PostgreSQL
+multi-session concurrency.** Concurrency must be tested on a real PostgreSQL server (PROPOSED,
+not done).
+
+### V.5 Git state (VERIFIED)
+
+See the architecture report Section 1 for the full Git verification (branch, HEAD, ahead-count,
+clean tree, per-commit files). No repository files were created or modified for these
+experiments.
