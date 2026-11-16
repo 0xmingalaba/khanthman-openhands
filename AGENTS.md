@@ -15,19 +15,21 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 4** delivered in `docs/`. Awaiting owner approval.
+- Milestone 0 (Discovery & Architecture) **Revision 5** delivered in `docs/`. Awaiting owner approval.
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
-- Accounting model (Rev 4): non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued`
-  contra-equity; `CollateralBucket` = restricted virtual-credit bucket (not a real asset).
-- Backing invariant is **claim-based** (Rev 4): `CollateralBucket + SettlementPayable +
-  SettlementCorrection = payout_per_share x ClaimUnitsRemaining`. Rev 3's bucket-only C1 was
-  false during settlement.
-- Settlement: 12-step, two-phase, resumable; payout journal + unique payout key committed
-  atomically; no reliance on a worker-progress flag.
+- Accounting model (Rev 5): three **independently balanced domains** — MMK, Share, Claim-unit.
+  Single-domain journals; no domain balances against another; committed atomically together.
+- Non-redeemable virtual credits; NO `Cash` asset; `CreditsIssued` contra-equity;
+  `CollateralBucket` = restricted virtual-credit bucket (not a real asset).
+- Backing invariant is **claim-based**: `CollateralBucket + SettlementPayable +
+  SettlementCorrection = payout_per_share x ClaimUnitsRemaining` (C1), plus C1b (units), C2, S1.
+- Settlement: 12-step, two-phase, resumable; payout journal + unit journal + unique payout key
+  committed atomically; no reliance on a worker-progress flag.
 - Corrections: immutable `SettlementEntitlement` snapshot survives share retirement;
   `CorrectionReceivable`/`CorrectionPayable`/`SettlementCorrection`; never silent negative balances.
-- Verification labels: VERIFIED / DOCUMENTED / RECOMMENDED / PROPOSED / OPEN / OWNER DECISION.
-  Do not mark designs VERIFIED without executed evidence.
+- Verification labels: VERIFIED (scratch) / VERIFIED (PGlite) / VERIFIED (real PostgreSQL) /
+  DOCUMENTED / RECOMMENDED / PROPOSED / OPEN / OWNER DECISION. **No real PostgreSQL concurrency
+  has been verified.** Do not mark designs VERIFIED without executed evidence.
 - Recommended stack: Next.js App Router + TS + Tailwind + PostgreSQL/PGlite + Drizzle +
   Zod + Vitest/Playwright + key-based `en`/`my` i18n.
 - PGlite VERIFIED for local/test (logic + constraints); real PostgreSQL needed for concurrency tests.

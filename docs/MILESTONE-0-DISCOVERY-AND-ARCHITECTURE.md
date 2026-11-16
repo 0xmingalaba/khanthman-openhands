@@ -1,10 +1,10 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 4)
+# Milestone 0 — Discovery & Architecture Report (Revision 5)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 4) — **awaiting product-owner review**
-**Supersedes:** Revision 3 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 4)
+**Status:** DRAFT (Revision 5) — **awaiting product-owner review**
+**Supersedes:** Revision 4 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 5)
 **Milestone:** still Milestone 0 — planning only. **No product features, auth, trading, ledger,
 matching, settlement, schema, or migrations have been implemented.**
 
@@ -12,7 +12,9 @@ matching, settlement, schema, or migrations have been implemented.**
 
 | Label | Meaning |
 | - | - |
-| **VERIFIED** | An actual command/test was run and its output observed (evidence quoted). |
+| **VERIFIED (scratch)** | A scratch model outside the repo was run; output observed. **Not** a product test. |
+| **VERIFIED (PGlite)** | A scratch test ran against PGlite (PostgreSQL 18.6 WASM). Constraint/mechanism evidence only. |
+| **VERIFIED (real PostgreSQL)** | Ran against a real PostgreSQL **server** with multiple sessions. **None performed.** |
 | **DOCUMENTED** | Supported by a primary technical document (URL given). |
 | **RECOMMENDED** | My professional recommendation. |
 | **PROPOSED** | A design not implemented and not tested. |
@@ -20,28 +22,26 @@ matching, settlement, schema, or migrations have been implemented.**
 | **OWNER DECISION** | Needs explicit product-owner approval. |
 
 > **Honesty statement.** No application, schema, migration, ledger, matching, settlement, or auth
-> code has been written. The only VERIFIED items are the scratch experiments in the financial
-> spec's Appendix V and the primary sources cited. **Scratch-model tests are not product tests.**
-> Everything describing the product is PROPOSED.
+> code has been written. **Scratch and PGlite results are not product tests. No real PostgreSQL
+> multi-session concurrency has been verified.** Everything describing the product is PROPOSED.
 
 ---
 
 ## 1. Repository and Git verification (VERIFIED)
 
 Run against the live local clone on 2026-11-16. **No secrets, tokens, or credential contents are
-included.** To avoid a self-referential stale hash, this section states the facts that are true
-of the branch **after** this revision is committed; the exact final commit hash is given in the
-delivery message that accompanies this revision.
+included.** To avoid a self-referential stale hash, this table states facts that remain true after
+this revision is committed; the exact final commit hash is reported in the delivery message.
 
 | Item | Value |
 | - | - |
 | Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence on this branch (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → **final revision-4 commit** |
-| Commits ahead of `main` | One documentation commit per Milestone-0 revision plus small follow-up commits; the exact final count and the exact final HEAD hash are reported in the delivery message that accompanies this revision (so this table cannot drift out of date) |
+| Commit sequence (oldest → newest) | `f6c7567` (initial) → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → **this revision's commit** |
+| Commits ahead of `main` | one documentation commit per Milestone-0 revision plus small follow-ups; exact final count and hash are in the delivery message |
 | Commits behind `main` | 0 |
 | Working tree | **clean** after this revision is committed |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) |
-| `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`, the initial commit) — **nothing has been pushed** |
+| `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` — **nothing pushed** |
 | Branches | only `main` and `milestone-0-discovery-architecture` |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
@@ -52,24 +52,29 @@ delivery message that accompanies this revision.
 | - | - | - |
 | `f6c7567` | Initial commit (pre-existing) | `README.md` (2 lines) |
 | `1b185f4` | Milestone 0 discovery & architecture report | 19 files: `.gitignore`, `AGENTS.md`, `README.md` (mod), both `docs/*.md`, `eslint.config.mjs`, `next.config.ts`, `package.json`, `package-lock.json`, `tsconfig.json`, `public/{file,globe,next,vercel,window}.svg`, `src/app/{favicon.ico,globals.css,layout.tsx,page.tsx}` |
-| `babc731` | record status + push blocker in AGENTS.md | `AGENTS.md` (+24) |
+| `babc731` | record status + push blocker in AGENTS.md | `AGENTS.md` |
 | `30cfa08` | Milestone 0 revision 2 | `AGENTS.md`, both `docs/*.md` |
 | `8eef5e4` | Milestone 0 revision 3 | `AGENTS.md`, both `docs/*.md` |
+| `1d408bf` | Milestone 0 revision 4 | `AGENTS.md`, both `docs/*.md` |
+| `502fda3`, `c2ea388` | revision-4 self-consistency fixes | `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` |
 
 ### 1.2 Direct answers
 
 - **Is the `create-next-app` scaffold committed?** **VERIFIED: yes** — all 19 scaffold files are
   tracked, **stock/unmodified**.
 - **Was `AGENTS.md` added or modified?** **VERIFIED: added** in `1b185f4`, then **modified** in
-  `babc731`, `30cfa08`, and `8eef5e4`.
+  `babc731`, `30cfa08`, `8eef5e4`, `1d408bf`, and this revision.
 - **Unexpected generated files?** **VERIFIED: none tracked.** Only `.next/`, `node_modules/`,
   `next-env.d.ts` exist and are git-ignored; **zero** untracked non-ignored files.
 
 ### 1.3 Push status — not assumed
 
-**VERIFIED: the four local commits are NOT pushed.** `origin/main` is still `f6c7567` and no
-remote branch `milestone-0-discovery-architecture` exists. Per instruction I have **not pushed**
-and will not without authorization. I am **not** asking you to paste a PAT into chat.
+**VERIFIED: local commits are NOT pushed.** `origin/main` is still `f6c7567`; no remote branch
+`milestone-0-discovery-architecture` exists. **Note:** a read-only access check on 2026-11-16
+found that the repository **now grants Contents write and Pull Requests write** (app `openhands-ai`
+installation: `contents: write`, `pull_requests: write`). **Nothing was pushed** — the write access
+was verified without modifying the remote (`git push --dry-run`, `info/refs?service=git-receive-pack`).
+I am **not** asking you to paste a PAT into chat.
 
 ---
 
@@ -118,10 +123,10 @@ resolves (driver present).
 
 ### 4.2 PGlite suitability (VERIFIED, with explicit limit)
 
-**VERIFIED** by scratch testing: engine PostgreSQL 18.6 (PGlite 0.5.16); transactions and `CHECK`
-constraints work; `FOR UPDATE`, `pg_advisory_xact_lock`, and `SERIALIZABLE` are supported
-*syntax*. **DOCUMENTED:** PGlite is intended for unit/CI testing and local development
-(`https://pglite.dev/docs/about`).
+**VERIFIED (scratch):** engine PostgreSQL 18.6 (PGlite 0.5.16); transactions and `CHECK`
+constraints work; `FOR UPDATE`, `pg_advisory_xact_lock`, and `SERIALIZABLE` are supported syntax;
+unique constraints reject duplicates. **DOCUMENTED:** PGlite is intended for unit/CI testing and
+local development (`https://pglite.dev/docs/about`).
 
 **Limit (explicit):** PGlite is a **single-connection, single-process embedded** engine and
 **cannot reproduce real multi-session contention**. **PGlite evidence is never presented as proof
@@ -134,18 +139,18 @@ Because PGlite **is** PostgreSQL, the same SQL dialect/schema/constraints/migrat
 Production uses a standard PostgreSQL server (managed vs self-hosted — OWNER DECISION). CI runs
 migrations + integration tests against **both** PGlite and a real PostgreSQL server.
 
-### 4.4 Ledger projections vs derived balances (RECOMMENDED)
+### 4.4 Three accounting domains (PROPOSED)
 
-The **ledger is the source of truth** (append-only). A **balance projection** row is maintained
-**inside the same transaction** as the ledger entries, guarded by row locks; **reconciliation**
-recomputes from the ledger and alerts on drift; tests assert **projection == derived**.
+The design has **three independently balanced domains** — MMK, Share, and Claim-unit — with
+single-domain journals committed atomically in one DB transaction (see the financial spec Part 1).
+Balance projection and reconciliation apply per domain; the **ledger is the source of truth**.
 
 ### 4.5 Locking and concurrency (RECOMMENDED)
 
 One DB transaction per financial mutation; consistent lock order; `SELECT … FOR UPDATE` on
 balance/order rows; `pg_advisory_xact_lock(market_id)` around matching; optimistic guards where
-apt; idempotency keys on every mutating endpoint. **Concurrency tests run on real PostgreSQL**
-(PROPOSED).
+apt; idempotency keys on every mutating endpoint; unique payout keys. **Concurrency tests run on
+real PostgreSQL** (PROPOSED).
 
 ### 4.6 Market closure and cancellation races (RECOMMENDED)
 
@@ -157,14 +162,14 @@ apt; idempotency keys on every mutating endpoint. **Concurrency tests run on rea
 | Release vs release | release bounded by unfilled qty, under lock; a second release is a no-op |
 
 The full 12-step closure/settlement lifecycle (two-phase settlement, resumable batch, atomic
-payout key + journal) is in the financial spec Part 4.
+payout key + journals, entitlement snapshot) is in the financial spec Parts 5 and 7.
 
 ### 4.7 Authentication and production email recovery (RECOMMENDED)
 
 Email + password, Argon2id, server-side sessions in `HttpOnly`+`Secure`+`SameSite` cookies,
 server-side session validation, CSRF, rate limiting. Recovery: **development** surfaces reset
 tokens in the UI/log; **production** requires a transactional email provider behind a small
-interface (OWNER DECISION). Reset tokens are single-use, short-lived, hashed at rest; no account
+interface (OWNER DECISION). Reset tokens single-use, short-lived, hashed at rest; no account
 enumeration. *(OPEN: provider choice; phone/SMS requirement.)*
 
 ### 4.8 Migration recovery strategy (RECOMMENDED)
@@ -177,15 +182,15 @@ Backups/restore defined before production (OWNER DECISION).
 ### 4.9 Testing of constraints and financial invariants (RECOMMENDED)
 
 - **Constraint tests:** SQL attempts to violate `CHECK (>= 0)`, `CHECK (price BETWEEN 1 AND 99)`,
-  unique keys, FKs — each **must fail**. **VERIFIED** in PGlite for the mechanism; **PROPOSED**
-  for the real schema.
+  unique keys, FKs — each **must fail**. **VERIFIED (PGlite)** for the mechanism; **PROPOSED** for
+  the real schema.
 - **Invariant tests:** assert C1 (claim-based), C1b, C2, S1, and M1 after every operation class;
   attempt to violate C1 and require failure.
-- **Settlement tests:** the 12-step crash/restart sequence as an automated test.
-- **Projection-vs-derived tests.**
-- **Concurrency tests:** on **real PostgreSQL** (PROPOSED), covering the races in 4.6.
-- **Property-style tests:** randomized split/trade/merge/cancel/settle sequences asserting all
-  invariants after every step.
+- **Settlement failure tests:** the six modes (crash before/after commit, duplicate payout,
+  concurrent workers, idempotency conflict, restart) as automated tests, run on **real PostgreSQL**
+  for the concurrency ones.
+- **Correction tests:** cases B–F with before/after balances.
+- **Property-style tests:** randomized sequences asserting all invariants after every step.
 
 ### 4.10 Module map (RECOMMENDED)
 
@@ -204,13 +209,15 @@ The UI is never authoritative for balances, prices, or calculations.
 Entities (no schema exists): users, user_preferences, sessions, categories, events, markets,
 outcomes, market_sources, resolution_records, **settlement_entitlements** (immutable, survives
 retirement), orders, trades, positions, balances (projection), **ledger_accounts,
-ledger_journals, ledger_entries**, **settlement_payouts** (unique key per
-market/user/resolution_version), **corrections**, idempotency_keys, audit_logs.
+ledger_journals, ledger_entries** (each tagged with its **domain**: MMK/Share/Unit),
+**settlement_payouts** (unique key per market/user/resolution_version), **corrections**,
+idempotency_keys, audit_logs.
 
 Integrity at the storage layer (PROPOSED): integer MMK `BIGINT` with `CHECK (>= 0)`; shares
-`BIGINT` with `CHECK (>= 0)`; price `INT` with `CHECK (price BETWEEN 1 AND 99)`; append-only
-ledger, entitlement, and audit tables; unique keys for positions, idempotency, payouts, and
-corrections; unique slugs; FKs with explicit `ON DELETE`; indexes on hot paths; **one financial
+`BIGINT` with `CHECK (>= 0)`; price `INT` with `CHECK (price BETWEEN 1 AND 99)`; claim units
+`INT` with `CHECK (>= 0)`; append-only ledger/entitlement/audit tables; unique keys for positions,
+idempotency, payouts, and corrections; a `CHECK`/trigger that a journal's entries share one
+domain; unique slugs; FKs with explicit `ON DELETE`; indexes on hot paths; **one financial
 mutation = one transaction**.
 
 ---
@@ -220,8 +227,8 @@ mutation = one transaction**.
 | Level | Tool | Runs against | Covers |
 | - | - | - | - |
 | Unit | Vitest | n/a | money math, ticks, quote/slippage, validation, i18n keys |
-| Integration (logic/constraints) | Vitest + **PGlite** | PGlite | auth, sessions, retrieval, order placement, matching logic, partial fills, reservation/release, positions, split/merge, ledger, idempotency, audit, constraint tests |
-| Integration (concurrency) | Vitest + **real PostgreSQL** | Postgres server | row-lock races, closure/cancel races, simultaneous fills, double-spend attempts |
+| Integration (logic/constraints) | Vitest + **PGlite** | PGlite | auth, sessions, retrieval, order placement, matching logic, partial fills, reservation/release, positions, split/merge, ledger, idempotency, audit, constraint tests, payout-key uniqueness |
+| Integration (concurrency) | Vitest + **real PostgreSQL** | Postgres server | row-lock races, closure/cancel races, simultaneous fills, concurrent settlement workers, double-spend attempts |
 | Migration | dedicated | PGlite + Postgres | migrations apply to empty and populated DBs |
 | E2E | Playwright | running app | navigation, search, filters, market detail, trading UI, portfolio, locale/theme switch, responsive, accessibility |
 | Static | `tsc --noEmit`, ESLint, `next build` | n/a | typecheck, lint, production build |
@@ -236,12 +243,12 @@ and why. A green `next build` is never proof of readiness.
 Password hashing (Argon2id); server-side sessions; CSRF; rate limiting; Zod validation at every
 boundary; safe output; no account enumeration; secrets in env only; audit logging; idempotency
 and concurrency protection; resolution as a **named, audited operator action**; **append-only
-ledger and entitlement snapshot**; **collateralization asserted and reconciled** (claim-based
-C1), not assumed from double-entry.
+ledger and entitlement snapshot**; **collateralization asserted and reconciled** (claim-based C1),
+not assumed from double-entry.
 
 ---
 
-## 8. First PR scope (RECOMMENDED — unchanged from Rev 2/3)
+## 8. First PR scope (RECOMMENDED — unchanged from Rev 2–4)
 
 Smallest sensible first PR: **PR-1 design tokens + app shell** (no data, no auth), then small,
 ordered PRs.
@@ -254,21 +261,21 @@ ordered PRs.
 | PR-4 | Auth | register/login/logout, Argon2id, sessions, guard, CSRF, rate limit, dev reset | auth/session/authorization/reset tests |
 | PR-5 | Market discovery + detail (read-only) | home feed, categories, search, filters, cards, detail, states | retrieval tests; discovery + theming/localization E2E |
 | PR-6 | Dev fixtures | deterministic, idempotent, labelled SIMULATED | seed idempotency; no-duplicate test |
-| PR-7+ | Trading (**gated**) | order book, limit, market, 1-Tap, split/merge, ledger, positions, settlement, corrections — **only after financial spec approval** | invariant + concurrency + settlement + correction suites |
+| PR-7+ | Trading (**gated**) | order book, limit, market, 1-Tap, split/merge, ledger (three domains), positions, settlement, corrections — **only after financial spec approval** | invariant + concurrency + settlement + correction suites |
 
 No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 4)
+## 9. Risk register (Revision 5)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
 | R1 | Burmese financial terminology quality | Med | High | glossary + fluent-speaker sign-off before release | OPEN |
 | R2 | Burmese font rendering (stacked diacritics) | Med | Med | Noto Sans Myanmar, tested line-height, visual QA | RECOMMENDED |
-| R3 | Matching correctness under concurrency | Med | High | row/advisory locks, consistent lock order, real-Postgres concurrency tests | RECOMMENDED |
+| R3 | Matching correctness under concurrency | Med | High | row/advisory locks, consistent lock order, **real-Postgres** concurrency tests | RECOMMENDED |
 | R4 | "No fabricated data" vs demo needs | Med | High | fixtures labelled SIMULATED everywhere | RECOMMENDED |
-| R5 | Collateral not actually backed | Low | Critical | claim-based C1 assertion + reconciliation + dedicated tests (spec Part 5) | RECOMMENDED |
+| R5 | Collateral not actually backed | Low | Critical | claim-based C1 assertion + reconciliation + dedicated tests (spec Part 4) | RECOMMENDED |
 | R6 | PGlite mistaken for proof of concurrency | Med | High | explicit limitation; concurrency tests on real Postgres | VERIFIED (limitation) |
 | R7 | Migration failure mid-deploy | Low | High | transactional forward-only migrations; empty+populated DB tests; backups | RECOMMENDED |
 | R8 | Production email recovery unavailable | High | Med | provider-abstracted; dev-mode reset; provider decision before prod | OPEN |
@@ -277,13 +284,15 @@ No PR is created, merged, or deployed in this milestone.
 | R11 | Cross-outcome matching complexity | Med | Med | defer to a separately reviewed feature | OPEN |
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
 | R13 | Resolution correction after payout | Low | High | entitlement snapshot + compensating entries + funding policy + audit (spec Part 6) | PROPOSED |
-| R14 | Push blocked (read-only credentials) | High | Med | owner grants write or supplies credential out-of-band | VERIFIED |
+| R14 | Push blocked | Low | Med | write access now verified available (contents + PR write) | VERIFIED |
 | R15 | Correction creates a hidden deficit | Low | High | `CorrectionReceivable` makes the deficit explicit; no silent negative balances; audit | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal written in the same transaction as the payout; C1b asserted each step | PROPOSED |
+| R17 | Cross-domain journal accidentally mixes units | Low | High | model rejects mixed-domain journals; DB `CHECK`/trigger per journal domain | PROPOSED |
+| R18 | Real concurrency of settlement workers unproven | High | High | explicitly unverified; must run on real PostgreSQL before release | OPEN |
 
 ---
 
-## 10. Owner decision register (Revision 4)
+## 10. Owner decision register (Revision 5)
 
 ### 10.1 Architecture / product
 
@@ -292,7 +301,7 @@ No PR is created, merged, or deployed in this milestone.
 | AR1 | Stack (Next.js + TS + Tailwind + Postgres/PGlite + Drizzle + Zod + Vitest/Playwright) | approve | RECOMMENDED |
 | AR2 | Auth model | email + password for MVP | OPEN |
 | AR3 | Money model | integer MMK; integer shares; integer price ticks | RECOMMENDED |
-| AR4 | Ledger | append-only double-entry + maintained projection + reconciliation | RECOMMENDED |
+| AR4 | Ledger | append-only double-entry, three domains, maintained projection + reconciliation | RECOMMENDED |
 | AR5 | MVP market type | binary YES/NO only; multi-outcome later | OPEN |
 | AR6 | Fixtures | deterministic, idempotent, labelled SIMULATED | RECOMMENDED |
 | AR7 | i18n / theming | key-based `en`/`my`; light-first with tested dark mode | RECOMMENDED |
@@ -300,8 +309,9 @@ No PR is created, merged, or deployed in this milestone.
 | AR9 | Production DB target | managed vs self-hosted Postgres | OPEN |
 | AR10 | Email provider | choose before production | OPEN |
 | AR11 | Entitlement snapshot retention | keep forever (append-only) | RECOMMENDED |
+| AR12 | Domain tagging on ledger entries | store a `domain` column per entry | RECOMMENDED |
 
-### 10.2 Financial — see the financial spec Part 8 (F1–F15).
+### 10.2 Financial — see the financial spec Part 9 (F1–F16).
 
 ---
 
@@ -322,45 +332,35 @@ No PR is created, merged, or deployed in this milestone.
 | T11 | Brand assets: does a logo exist, or should one be proposed? | OPEN |
 | T12 | Settlement batch size / concurrency limit for the payout phase? | OPEN |
 | T13 | `CorrectionReceivable` recovery: automatic netting vs manual review? | OWNER DECISION |
+| T14 | Should `SettlementCorrection` be allowed to persist past market close, or must it close at 0? | OWNER DECISION |
 
 ---
 
-## 12. Change list — Revision 3 → Revision 4
+## 12. Change list — Revision 4 → Revision 5
 
-1. **C1 rebuilt as a claim-based invariant.** Rev 3's `CollateralBucket = P × outstanding` was
-   false during settlement. Rev 4 defines
-   `CollateralBucket + SettlementPayable + SettlementCorrection = P × ClaimUnitsRemaining`,
-   proven (by hand and by scratch model) at **before recognition, after recognition, after each
-   payout, after a crash, after all payouts, and after retirement**. Added unit control accounts
-   and C1b.
-2. **M1 completed.** Added `SettlementPayable`, `SettlementCorrection`, `CorrectionPayable`, and
-   `CorrectionReceivable`; documented every account's type/normal side/effects; showed every
-   journal preserves M1.
-3. **Resumable settlement proven.** Added the 12-step example with two winners, a simulated
-   worker crash, and a restart; showed every account balance and invariant after each step;
-   stated the exact transaction boundaries; and made the payout journal + unique payout key
-   **atomic**, with correctness **independent of any progress flag**.
-4. **Correction model + entitlements.** Added the immutable `SettlementEntitlement` snapshot
-   (survives retirement) and corrections for before recognition, after recognition, during
-   partial payout, and after full settlement, covering mis-paid credits that are available,
-   reserved, transferred, used to buy shares, and already spent — with accounts, journals, audit
-   records, idempotency, and the effect on M1 (including explicit issuance if permitted).
-5. **Market-order examples expanded** (insufficient liquidity, partial fill with unspent,
-   slippage breach, expired quote, duplicate submission); slippage unit made explicit; **no
-   default tolerance approved on the owner's behalf**.
-6. **Verification claims reconciled** — separated design argument, scratch tests, PGlite tests,
-   real-Postgres-not-executed, and non-existent implementation; added exact commands, runtime
-   versions, and output in Appendix V; **scratch tests are not called product tests**.
-7. **Git verification updated** (HEAD, ahead/behind, clean tree, remote state) and stated to
-   agree with the revision commit.
-8. **All registers updated** (financial F1–F15, architecture AR1–AR11, risks R1–R16, questions
-   T1–T13).
+1. **All correction paths B–F corrected against C1**, with before/after balances, an MMK journal, a
+   claim-unit journal, explicit `ClaimUnitsRemaining`/`UnitsControl` changes, and C1/C1b/M1 checks —
+   all executed in the scratch model (34/34 checks passed). `SettlementCorrection` accounted.
+2. **Three accounting domains** defined (MMK, Share, Claim-unit), each independently balanced;
+   single-domain journals committed atomically; no domain balances against another.
+3. **Settlement failure modes extended** (crash before/after commit, duplicate payout, concurrent
+   workers, idempotency conflict, restart); **real concurrency explicitly not claimed**.
+4. **M1 proof completed** with a per-operation delta table including issuance, receivable raising
+   and recovery, and every correction path; `SettlementCorrection` lifecycle and permitted balance
+   defined.
+5. **Entitlement rules completed**: the settlement ownership cutoff (free + escrowed, cancellations,
+   partially filled sell orders, pending executions) and superseding resolution versions.
+6. **Market-order terminology corrected** (filled quantity, partial fills, unspent budget, expired
+   orders, rejected orders); fill completion never inferred from budget consumption.
+7. **Verification reconciled**: exact commands, runtime versions, and output; scratch vs PGlite vs
+   real-PostgreSQL vs unimplemented clearly separated. Registers updated (F1–F16, AR1–AR12,
+   R1–R18, T1–T14).
 
 ---
 
 ## 13. Stop condition
 
-Per instruction, this revision **stops here**. I have **not** started Milestone 1, added
-features, implemented auth/trading/ledger/settlement, created schemas or migrations, modified
-financial logic, or pushed/merged/deployed. I am **not** asking for permission to implement
-trading. I await your independent review of Revision 4.
+Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
+implemented auth/trading/ledger/settlement, created schemas or migrations, modified financial
+logic, or pushed/merged/deployed. I am **not** asking for permission to implement trading. I await
+your independent review of Revision 5.
