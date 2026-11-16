@@ -15,13 +15,13 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 12** documentation **delivered in `docs/`, awaiting
-  explicit owner approval** (delivery is **not** owner acceptance). Revision 12 **restores the
-  owner-approved M0–M6 roadmap** (documentation-only; the unapproved Revision 10/11 sequence is
-  superseded); Revision 11 corrected the **C2 verification-model defect** and resolved four
-  documentation inconsistencies (D12–D15). **No financial policy, account, journal, architecture
-  direction, or owner decision changed.** The only code change is the scratch verification script
-  `docs/verification/rev9/rev9.mjs` (C2 sign fix + Section 4 share tests).
+- Milestone 0 (Discovery & Architecture) **Revision 12.2** documentation **delivered in `docs/`, awaiting
+  explicit owner approval** (delivery is **not** owner acceptance). Revision 12.2 applies
+  **independent-review corrections** (documentation + verification evidence only); Revision 12
+  **restores the owner-approved M0–M6 roadmap**; Revision 11 corrected the **C2 verification-model
+  defect** and resolved four documentation inconsistencies (D12–D15). **No financial policy, account,
+  journal, architecture direction, or owner decision changed.** The only code change is the scratch
+  verification script `docs/verification/rev9/rev9.mjs` (C2 sign fix + Section 4 share tests).
 - **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
 
@@ -36,7 +36,9 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - **Ledger and trading live inside M4**, strictly behind financial-specification approval. See the
   architecture report **§3.3** for the full table and gates.
 - **Reproducible verification** lives in `docs/verification/rev9/` (scripts + README + captured
-  output). It is **verification, not application code**; do not import it. Run:
+  output) and is **published on the review branch `review/m0-documents-2026-11-16`** (byte-identical to
+  the working branch; source commits `a8bbb06` → `bb498b3`). It is **verification, not application
+  code**; do not import it. Run:
   `node docs/verification/rev9/rev9.mjs` (no deps; **136 tests, 253 assertions**; Section 4 covers C2/S1) and
   `node docs/verification/rev9/rev9-pglite.mjs` (needs `@electric-sql/pglite@0.5.16`).
   Three levels: scratch (single-process) / PGlite (single-connection) / real PostgreSQL multi-session
@@ -75,18 +77,23 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 ### Commands
 - `npm run dev` / `npm run build` / `npm run lint`
 
-### Known environment issue: pushing to GitHub
+### Git access and publication status
 - Repo: https://github.com/0xmingalaba/khanthman-openhands (default branch `main`, shallow clone).
 - **Read access — verified** (`git ls-remote` works; remote refs visible).
-- **Write access — NOT verified.** Write access is **never** tested by pushing.
-- **Historical report (not re-tested):** a prior session reported `git push` failing with **HTTP 403**
-  ("Permission ... denied"); both the git credential helper (`~/.openhands/git-credential-helper`) and
-  `$GITHUB_TOKEN` resolve to a GitHub App / integration token with **read-only** access, and API writes
-  return `Resource not accessible by integration`. Treat this as **historical** until re-established.
-- To push, the owner must grant write (`contents: write`) to the app/integration or provide a PAT with
-  `repo` scope. Do **not** push to `main`; use a feature branch and open a PR.
+- **Write access — verified for the credentials in use.** The documentation review branch
+  **`review/m0-documents-2026-11-16`** was **successfully published** (commit `a6bf123`), pushed as a
+  **new, non-`main` branch** and independently re-fetched to confirm it matches. Write access is
+  established by this **non-destructive publication** — **never** by writing to `main` or force-pushing.
+- **`origin/main` — unchanged** (`f6c7567`); nothing merged; the working branch
+  `milestone-0-discovery-architecture` is **separate** from the review branch and does **not** exist
+  remotely.
+- **Historical report (dated 2026-11-16, working-branch context; NOT current, superseded):** an earlier
+  session reported `git push` failing with **HTTP 403** ("Permission ... denied"), with the credential
+  helper and `$GITHUB_TOKEN` resolving to a **read-only** GitHub App / integration token. Retained
+  **only** as a dated, branch-scoped historical record; it no longer describes the current state.
+- Policy: **do not push to `main`**; use a feature/review branch.
 
-### Dependency status (Revision 12 — do not overstate)
+### Dependency status (Revision 12.2 — do not overstate)
 - **Declared in `package.json`:** `next`, `react`, `react-dom` (deps); `@tailwindcss/turbopack`,
   `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`,
   `typescript` (devDeps). **Nothing else.**

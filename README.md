@@ -10,6 +10,12 @@ original Khant Hman branding.
 > yet. This repository currently contains an unmodified Next.js scaffold (used only to verify
 > the recommended stack builds) plus planning documentation awaiting product-owner approval.
 >
+> **Branch scope.** The **`main` branch does not contain the documents below.** The published review
+> branch **`review/m0-documents-2026-11-16`** is a **documentation-and-evidence-only snapshot**: it
+> contains the four Milestone 0 Markdown documents plus the `docs/verification/rev9/` evidence, and it
+> does **not** contain the Next.js scaffold or any application code. The scaffold lives on the
+> **working branch `milestone-0-discovery-architecture`**, not on the review branch.
+>
 > **Virtual credits only.** Credits are virtual and can never be deposited, withdrawn, or
 > redeemed. There is no real money, no payment processing, and no monetary value.
 
@@ -40,7 +46,7 @@ original Khant Hman branding.
   **Appendix B coverage matrix** for topic-by-topic status. It is **not** a complete financial
   specification and **no approval has been granted**. (Revision 11 corrected the C2 verification-model
   defect and the C2/S1 share-ledger tests; see the spec Part 4a and
-  [`docs/verification/rev9/`](docs/verification/rev9/).)
+  [`docs/verification/rev9/`](docs/verification/rev9/), which is included on the review branch.)
 
 ---
 
@@ -79,6 +85,10 @@ verification evidence and its limits.
 ---
 
 ## Getting started (development)
+
+> These commands require the **Next.js scaffold**, which is present on the **working branch
+> `milestone-0-discovery-architecture`**, **not** on the documentation review branch
+> `review/m0-documents-2026-11-16`.
 
 ```bash
 npm install

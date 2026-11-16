@@ -1,13 +1,14 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 12) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 11 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12)
+**Status:** DRAFT (Revision 12.2) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 12 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.2)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
-**Revision 12 restores the owner-approved M0–M6 roadmap** (documentation-only; the Revision 11 C2
-verification-model correction and S1 derivation remain). **No financial policy, account, journal, or
-decision was changed and no alternative was selected.**
+**Revision 12.2 applies independent-review corrections** (documentation only): it clarifies **internal
+payout terminology** (§6.7 / E8) and the **price grid** (Appendix B topic 16; **T1 stays OPEN**), and
+publishes the `docs/verification/rev9/` evidence to the review branch. **No financial policy, account,
+journal, or decision was changed and no alternative was selected.**
 
 ### Verification labels
 
@@ -31,7 +32,7 @@ decision was changed and no alternative was selected.**
 
 ---
 
-## Part 0 — Change history (Revision 9, Revision 10, Revision 11 and Revision 12)
+## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12 and Revision 12.2)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -116,6 +117,20 @@ Revision 9 corrects all three.
 - **No financial decision changed.** F14 and F16–F31 remain **NOT APPROVED**; F28, F30 and F31 remain
   undecided. **No policy was selected and no ledger/trading/schema/migration code was written.**
   **C2/S1 verification corrections are not financial approval.** See the architecture report §12.3.
+
+### Revision 12.2 — independent-review corrections (documentation + evidence only)
+
+- **Internal payout terminology clarified (§6.7 / E8).** E8's "payout" is **internal virtual-credit
+  settlement/distribution** only — it is **not** a cash payment, withdrawal, redemption, external
+  transfer, or real-money payout. **No journal, account, or policy changed.**
+- **Price grid clarified (Appendix B topic 16).** `CHECK (price BETWEEN 1 AND 99)` is a **proposed
+  integer range bound only** and implies **no tick increment**; the exact integer price grid remains
+  **T1, still OPEN**. **No price grid is selected or approved.**
+- **Verification evidence published.** `docs/verification/rev9/` is published on the review branch
+  `review/m0-documents-2026-11-16` (**byte-identical**, no reported result changed); see the architecture
+  report §6.1. **No reported test result changed.**
+- **No financial decision changed (Revision 12.2).** F14, F16–F31 remain **NOT APPROVED**; F28, F30,
+  F31 undecided; no policy selected. See the architecture report §12.4.
 
 ---
 
@@ -274,7 +289,7 @@ payout keys reject duplicates and credit exactly once.
 | **E5** | Owner-approved write-off | `CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` | MMK |
 | **E6** | Owner-approved issuance | `CreditsIssued D x / (CorrectionReceivable:Bob C a + CorrectionWriteOffLoss:M C b)`, `a+b=x` — **how `x` is split between `a` and `b` is F28, NOT APPROVED** (see 6.4a) | MMK |
 | **E7** | Funded claim-unit reopening | `ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P` | UNIT |
-| **E8** | Payout of the corrected entitlement | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
+| **E8** | Payout of the corrected entitlement (**internal** virtual-credit settlement only — see 6.7) | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
 | **E9** | Claim-unit retirement | `UnitsControl:M D u / ClaimUnitsRemaining:M C u` | UNIT |
 
 ### 6.2 E2 — recognition
@@ -442,11 +457,26 @@ cannot double-count the same entitlement. This is **not** a claim of production-
 concurrency, multi-user allocation, and crash/retry for Option A are **not verified** (Part 12).
 Whether to adopt Option A remains **OWNER DECISION F20 / AR15** (recommendation: Option B).
 
-### 6.7 E8/E9 — payout and retirement
+### 6.7 E8/E9 — internal settlement ("payout") and retirement
 
 `E8` (MMK) moves realized funding to Alice; `E9` (UNIT) retires the units. **Payout and retirement
 must be atomic**, and the payout may not exceed the funded `SettlementCorrection`. **VERIFIED
 (scratch R9-09, R8-15).**
+
+> **Terminology — "payout" here is INTERNAL only.** Throughout this document, **"payout"** means the
+> **internal virtual-credit settlement/distribution** of an entitlement between ledger accounts
+> (`SettlementCorrection:M` → `UserAvailable:Alice`). It is **explicitly NOT** any of the following, and
+> this document defines no such mechanism:
+>
+> - **cash payment** (no money is paid);
+> - **withdrawal** (credits can never be withdrawn);
+> - **redemption** (credits are non-redeemable; there is **no** `Cash` asset — see Part 2.1);
+> - **external transfer** (no transfer leaves the system);
+> - **real-money payout** (credits have **no** monetary value).
+>
+> The **virtual-credit-only** product rule is **unchanged**: credits are internal, non-redeemable
+> units. This clarification changes **no journal, account, or financial policy** — it only fixes
+> wording so "payout" is never read as a cash disbursement.
 
 ---
 
@@ -588,7 +618,7 @@ and payout → funding is preserved and payout resumes; during retry → idempot
 
 ---
 
-## Part 10 — Financial decision register (Revision 12)
+## Part 10 — Financial decision register (Revision 12.2)
 
 All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
 **F1–F13 and F15 are not defined in this document** (see the note after the table).
@@ -842,7 +872,7 @@ required · **D** = deferred to a later milestone.
 | 13 | Correction state model | S | Part 7 |
 | 14 | Worked scenarios | S | Part 8 |
 | 15 | Atomicity / idempotency / recovery | P | Part 9; concurrency unproven |
-| 16 | **Price grid / integer price tick** | **M** | Not defined (T1); only UX reference |
+| 16 | **Price grid / integer price tick** | **M** | **T1 OPEN** — not defined; `BETWEEN 1 AND 99` is a proposed range only, no tick selected |
 | 17 | **Minimum order size / notional** | **M** | Not defined |
 | 18 | **Fees** | **M** | Not defined; only Polymarket UX formula quoted |
 | 19 | **Slippage tolerance unit/default** | **M** | Not defined (T4/R12) |
@@ -859,6 +889,11 @@ required · **D** = deferred to a later milestone.
 (#16), the **minimum order size / notional** (#17), the **fee rule** (#18), and the **slippage unit and
 default** (#19) are **not specified** in this document and are **owner decisions** (T1, T4, R12).
 **No values or policies are chosen here.**
+
+**Price-grid scope note (T1 stays OPEN):** the integrity bound `CHECK (price BETWEEN 1 AND 99)` proposed
+in the architecture report **§5** is a **validity range only** — it is **not** a price grid and implies
+**no tick increment**. The **exact integer price grid / tick size is undecided** and remains **owner
+decision T1**. This document **selects and approves no price grid**.
 
 **Conclusion:** the specification is **substantially specified for the accounting/correction model** but
 **materially incomplete for pricing, trading mechanics, and multi-user correction handling**. The
