@@ -18,6 +18,10 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - Milestone 0 (Discovery & Architecture) **Revision 9** delivered in `docs/`. Awaiting owner review.
 - **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED. Milestone 1 has NOT started.**
 - Trading code is **gated** on approval of `docs/FINANCIAL-SPECIFICATION.md`.
+- **Reproducible verification** lives in `docs/verification/rev9/` (scripts + README + captured
+  output). It is **verification, not application code**; do not import it. Run:
+  `node docs/verification/rev9/rev9.mjs` (no deps) and
+  `node docs/verification/rev9/rev9-pglite.mjs` (needs `@electric-sql/pglite@0.5.16`).
 - Accounting model (Rev 9): three **independently balanced domains** — MMK, Share, Claim-unit.
   Single-domain journals; no domain balances against another; committed atomically together.
 - Unique economic events **E1–E9** (Rev 9 fixed the duplicated Rev-8 `E3`):
@@ -29,8 +33,9 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - **Issuance (E6) is ATOMIC with realization (E4) and reopening (E7)** — this is the Rev-9 fix:
   the Rev-8 E7 credited `SettlementCorrection` without reopening units (broke C1) and did not clear
   `PendingCorrectionClaim` (double-counted). Issuance cancels the outstanding claim
-  (receivable, else write-off loss), so `pending + corr` never exceeds the correction amount and a
-  later collection cannot re-fund it.
+  (receivable and/or write-off loss), so `pending + corr` never exceeds the correction amount and a
+  later collection cannot re-fund it. **The cancel order (receivable-first vs loss-first) is F28 and
+  is NOT approved**; the derivation is in financial spec 6.4a.
 - Write-off: owner-approved only, `CorrectionWriteOffLoss:M D / CorrectionReceivable:Bob C`
   (debit-normal loss). Unapproved write-off is rejected.
 - C1 backing = `CollateralBucket + SettlementPayable + SettlementCorrection

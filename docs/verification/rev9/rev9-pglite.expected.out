@@ -1,0 +1,16 @@
+P1 recognize: committed
+   after recognition: [{"account":"ClaimUnitsRemaining:M","balance":0},{"account":"CorrectionReceivable:Bob","balance":200},{"account":"CorrectionWriteOffLoss:M","balance":0},{"account":"CreditsIssued","balance":30000},{"account":"PendingCorrectionClaim:M","balance":200},{"account":"SettlementCorrection:M","balance":0},{"account":"UnitsControl:M","balance":0},{"account":"UserAvailable:Alice","balance":9800},{"account":"UserAvailable:Bob","balance":10200}]
+P2 issuance rollback: rolled-back: injected failure after journals
+   state unchanged after rollback: true
+P3 issuance commit: committed
+   balances: [{"account":"ClaimUnitsRemaining:M","balance":2},{"account":"CorrectionReceivable:Bob","balance":0},{"account":"CorrectionWriteOffLoss:M","balance":0},{"account":"CreditsIssued","balance":30200},{"account":"PendingCorrectionClaim:M","balance":0},{"account":"SettlementCorrection:M","balance":200},{"account":"UnitsControl:M","balance":2},{"account":"UserAvailable:Alice","balance":9800},{"account":"UserAvailable:Bob","balance":10200}]
+P4 corrected E6: issued 30200, recv 0, pending 0, corr 200, units 2: true
+   ledger rows T-ISS: 6 | T-ISS-FAIL: 0
+P5a after write-off: loss 200, recv 0: true
+P5 Path A: loss reversed after issuance: true | pending 0: true | corr 200: true
+P6 issuance: committed
+P6 duplicate issuance: rejected: duplicate key value violates unique constraint "issuance_pkey"
+P7 payout: committed
+P7 duplicate payout: rejected: duplicate key value violates unique constraint "payouts_pkey"
+P8 negative claim cancel rejected: rolled-back: new row for relation "accounts" violates check constraint "accounts_balance_check"
+   receivable non-negative: true

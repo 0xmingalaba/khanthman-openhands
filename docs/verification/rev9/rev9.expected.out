@@ -1,0 +1,279 @@
+############ SECTION 1 — Revision 8 suite (preserved) ############
+--- R8-01: recognition ---
+   [E2] COMMITTED (all invariants hold at boundary)
+PASS R8-01 recognize: CorrectionReceivable D 200 / PendingCorrectionClaim C 200 | expected=committed actual=committed
+PASS R8-01b receivable 200, pending 200, corr 0, units 0 | expected=true actual=true
+PASS R8-01 after recognition                        MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+--- R8-02: full collection ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-02] COMMITTED (all invariants hold at boundary)
+PASS R8-02 full collect+realize+reopen (2 units) | expected=committed actual=committed
+PASS R8-02b receivable 0, pending 0, corr 200, units 2 | expected=true actual=true
+   [R8-02c] COMMITTED (all invariants hold at boundary)
+PASS R8-02c pay+close -> all zero | expected=committed actual=committed
+PASS R8-02d Bob 10000, Alice 10000 | expected=true actual=true
+PASS R8-02 final                                    MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+--- R8-03: partial collection ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-03] COMMITTED (all invariants hold at boundary)
+PASS R8-03 partial: collect+realize+reopen 1 funded unit | expected=committed actual=committed
+PASS R8-03b receivable 100, pending 100, funded 100, 1 unit | expected=true actual=true
+   [R8-03c] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R8-03c reopening the 2nd (unfunded) unit is rejected | expected=rolled-back actual=rolled-back
+   [R8-03d] COMMITTED (all invariants hold at boundary)
+PASS R8-03d collecting the outstanding 100 later commits | expected=committed actual=committed
+PASS R8-03e all collected: recv 0, pending 0, corr 200, units 2 | expected=true actual=true
+--- R8-04: zero collection ---
+   [E2] COMMITTED (all invariants hold at boundary)
+PASS R8-04 zero collection: no journal; receivable 200 outstanding, corr 0, units 0 | expected=true actual=true
+PASS R8-04 uncollectible-so-far                     MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+--- R8-05/R8-06: over-collection guards ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-05] REJECTED (NEGATIVE BALANCE: CorrectionReceivable:Bob would be -100) -> ROLLBACK
+PASS R8-05 collect 300 > outstanding 200 -> rejected | expected=rolled-back actual=rolled-back
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-06] REJECTED (NEGATIVE BALANCE: UserAvailable:Bob would be -150) -> ROLLBACK
+PASS R8-06 collect 200 > Bob available 50 -> rejected | expected=rolled-back actual=rolled-back
+--- R8-07/R8-08: collection idempotency ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [c] COMMITTED (all invariants hold at boundary)
+PASS R8-07a first collection commits (100) | expected=committed actual=committed
+PASS R8-07 duplicate collection is a no-op | expected=duplicate actual=duplicate
+PASS R8-08 same collection key different payload -> conflict | expected=conflict actual=conflict
+--- R8-09/R8-10: write-off ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-09] REJECTED (WRITE-OFF NOT APPROVED) -> ROLLBACK
+PASS R8-09 unapproved write-off rejected | expected=rolled-back actual=rolled-back
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-10] COMMITTED (all invariants hold at boundary)
+PASS R8-10 approved write-off journal balances | expected=committed actual=committed
+PASS R8-10b receivable 0, loss 200; M1 holds | expected=true actual=true
+--- R8-11/R8-12: funding gates reopening ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-11] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R8-11 unfunded correction cannot reopen claim units | expected=rolled-back actual=rolled-back
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-12] COMMITTED (all invariants hold at boundary)
+PASS R8-12 funded tranche reopens its 1 backed unit | expected=committed actual=committed
+PASS R8-12b C1 holds: corr 100 = 100 x 1 unit | expected=true actual=true
+   [R8-12c] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R8-12c realize alone (no reopen) rejected: funding without units breaks C1 | expected=rolled-back actual=rolled-back
+--- R8-13/R8-14: immediate and delayed payout ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-13] COMMITTED (all invariants hold at boundary)
+PASS R8-13 immediate: collect+realize+reopen+pay+close in one transaction | expected=committed actual=committed
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-14a] COMMITTED (all invariants hold at boundary)
+PASS R8-14a delayed funding transaction | expected=committed actual=committed
+PASS R8-14b backing preserved between transactions | expected=true actual=true
+   [R8-14c] COMMITTED (all invariants hold at boundary)
+PASS R8-14c delayed payment transaction | expected=committed actual=committed
+--- R8-15/R8-16: duplicate payout and funding ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [f] COMMITTED (all invariants hold at boundary)
+   [R8-15] REJECTED (NEGATIVE BALANCE: SettlementCorrection:M would be -200) -> ROLLBACK
+PASS R8-15 duplicate payout rejected | expected=rolled-back actual=rolled-back
+   [E2] COMMITTED (all invariants hold at boundary)
+   [f2] COMMITTED (all invariants hold at boundary)
+   [R8-16] REJECTED (NEGATIVE BALANCE: PendingCorrectionClaim:M would be -200) -> ROLLBACK
+PASS R8-16 duplicate realization rejected (pending exhausted) | expected=rolled-back actual=rolled-back
+--- R8-17/R8-18: failure and rollback ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R8-17] REJECTED (crash) -> ROLLBACK
+PASS R8-17 failure after collection rolls back | expected=rolled-back actual=rolled-back
+PASS R8-17b state byte-identical after rollback | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [c2] COMMITTED (all invariants hold at boundary)
+   [R8-18] REJECTED (crash) -> ROLLBACK
+PASS R8-18 failure after reopening rolls back reopening | expected=rolled-back actual=rolled-back
+PASS R8-18b corr 200 and units 2 intact | expected=true actual=true
+--- R8-19/R8-20: restart retry and reconciliation ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [a] COMMITTED (all invariants hold at boundary)
+PASS R8-19a first apply commits | expected=committed actual=committed
+PASS R8-19 retry is idempotent | expected=duplicate actual=duplicate
+PASS R8-19b Alice paid exactly once | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [r] COMMITTED (all invariants hold at boundary)
+PASS R8-20 final reconciliation all zero | expected=true actual=true
+
+############ SECTION 2 — Revision 9 suite (new) ############
+--- R9-01..R9-04: corrected E6 issuance (Path B: receivable outstanding) ---
+   [E2] COMMITTED (all invariants hold at boundary)
+PASS R9-00 after recognition (pending 200)          MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [R9-01] COMMITTED (all invariants hold at boundary)
+PASS R9-01 corrected E6 issuance+realize+reopen commits atomically | expected=committed actual=committed
+PASS R9-01b corr 200 = 100 x 2 units (C1 holds after issuance) | expected=true actual=true
+PASS R9-02 no double-count: pending 0 and corr 200 | expected=true actual=true
+PASS R9-03 issuance cancels the receivable (recv 0) | expected=true actual=true
+PASS R9-03b CreditsIssued increased by 200 (30000 -> 30200) | expected=true actual=true
+PASS R9-01.1 after corrected issuance               MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=0 corr=200 loss=0 units=2 | AvA=9800 AvB=10200 AvC=10000 issued=30200
+   [R9-04] REJECTED (NEGATIVE BALANCE: CorrectionReceivable:Bob would be -200) -> ROLLBACK
+PASS R9-04 later collection after issuance is rejected (receivable gone) | expected=rolled-back actual=rolled-back
+--- R9-05/R9-06: Path A write-off, then issuance ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-05a] COMMITTED (all invariants hold at boundary)
+PASS R9-05a write-off records loss and keeps the claim pending | expected=committed actual=committed
+PASS R9-05b after write-off: recv 0, loss 200, pending 200, corr 0 | expected=true actual=true
+PASS R9-05.0 after write-off (loss recognized, correction pending) MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=200 corr=0 loss=200 units=0 | AvA=9800 AvB=10200 AvC=10000 issued=30000
+   [R9-05c] COMMITTED (all invariants hold at boundary)
+PASS R9-05c issuance after write-off commits; loss reversed; pending cleared | expected=committed actual=committed
+PASS R9-05d final: recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
+PASS R9-05.1 after issuance (loss reclassified to issuance cost) MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=0 corr=200 loss=0 units=2 | AvA=9800 AvB=10200 AvC=10000 issued=30200
+--- R9-07/R9-08: partial collection then partial issuance ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-07] COMMITTED (all invariants hold at boundary)
+PASS R9-07 partial collection 100 -> pending 100, corr 100, 1 unit | expected=committed actual=committed
+PASS R9-07b balances: recv 100, pending 100, corr 100, units 1 | expected=true actual=true
+PASS R9-07 partial collection                       MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=100 pending=100 corr=100 loss=0 units=1 | AvA=9800 AvB=0 AvC=20100 issued=30000
+   [R9-08] COMMITTED (all invariants hold at boundary)
+PASS R9-08 partial issuance 100 for the remainder -> corr 200, units 2 | expected=committed actual=committed
+PASS R9-08b all funded: recv 0, pending 0, corr 200, units 2 | expected=true actual=true
+PASS R9-08 partial issuance                         MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=0 corr=200 loss=0 units=2 | AvA=9800 AvB=0 AvC=20100 issued=30100
+--- R9-09/R9-10: delayed payout and duplicate issuance ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [fund] COMMITTED (all invariants hold at boundary)
+PASS R9-09a backing preserved between funding and payout | expected=true actual=true
+   [R9-09b] COMMITTED (all invariants hold at boundary)
+PASS R9-09b delayed payout commits | expected=committed actual=committed
+PASS R9-09c final all-zero; Alice 10000, Bob 10200 | expected=true actual=true
+PASS R9-09 delayed payout                           MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [R9-10] REJECTED (ISSUANCE EXCEEDS OUTSTANDING CLAIM (nothing to cancel)) -> ROLLBACK
+PASS R9-10 duplicate issuance rejected (nothing left to cancel) | expected=rolled-back actual=rolled-back
+--- R9-11/R9-12/R9-13: duplicate guards ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [c] COMMITTED (all invariants hold at boundary)
+PASS R9-11a first collection commits | expected=committed actual=committed
+PASS R9-11 duplicate collection no-op | expected=duplicate actual=duplicate
+PASS R9-11b same key different payload -> conflict | expected=conflict actual=conflict
+   [E2] COMMITTED (all invariants hold at boundary)
+   [f] COMMITTED (all invariants hold at boundary)
+   [R9-12] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R9-12 duplicate reopening rejected (units already 2, funding 200) | expected=rolled-back actual=rolled-back
+   [R9-13] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R9-13 duplicate payout rejected | expected=rolled-back actual=rolled-back
+--- R9-14/R9-15: crash and retry ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-14] REJECTED (crash after funding) -> ROLLBACK
+PASS R9-14 crash between funding and payout: funding tx fails and rolls back | expected=rolled-back actual=rolled-back
+PASS R9-14b state reconciled and resumable (pending 200, corr 0, units 0) | expected=true actual=true
+   [i] COMMITTED (all invariants hold at boundary)
+PASS R9-15a retry: first issuance commits | expected=committed actual=committed
+PASS R9-15 retry after restart is idempotent | expected=duplicate actual=duplicate
+--- R9-16/R9-17: declined issuance; insufficient balance ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-16] REJECTED (ISSUANCE NOT APPROVED) -> ROLLBACK
+PASS R9-16 owner declines issuance -> correction stays pending | expected=rolled-back actual=rolled-back
+PASS R9-16b pending 200 outstanding, corr 0, units 0 | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-17] REJECTED (NEGATIVE BALANCE: UserAvailable:Bob would be -150) -> ROLLBACK
+PASS R9-17 collect 200 > Bob available 50 -> rejected | expected=rolled-back actual=rolled-back
+--- R9-18/R9-19: unfunded reopening; negative receivable ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-18] COMMIT-BOUNDARY invariant failure -> ROLLBACK
+PASS R9-18 unfunded reopening rejected | expected=rolled-back actual=rolled-back
+PASS R9-19 negative receivable rejected | expected=true actual=true
+--- R9-20..R9-23: final reconciliation and invariant sweep ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-20] COMMITTED (all invariants hold at boundary)
+PASS R9-20 issuance-funded final reconciliation (all correction accounts 0) | expected=true actual=true
+PASS R9-20 final (issuance-funded)                  MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=0 corr=0 loss=0 units=0 | AvA=10000 AvB=10200 AvC=10000 issued=30200
+PASS R9-21.0 initial                                MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [E2] COMMITTED (all invariants hold at boundary)
+PASS R9-21.1 after recognition                      MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [c] COMMITTED (all invariants hold at boundary)
+PASS R9-21.2 after collection+realize+reopen        MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [p] COMMITTED (all invariants hold at boundary)
+PASS R9-21.3 after payout+close                     MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+PASS R9-21 M1/C1/C1b held after every committed transition | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-22] REJECTED (crash) -> ROLLBACK
+PASS R9-22 issuance+reopen rollback on failure | expected=rolled-back actual=rolled-back
+PASS R9-22b byte-identical after rollback | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [i] COMMITTED (all invariants hold at boundary)
+PASS R9-23 no double-count: pending+corr == 200 (never 400) | expected=true actual=true
+
+############ SECTION 3 — Revision 9 review-prep suite (new) ############
+--- R9-24..R9-29: F28 cancel-order — four claim states, both orders ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-24] COMMITTED (all invariants hold at boundary)
+PASS R9-24 fully outstanding, recv-first: recv 0, loss 0, corr 200 | expected=committed actual=committed
+PASS R9-24b recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-25] COMMITTED (all invariants hold at boundary)
+PASS R9-25 fully outstanding, loss-first: same result (recv 0, loss 0, corr 200) | expected=committed actual=committed
+PASS R9-25b recv 0, loss 0, corr 200 (orders agree when only recv exists) | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-26] COMMITTED (all invariants hold at boundary)
+PASS R9-26 fully written-off, recv-first: recv 0, loss 0, corr 200 | expected=committed actual=committed
+PASS R9-26b recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-27] COMMITTED (all invariants hold at boundary)
+PASS R9-27 fully written-off, loss-first: same result | expected=committed actual=committed
+PASS R9-27b recv 0, loss 0, corr 200 (orders agree when only loss exists) | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-28] COMMITTED (all invariants hold at boundary)
+PASS R9-28 partial write-off (recv 100, loss 100), recv-first: issuance 200 commits | expected=committed actual=committed
+PASS R9-28b recv-first residual: recv 0, loss 0 (both fully cancelled) | expected=true actual=true
+PASS R9-28 partial write-off, recv-first            MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-29] COMMITTED (all invariants hold at boundary)
+PASS R9-29 partial write-off, loss-first: issuance 200 commits | expected=committed actual=committed
+PASS R9-29b loss-first residual: loss 0, recv 0 (both fully cancelled here too) | expected=true actual=true
+PASS R9-29 partial write-off, loss-first            MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-30] COMMITTED (all invariants hold at boundary)
+PASS R9-30 partial write-off, recv-first, issuance 100: cancels recv first | expected=committed actual=committed
+PASS R9-30b recv-first residual: recv 0, loss 100 (loss stays outstanding) | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-31] COMMITTED (all invariants hold at boundary)
+PASS R9-31 partial write-off, loss-first, issuance 100: cancels loss first | expected=committed actual=committed
+PASS R9-31b loss-first residual: loss 0, recv 100 (receivable stays outstanding) | expected=true actual=true
+PASS R9-31 partial write-off, loss-first, partial issuance (orders differ) MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E3] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [R9-32] COMMITTED (all invariants hold at boundary)
+PASS R9-32 collected+written-off, loss-first: issuance 100 for the remainder | expected=committed actual=committed
+PASS R9-32b all funded: recv 0, loss 0, pending 0, corr 200, units 2 | expected=true actual=true
+PASS R9-32 collected+written-off, loss-first        MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+     : recv=0 pending=0 corr=200 loss=0 units=2 | AvA=9800 AvB=0 AvC=20100 issued=30100
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [x] COMMITTED (all invariants hold at boundary)
+PASS R9-33 M1 holds after partial-write-off issuance (recv-first) | expected=true actual=true
+   [E2] COMMITTED (all invariants hold at boundary)
+   [E5] COMMITTED (all invariants hold at boundary)
+   [x] COMMITTED (all invariants hold at boundary)
+PASS R9-33b M1 holds after partial-write-off issuance (loss-first) | expected=true actual=true
+--- R9-34..R9-38: Option A completeness (CorrectionPayableMarket) ---
+   [E2] COMMITTED (all invariants hold at boundary)
+   [R9-34] COMMITTED (all invariants hold at boundary)
+PASS R9-34 Option A: issuance-funded reopen then recognize | expected=committed actual=committed
+PASS R9-34b Option A after recognition: corr 0, corrPayableMarket 200, units 2, C1 holds | expected=true actual=true
+PASS R9-35 Option A: no double-count (corr + corrPayableMarket = 200, not 400) | expected=true actual=true
+   [R9-36] COMMITTED (all invariants hold at boundary)
+PASS R9-36 Option A payout: market control -> Alice, then close | expected=committed actual=committed
+PASS R9-36b Option A final: corr 0, corrPayableMarket 0, units 0, Alice 10000 | expected=true actual=true
+PASS R9-37 Option A subledger ties to market control at every step | expected=true actual=true
+PASS R9-37 Option A reconciliation                  MMK=true SH=true UN=true C1=true C1b=true M1=true C2=true S1=true nonNeg=true subTie=true noDbl=true
+   [R9-38] REJECTED (NEGATIVE BALANCE: SettlementCorrection:M would be -200) -> ROLLBACK
+PASS R9-38 Option A: double recognition rejected (corr already 0) | expected=rolled-back actual=rolled-back
+
+================ SUMMARY ================
+test cases: 102 (102 passed, 0 failed)
+invariant assertions at commit boundaries: 220
+>>> ALL CHECKS PASSED (scratch)

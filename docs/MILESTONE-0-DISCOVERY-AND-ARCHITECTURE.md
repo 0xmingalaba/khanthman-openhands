@@ -393,9 +393,15 @@ No PR is created, merged, or deployed in this milestone.
 3. **Duplicate `E3` event identifier fixed:** events renumbered uniquely **E1–E9**.
 4. **Two issuance paths analysed** (Path A write-off→issuance, Path B issuance while outstanding) with
    complete journals and post-commit balances; **F27/F28/F29**, **AR19**, **R29–R32**, **T25–T27**.
-5. **Verification extended:** Revision 9 scratch model (**75 test cases, 165 invariant assertions**;
-   Rev-8 suite preserved) + PGlite mechanism test.
-6. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
+5. **Verification extended and made reproducible:** the Revision 9 scratch model (**102 test cases,
+   220 invariant assertions**; the 45 Rev-8 tests are preserved) is now committed in the repository at
+   **`docs/verification/rev9/`** with a README, captured outputs, and exact commands; a PGlite
+   mechanism test accompanies it.
+6. **F28 resolved in derivation, not in policy:** the E6 cancel order is derived for every claim state
+   (financial spec 6.4a); **loss-first** is recommended and **F28 remains unapproved**.
+7. **Option A completeness established:** the Option A lifecycle and a no-double-count proof are added
+   (financial spec 6.6); adoption remains F20 / AR15.
+8. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
 
 ---
 
