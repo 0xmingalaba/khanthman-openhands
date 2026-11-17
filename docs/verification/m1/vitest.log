@@ -1,0 +1,5 @@
+RUN  v5.1.0 <repo>
+
+ Test Files  4 passed (4)
+      Tests  28 passed (28)
+   Duration  3.38s (environment 40%, tests 35%, setup 12%, import 9%, transform 2%, worker 1%)

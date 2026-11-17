@@ -1,14 +1,22 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 11)
+# Milestone 0 — Discovery & Architecture Report (Revision 12.6)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 11) — **awaiting product-owner review. NO APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 10 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 11)
-**Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
-features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
-**Revision 11 corrects the C2 verification-model defect and four documentation inconsistencies**
-(D12–D15); **no financial policy, account, journal, architecture direction, or owner decision was
+**Status:** DRAFT (Revision 12.6) — **delivered and accepted as the Milestone 0 planning baseline.**
+**Milestone 1 (application foundation) is IN PROGRESS** on branch `milestone-1-foundation`.
+**NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 12.5 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 12.6)
+**Milestone:** Milestone 0 planning baseline accepted; **Milestone 1 (application foundation) is IN
+PROGRESS**. M1 implements presentation, preferences, and a **non-financial** schema/migration
+foundation only. **No auth, trading, ledger, matching, or settlement code exists.**
+**Revision 12.6 corrects payout terminology consistency** (documentation only): it separates the
+**prohibited** real-money flows (deposits, withdrawals, redemption, cash payouts, real-money payments,
+external transfers) from the **permitted internal virtual-credit settlement** between ledger accounts,
+and prefers the term **"internal virtual-credit settlement"** over the ambiguous standalone word
+**"payout"**. Historical records are preserved and labelled (initial publication `a6bf123`, Revision
+12.2 `b2437c8`, Revision 12.3 `7bca12d`, Revision 12.4 `67251ad`, original `main` baseline
+`f6c7567`). **No financial policy, account, journal, architecture direction, or owner decision was
 changed.**
 
 ### Verification labels
@@ -34,20 +42,27 @@ changed.**
 
 ## 1. Repository and Git verification (VERIFIED)
 
-Run against the live local clone on 2026-11-16. **No secrets, tokens, or credential contents are
-included.** To avoid a self-referential stale hash, this table states facts true after this revision
-is committed; the exact final commit hash is in the delivery message.
+Run against the live local clone on **2026-11-16**. **No secrets, tokens, or credential contents are
+included.** This section distinguishes two branches:
+
+- the **original working branch** `milestone-0-discovery-architecture`, where the Revision 12 documents
+  are **modified but uncommitted**; and
+- the **separate documentation review branch** `review/m0-documents-2026-11-16`, where a **committed
+  documentation-only snapshot** was published for independent review.
+
+The Revision 12 documents therefore **have a committed hash only on the review branch**; on the working
+branch they remain uncommitted.
 
 | Item | Value |
 | - | - |
-| Current branch | `milestone-0-discovery-architecture` |
-| Commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → `9f1304d` → **this revision's commit** |
-| Commits ahead of `main` | **15** before this revision; one documentation commit per Milestone-0 revision plus small follow-ups. Exact final count and hash are in the delivery message |
-| Commits behind `main` | 0 |
-| Working tree | **clean** after this revision is committed |
+| Observation date | **2026-11-16** (single observation; not a live feed) |
 | Remote | `origin` = `https://github.com/0xmingalaba/khanthman-openhands.git` (plain URL, no embedded credentials) — **canonical repository confirmed** |
-| `origin/main` | still `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` — **nothing pushed** |
-| Branches | only `main` and `milestone-0-discovery-architecture` (the working branch does **not** exist remotely) |
+| `origin/main` | `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` — **UNCHANGED; nothing merged or pushed to `main`** |
+| Working branch | `milestone-0-discovery-architecture` — HEAD `bb498b30a8bf169a4d281adc9fd6626375dc8faa` (`bb498b3`); Revision 12 docs **uncommitted**; working tree **NOT clean** (four modified `.md`) |
+| Working-branch commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → `9f1304d` → `bb498b3` (**HEAD**) |
+| Working branch vs `main` | **16 ahead / 0 behind** `origin/main` |
+| Review branch | `review/m0-documents-2026-11-16` — **published**; **at the Revision 12.4 publication the branch was 4 commits ahead / 0 behind** `origin/main` (head at that time `67251addbab0c3bf19ac553b585b086a117ac893` — a **publication-time snapshot, not a claim about the live branch head**), a **documentation-and-evidence snapshot based on `origin/main`**; publication history: initial publication `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`, Revision 12) → `b2437c8` (Revision 12.2) → `7bca12d` (Revision 12.3) → `67251ad` (Revision 12.4) |
+| Branches (remote) | exactly `main` and `review/m0-documents-2026-11-16` (the working branch does **not** exist remotely) |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
 
@@ -72,16 +87,24 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | `a8bbb06` | Milestone 0 revision 9 review preparation | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
 | `ec59879` | Milestone 0 revision 9 independent-review corrections | `AGENTS.md`, both `docs/*.md`, `docs/verification/rev9/*` |
 | `9f1304d` | Milestone 0 revision 10 (final-review corrections) | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/README.md` |
-| *(this revision)* | Milestone 0 revision 11 (C2 verification + consistency) | both `docs/*.md`, `AGENTS.md`, `docs/verification/rev9/*` |
+| `bb498b3` | Milestone 0 revision 11 (C2 verification + consistency) | both `docs/*.md`, `AGENTS.md`, `docs/verification/rev9/*` |
+| *(uncommitted)* | Milestone 0 revision 12 (roadmap restoration) — **not yet committed on the working branch** | both `docs/*.md`, `README.md`, `AGENTS.md` |
+| `a6bf123` | **Initial review publication** — Milestone 0 revision 12 documents published for review (`review/m0-documents-2026-11-16`) | `AGENTS.md`, `README.md`, both `docs/*.md` |
+| `b2437c8` | Milestone 0 revision 12.2 (independent-review corrections) — **documentation + verification evidence** | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/*` |
+| `7bca12d` | Milestone 0 revision 12.3 (final documentation-consistency corrections) — **documentation only** | `AGENTS.md`, `README.md`, both `docs/*.md` |
+| `67251ad` | Milestone 0 revision 12.4 (synchronize current Git publication references) — **documentation only** | `AGENTS.md`, `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md`, `docs/FINANCIAL-SPECIFICATION.md` |
+| *(this revision)* | Milestone 0 revision 12.5 (make Git publication records durable) — **documentation only** | `AGENTS.md`, both `docs/*.md` |
 
 **Shallow-clone limitation:** the clone is **shallow**, so historical file-change verification is
-limited to the commits present locally (all listed above are present). The exact Revision 11 hash and
-counts are reported in the delivery message.
+limited to the commits present locally (all committed rows above are present). **Revision 12 is
+uncommitted on the working branch**, so it has **no commit hash there**; its working-branch file list is
+a working-tree change set. The **review branch** carries committed snapshots (Revisions 12 and 12.2).
 
 ### 1.2 Direct answers
 
-- **Is the `create-next-app` scaffold committed?** **VERIFIED: yes** — the stock scaffold is tracked
-  and **unmodified**. Exactly **15** scaffold files are tracked (counted from `git ls-files`):
+- **Is the `create-next-app` scaffold committed?** **VERIFIED: yes — on the working branch
+  `milestone-0-discovery-architecture`** — the stock scaffold is tracked there and **unmodified**.
+  Exactly **15** scaffold files are tracked (counted from `git ls-files`):
 
   `.gitignore`, `eslint.config.mjs`, `next.config.ts`, `package.json`, `package-lock.json`,
   `tsconfig.json`, `public/file.svg`, `public/globe.svg`, `public/next.svg`, `public/vercel.svg`,
@@ -93,40 +116,78 @@ counts are reported in the delivery message.
   not tracked (git-ignored):** `node_modules/`, `.next/`, `next-env.d.ts`, `tsconfig.tsbuildinfo`.
   (The "19 files" figure for commit `1b185f4` = 15 scaffold + `AGENTS.md` + 2 docs + `README.md`
   modification, i.e. 15 scaffold files plus 4 documentation files.)
+- **Is the scaffold present on the review branch?** **VERIFIED: no.** The review branch
+  `review/m0-documents-2026-11-16` is a **documentation-only snapshot based on `origin/main`**; it
+  contains **only the four Markdown documents** (plus the verification evidence added in Revision 12.2).
+  It does **not** contain the Next.js scaffold. Do **not** claim the scaffold is present on the review
+  branch.
 - **Was `AGENTS.md` added or modified?** **VERIFIED: added** in `1b185f4`, then modified in later
   revisions (including this one).
 - **Unexpected generated files?** **VERIFIED: none tracked.** Only `.next/`, `node_modules/`,
   `next-env.d.ts`, `tsconfig.tsbuildinfo` exist and are git-ignored; **zero** untracked non-ignored
   files.
 
-### 1.3 Push status — not assumed
+### 1.3 Push status — read access, write access, and publication
 
-**VERIFIED: local commits are NOT pushed.** `origin/main` is still `f6c7567`; the working branch does
-**not** exist remotely. **No remote operation occurred in this revision.**
+**Historical snapshot (observation date 2026-11-16, on the working branch
+`milestone-0-discovery-architecture`, before the review branch existed):** at that time **no commit had
+been pushed** — `origin/main` was `f6c7567` and the working branch did **not** exist remotely. That
+historical snapshot is retained here **only because it is labelled with its date and branch context**;
+it is **superseded** by the publication below.
+
+**Publication (verified against the live remote on 2026-11-16; publication-time snapshot):** the
+documentation review branch **was successfully published** to the canonical repository. At the
+**Revision 12.4 publication** the branch head was
+`67251addbab0c3bf19ac553b585b086a117ac893` (`67251ad`) and the branch was **4 commits ahead / 0 behind**
+the original `main` baseline `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`). `origin/main`
+**remained unchanged** (`f6c7567`) throughout; nothing was merged and nothing was pushed to `main`.
+**This is a publication-time snapshot, not a claim about the live branch head** — the review branch is
+mutable and its head may advance with later revisions.
+
+**Review-branch publication history (do not conflate these commits):**
+
+| Stage | Commit | Meaning |
+| - | - | - |
+| Initial review publication | `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`) | Revision 12 documents published for independent review |
+| Revision 12.2 publication | `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`) | Independent-review corrections (documentation + verification evidence) |
+| Revision 12.3 publication | `7bca12dbbb5dc355a54fe2cc0dcb976e3eb56a47` (`7bca12d`) | Final documentation-consistency corrections (documentation only) |
+| **Revision 12.4 publication** | **`67251addbab0c3bf19ac553b585b086a117ac893` (`67251ad`)** | Synchronize current Git publication references (documentation only); at this publication the branch was **4 commits ahead / 0 behind** the original `main` baseline |
+| Original `main` baseline | `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`) | Unchanged; nothing merged |
+
+**`a6bf123` is the initial publication only — it is NOT a claim about the live branch head.** Each row
+above is a **publication-time snapshot**; the review branch head is mutable and may advance with later
+revisions.
 
 **Git access evidence (precise):**
 
-- **Read access — VERIFIED.** `git ls-remote --heads origin` returns
-  `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9  refs/heads/main`, and the remote references are visible
-  locally. Remote URL: `https://github.com/0xmingalaba/khanthman-openhands.git` (no embedded credentials).
-- **Write access — NOT VERIFIED.** Write access has **not** been independently established by any safe,
-  non-mutating method. Per policy, **write access is never tested by pushing.**
-- **Historical report (labelled historical, not re-verified this revision):** a prior revision
-  (`AGENTS.md`) reported that `git push` failed with **HTTP 403 "Permission … denied"**, that both the
-  credential helper and `$GITHUB_TOKEN` resolve to a GitHub App / integration token with **read-only**
-  access, and that API writes return `Resource not accessible by integration`. This is a **historical
-  report**; it was **not** re-tested in this revision (no push was attempted).
-- **Net state:** read = verified; write = **unverified**; a **historical** push failure is on record.
-  If a push is ever required, the owner must first establish write (`contents: write`) by a safe method.
+- **Read access — VERIFIED.** `git ls-remote --heads origin` returns the remote heads above. Remote
+  URL: `https://github.com/0xmingalaba/khanthman-openhands.git` (no embedded credentials).
+- **Write access — VERIFIED for the credentials in use.** The review-branch publications succeeded:
+  the initial publication (`a6bf123`), the Revision 12.2 commit (`b2437c8`), the Revision 12.3 commit
+  (`7bca12d`), and the Revision 12.4 commit (`67251ad`) were pushed to a **new, non-`main` branch**, and
+  the remote branch was independently re-fetched and confirmed to match the local commits. Write access
+  is established by these **successful, non-destructive publications** — **not** by force-pushing or by
+  writing to `main`.
+- **Historical report (labelled historical — prior session, date not re-established, working branch
+  context; NOT re-tested here):** an earlier session reported `git push` failing with **HTTP 403**
+  ("Permission … denied"), with both the git credential helper and `$GITHUB_TOKEN` resolving to a
+  GitHub App / integration token with **read-only** access, and API writes returning
+  `Resource not accessible by integration`. This is a **historical observation only** and is **no longer
+  the current state** — it is superseded by the verified publications above.
+- **Net current state:** read = verified; write = **verified** (review branch published through the
+  Revision 12.4 commit `67251ad`); `origin/main` = **unchanged**; the historical 403 is retained **only**
+  as a dated, branch-scoped historical record. Policy is unchanged: **never push to `main`; use a
+  feature/review branch.**
 
 ---
 
 ## 2. Product understanding (CONFIRMED)
 
 Polymarket-style prediction market trading **virtual YES/NO shares** about real-world events. Hard
-rules: **MMK only, whole Kyat**; **virtual credits only** (no deposit/withdraw/payment/payout/
-redeem); **no fabricated data** (fixtures labelled SIMULATED); **no admin dashboard**; **original
-branding**; **no version-based naming**.
+rules: **MMK only, whole Kyat**; **virtual credits only** (no deposits, withdrawals, payments, cash
+payouts, redemption, or external transfers — the only permitted movement is **internal virtual-credit
+settlement** between ledger accounts); **no fabricated data** (fixtures labelled SIMULATED); **no admin
+dashboard**; **original branding**; **no version-based naming**.
 
 ---
 
@@ -158,23 +219,25 @@ here is approved. Localization (EN + MY), theme (light/dark), responsive layout 
 and loading/empty/error/unavailable states are **cross-cutting requirements for every page**. The
 **Staff/Admin dashboard is explicitly excluded** from current scope.
 
-The **Milestone** column is a **proposed** assignment and is aligned with the **§3.3 roadmap** and the
-**§8 PR sequence** (auth pages → M3, discovery/detail pages → M4, trading/portfolio → M7+). **All
-milestone numbers are PROPOSED and subject to owner approval**; they are not delivery commitments.
+The **Milestone** column is an assignment aligned with the **§3.3 owner-approved roadmap** and the
+**§8 PR sequence**: shell/static pages → **M1**, authentication pages → **M2**, discovery/detail pages →
+**M3**, the trading interface → **M4 (gated)**, and portfolio/orders/activity/settings → **M5**.
+**M0–M6 is the owner-approved sequence** (restored in Revision 12); the milestone numbers here are
+**not** new commitments beyond it.
 
 | # | Page / surface | Route (proposed) | Key content | Milestone |
 | - | - | - | - | - |
-| P1 | Home / discovery | `/` | featured + trending market cards, category chips, locale & theme toggles | M1 (shell) / M4 |
-| P2 | Categories | `/categories`, `/category/[slug]` | category grid → filtered market list | M4 |
-| P3 | Search | `/search` (or query on P1) | query box, filters (category, status, close date), results | M4 |
-| P4 | Market detail | `/market/[slug]` | question, outcome probabilities, price history chart, order book, resolution rules & source, end date | M4 |
+| P1 | Home / discovery | `/` | featured + trending market cards, category chips, locale & theme toggles | M1 (shell) / M3 |
+| P2 | Categories | `/categories`, `/category/[slug]` | category grid → filtered market list | M3 |
+| P3 | Search | `/search` (or query on P1) | query box, filters (category, status, close date), results | M3 |
+| P4 | Market detail | `/market/[slug]` | question, outcome probabilities, price history chart, order book, resolution rules & source, end date | M3 |
 | P5 | Event / multi-outcome (later) | `/event/[slug]` | several binary markets under one event | later (AR5) |
-| P6 | Trading interface | within `/market/[slug]` | the four planned modes: order book, limit, market, 1-Tap; split/merge | M7+ (gated) |
-| P7 | Portfolio / positions | `/portfolio` | open positions, claim units, split/merge actions | M7+ (gated) |
-| P8 | Orders | `/orders` | open/historical orders | M7+ (gated) |
-| P9 | Activity | `/activity` | trade & settlement history (append-only view) | M7+ |
-| P10 | Authentication | `/login`, `/register` | email + password (AR2); recovery (AR10) | M3 |
-| P11 | Account settings | `/settings` | profile, locale, theme, session management | M3 |
+| P6 | Trading interface | within `/market/[slug]` | the four planned modes: order book, limit, market, 1-Tap; split/merge | M4 (gated) |
+| P7 | Portfolio / positions | `/portfolio` | open positions, claim units, split/merge actions | M5 |
+| P8 | Orders | `/orders` | open/historical orders | M5 |
+| P9 | Activity | `/activity` | trade & settlement history (append-only view) | M5 |
+| P10 | Authentication | `/login`, `/register` | email + password (AR2); recovery (AR10) | M2 |
+| P11 | Account settings | `/settings` | profile, locale, theme, session management | M5 |
 | P12 | Legal / disclosure | `/about`, `/terms`, `/disclosure` | "virtual credits only, no real money" disclosure | M1 (static) |
 | P13 | Not found / error | `not-found`, `error` | standard Next.js states | M1 |
 
@@ -193,21 +256,53 @@ terminology for user-facing strings is marked for fluent-speaker review (risk R1
 | Forms & feedback | `TextInput`, `PasswordInput`, `Button`, `Dialog`, `Toast`, `EmptyState`, `ErrorState`, `LoadingSkeleton`, `UnavailableState` |
 | Primitives | `Card`, `Tabs`, `Tooltip`, `Badge`, `Icon` |
 
-### 3.3 Milestone roadmap (PROPOSED — planning artifact, not an approved plan)
+### 3.3 Milestone roadmap (OWNER-APPROVED M0–M6 — restored in Revision 12)
 
-**Milestone 0 is complete (this document set). Milestone 1 has NOT started.** All later milestones are
-**PROPOSED** and require owner authorization. Trading is **gated** on financial-specification approval.
+**Milestone 0 documentation is delivered and accepted as the planning baseline; Milestone 1
+(application foundation) is IN PROGRESS** on branch `milestone-1-foundation`. The milestone sequence below is the **owner-approved M0–M6 roadmap**, restored in Revision 12
+(it was silently dropped in Revision 3 and replaced by an unapproved sequence in Revisions 10–11).
+**No milestone is renumbered and no M7+ exists.** Trading and the ledger sit **inside M4**, strictly
+behind financial-specification approval. **M1 has been authorized by the owner and is in progress.**
 
 | Milestone | Theme | Contents | Gate |
 | - | - | - | - |
 | **M0** | Discovery & architecture | this report + financial spec + verification (done) | owner review |
-| **M1** | Foundation | design tokens + app shell + EN/MY i18n + static placeholder home + disclosure (PR-1, PR-2) | **owner authorization**; AR1/AR7/AR8 |
-| **M2** | Database foundation | Drizzle config, connection, migration runner, migration 0001 (non-financial tables), test tooling (PR-3) | **F30/F31** (ledger granularity) before ledger tables |
-| **M3** | Auth | register/login/logout, sessions, guard, CSRF, rate limit, dev reset (PR-4) | AR2/AR10 |
-| **M4** | Discovery & detail (read-only) | home feed, categories, search, filters, cards, detail, states (PR-5) | — |
-| **M5** | Dev fixtures | deterministic, idempotent, labelled SIMULATED (PR-6) | AR6 |
-| **M6** | Ledger core (gated) | three-domain ledger, invariant assertion, reconciliation | **financial spec approval**; F14–F31 |
-| **M7+** | Trading & settlement (gated) | order book, limit/market/1-Tap, split/merge, positions, settlement, corrections | financial spec approval + **real-PostgreSQL concurrency tests** |
+| **M1** | Application foundation | app foundation, design system (tokens, `globals.css`, `layout.tsx`, primitives), navigation/shell, localization (EN/MY), themes, **database + migrations**, reusable components, tests (PR-1, PR-2, PR-3) | **owner authorization**; AR1/AR7/AR8 |
+| **M2** | Authentication & sessions | register/login/logout, Argon2id, sessions, protected routes, preferences, guard, CSRF, rate limit, dev reset, **development fixtures (deterministic, idempotent, labelled SIMULATED)** (PR-4, PR-6) | AR2/AR10 |
+| **M3** | Market experience | home, discovery, search, categories, cards, market details, outcomes, charts, rules, activity (PR-5) | AR5 |
+| **M4** | Financial specification & trading | **obtain explicit owner approval of the financial specification first**, then ledger (three domains) and trading implementation: order book, limit/market/1-Tap, split/merge, matching/fills, positions, settlement, corrections, safeguards (PR-7+) | **financial-spec approval (gate)**; F14–F31; **real-PostgreSQL concurrency tests**; F30/F31 before ledger tables |
+| **M5** | Portfolio & account | portfolio, positions, balances, open orders, cancellation, history, account settings, refinements | M4 stable |
+| **M6** | Security & release readiness | security, responsive testing, accessibility, DB integrity, **financial invariants, real-PostgreSQL concurrency**, regression, E2E, release-readiness report | all prior milestones |
+
+**How the unapproved Revision 10/11 sequence maps onto M0–M6 (for reference; the old labels are
+superseded):** old "M2 Database foundation" → **M1**; old "M5 Dev fixtures" → **M2**; old "M4
+Discovery & detail" → **M3**; old "M6 Ledger core" + "M7+ Trading & settlement" → **M4** (gated); old
+trading/portfolio "M7+" pages → **M4** (trading) and **M5** (portfolio). **No scope is lost by this
+restoration**, and the former **M6 "QA & release readiness"** is restored as **M6 "Security & release
+readiness"**.
+
+#### M4 gate sequencing (distinct stages — do not collapse)
+
+M4 is the **only** milestone that touches the ledger and trading. Its gates are **five distinct
+stages**; passing one does **not** imply the next. **No stage is weakened by this clarification.**
+
+1. **M4 entry conditions.** M1–M3 are complete and stable (foundation, auth/sessions, market
+   experience). Entry to M4 is **not** a financial-specification approval.
+2. **Financial-specification and owner-decision prerequisites.** **Explicit owner approval of
+   `docs/FINANCIAL-SPECIFICATION.md` is required before any M4 ledger/trading implementation.**
+   Separately, the **owner decisions remain NOT APPROVED** (F14, F16–F31; F28, F30, F31 undecided).
+   Financial-spec approval does **not** by itself decide F14/F16–F31.
+3. **Ledger-table prerequisites.** **F30 (identifier model) and F31 (whole-Kyat divisibility) must be
+   resolved before the ledger tables are created.** No ledger schema or migration may be written while
+   F30/F31 are undecided. (F28 is the E6 cancel order; also NOT APPROVED.)
+4. **Implementation verification requirements.** Invariant + concurrency + settlement + correction
+   suites, and **real-PostgreSQL multi-session concurrency tests** — which have **NOT been performed**
+   (see §13 and spec Part 12). A passing scratch/PGlite check does **not** satisfy this stage.
+5. **M6 release-readiness requirements.** Security, responsive testing, accessibility, DB integrity,
+   financial invariants, real-PostgreSQL concurrency, regression, E2E, and a release-readiness report.
+   These are **M6**, dependent on **all prior milestones** — **not** part of M4 entry.
+
+**None of these five stages is satisfied as of this revision; no gate is relaxed.**
 
 ---
 
@@ -268,9 +363,10 @@ market-scoped control account `CorrectionPayableMarket:{m}` in C1 with a subledg
 ### 4.6 Correction lifecycle (PROPOSED, corrected in Rev 9)
 
 Unique events **E1–E9**: mispayment, recognition, collection, realization, write-off, issuance,
-reopening, payout, retirement. The **issuance group (E6+E4+E7) is atomic**: issuance creates funding,
-cancels the outstanding claim (receivable or write-off loss), realizes funding, and reopens units —
-so C1 holds and the obligation is never double-counted. **F27–F29.**
+reopening, internal virtual-credit settlement, retirement. The **issuance group (E6+E4+E7) is
+atomic**: issuance creates funding, cancels the outstanding claim (receivable or write-off loss),
+realizes funding, and reopens units — so C1 holds and the obligation is never double-counted.
+**F27–F29.**
 
 ### 4.7 Atomic multi-journal correction (PROPOSED)
 
@@ -281,7 +377,7 @@ application **must never commit a partial, invariant-breaking correction**.
 ### 4.8 Locking and concurrency (RECOMMENDED)
 
 One DB transaction per financial mutation; consistent lock order; `SELECT … FOR UPDATE`; advisory
-locks around matching; optimistic guards; idempotency keys; unique issuance/collection/payout/
+locks around matching; optimistic guards; idempotency keys; unique issuance/collection/settlement/
 correction keys. **Concurrency tests run on real PostgreSQL** (PROPOSED, NOT VERIFIED).
 
 ### 4.9 Market closure and cancellation races (RECOMMENDED)
@@ -310,8 +406,8 @@ production (OWNER DECISION).
 - **Constraint tests:** violate `CHECK (>= 0)`, `CHECK (price BETWEEN 1 AND 99)`, unique keys, FKs —
   each **must fail**. **VERIFIED (PGlite)** for the mechanism; **PROPOSED** for the real schema.
 - **Invariant tests:** assert C1, C1b, C2, S1, M1, and non-negativity at **every commit boundary**.
-- **Correction tests:** recognition, collection, realization, write-off, issuance, reopening, payout;
-  Path A and Path B; atomicity; rollback; idempotency.
+- **Correction tests:** recognition, collection, realization, write-off, issuance, reopening,
+  internal virtual-credit settlement; Path A and Path B; atomicity; rollback; idempotency.
 - **Settlement failure tests:** six modes, run on **real PostgreSQL** for the concurrency ones.
 - **Property-style tests:** randomized sequences asserting all invariants after every step.
 
@@ -332,7 +428,8 @@ The UI is never authoritative for balances, prices, or calculations.
 Entities (no schema exists): users, user_preferences, sessions, categories, events, markets,
 outcomes, market_sources, resolution_records, **settlement_entitlements** (immutable), orders,
 trades, positions, balances (projection), **ledger_accounts, ledger_journals, ledger_entries**
-(tagged with **domain**), **settlement_payouts** (unique key), **corrections** (unique key +
+(tagged with **domain**), **settlement_payouts** (unique key; proposed table name — its rows are
+**internal virtual-credit settlement** records, never cash payouts), **corrections** (unique key +
 `correction_seq`), **collections**, **issuances**, **writeoffs** (each with idempotency keys),
 **correction_payables** (Option A; key `(market_id, resolution_version, user_id)`), idempotency_keys,
 audit_logs.
@@ -341,8 +438,15 @@ Integrity (PROPOSED): integer MMK `BIGINT` with `CHECK (>= 0)`; shares `BIGINT` 
 price `INT` with `CHECK (price BETWEEN 1 AND 99)`; claim units `INT` with `CHECK (>= 0)`;
 **`CHECK (balance >= 0)` on every account balance** (verified in PGlite); a `CHECK`/trigger that a
 journal's entries share **one domain**; append-only ledger/entitlement/audit tables; unique keys for
-positions, idempotency, payouts, corrections, collections, issuances, writeoffs, correction payables;
-unique slugs; FKs with explicit `ON DELETE`; indexes; **one financial mutation = one transaction**.
+positions, idempotency, settlement records, corrections, collections, issuances, writeoffs,
+correction payables; unique slugs; FKs with explicit `ON DELETE`; indexes; **one financial mutation =
+one transaction**.
+
+> **Price grid is NOT defined (T1 OPEN).** `CHECK (price BETWEEN 1 AND 99)` is a **proposed integer
+> range only** — it is a validity bound, **not** a chosen price grid, and it implies **no specific tick
+> increment**. The **exact integer price grid / tick size is undecided** and remains **owner decision
+> T1** (see §11). This document **does not** select or approve a price grid. (Consistent with the
+> financial spec Appendix B topic 16 and T1; **no value is invented here**.)
 
 ---
 
@@ -360,6 +464,29 @@ unique slugs; FKs with explicit `ON DELETE`; indexes; **one financial mutation =
 **Reporting rule:** the QA report lists every command and result and names any **skipped** test and
 why. A green `next build` is never proof of readiness.
 
+### 6.1 Reproducible verification evidence (Milestone 0)
+
+The Milestone-0 verification scripts, README, and captured expected outputs live at
+**`docs/verification/rev9/`** and are **published on the documentation review branch
+`review/m0-documents-2026-11-16`** (added in Revision 12.2) so a reviewer can reproduce the results
+directly. They are **verification artifacts, not application code**, and are **not** imported by the app.
+
+- **Provenance (source commit and files):** the directory was introduced in commit `a8bbb06`
+  (Revision 9 review preparation) and last revised in `bb498b3` (Revision 11). The five files are
+  `docs/verification/rev9/{README.md, rev9.mjs, rev9.expected.out, rev9-pglite.mjs,
+  rev9-pglite.expected.out}`; the review-branch copies are **byte-identical** to the working-branch
+  copies (same blob SHAs).
+- **Reproduction:** `node docs/verification/rev9/rev9.mjs` (no dependencies) prints
+  `test cases: 136 (136 passed, 0 failed)`, `invariant assertions at commit boundaries: 253`, and
+  `>>> ALL CHECKS PASSED (scratch)`, exit `0`; `diff` against `rev9.expected.out` is **empty**.
+- **Three distinct levels — do not conflate:** (1) **scratch** — single-process in-memory model
+  (`rev9.mjs`); (2) **PGlite** — single-connection mechanism tests (`rev9-pglite.mjs`, needs
+  `@electric-sql/pglite@0.5.16`); (3) **real PostgreSQL multi-session** — **NOT PERFORMED.** **None is
+  application-level financial validation.**
+
+The review branch is a **documentation-and-evidence snapshot only**; it does **not** contain the Next.js
+scaffold or any application code. Reported test results are **unchanged** by Revision 12.2.
+
 ---
 
 ## 7. Security strategy (RECOMMENDED)
@@ -374,21 +501,24 @@ disguised as collateral**.
 
 ## 8. First PR scope (RECOMMENDED — unchanged from Rev 2–8)
 
-| PR | Title | Scope | Tests |
-| - | - | - | - |
-| **PR-1** | Design tokens + app shell | tokens, `globals.css`, `layout.tsx`, primitives, `ThemeToggle`, static placeholder home (EN+MY + disclosure), metadata | Vitest component test; Playwright smoke |
-| PR-2 | i18n foundation | typed `en`/`my` dictionaries, locale provider/switch | key-parity; locale-switch E2E |
-| PR-3 | Database foundation | Drizzle config, connection, migration runner, migration 0001 (non-financial tables) | migration tests; constraint tests |
-| PR-4 | Auth | register/login/logout, Argon2id, sessions, guard, CSRF, rate limit, dev reset | auth/session/authorization/reset tests |
-| PR-5 | Market discovery + detail (read-only) | home feed, categories, search, filters, cards, detail, states | retrieval tests; discovery + theming/localization E2E |
-| PR-6 | Dev fixtures | deterministic, idempotent, labelled SIMULATED | seed idempotency; no-duplicate test |
-| PR-7+ | Trading (**gated**) | order book, limit, market, 1-Tap, split/merge, ledger (three domains), positions, settlement, corrections — **only after financial spec approval** | invariant + concurrency + settlement + correction suites |
+PRs map onto the **owner-approved M0–M6 roadmap** (§3.3): PR-1/PR-2/PR-3 → **M1**, PR-4/PR-6 → **M2**,
+PR-5 → **M3**, PR-7+ → **M4 (gated)**.
+
+| PR | Milestone | Title | Scope | Tests |
+| - | - | - | - | - |
+| **PR-1** | M1 | Design tokens + app shell | tokens, `globals.css`, `layout.tsx`, primitives, `ThemeToggle`, static placeholder home (EN+MY + disclosure), metadata | Vitest component test; Playwright smoke |
+| PR-2 | M1 | i18n foundation | typed `en`/`my` dictionaries, locale provider/switch | key-parity; locale-switch E2E |
+| PR-3 | M1 | Database foundation | Drizzle config, connection, migration runner, migration 0001 (non-financial tables) | migration tests; constraint tests |
+| PR-4 | M2 | Auth | register/login/logout, Argon2id, sessions, guard, CSRF, rate limit, dev reset | auth/session/authorization/reset tests |
+| PR-5 | M3 | Market discovery + detail (read-only) | home feed, categories, search, filters, cards, detail, states | retrieval tests; discovery + theming/localization E2E |
+| PR-6 | M2 | Dev fixtures | deterministic, idempotent, labelled SIMULATED | seed idempotency; no-duplicate test |
+| PR-7+ | M4 (**gated**) | Ledger + trading | three-domain ledger, invariant assertion, reconciliation, order book, limit, market, 1-Tap, split/merge, positions, settlement, corrections — **only after financial spec approval** | invariant + concurrency + settlement + correction suites |
 
 No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 11)
+## 9. Risk register (Revision 12.6)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -404,8 +534,8 @@ No PR is created, merged, or deployed in this milestone.
 | R10 | Real-money temptation | Low | High | hard separation; disclosure; no payment code paths | RECOMMENDED |
 | R11 | Cross-outcome matching complexity | Med | Med | defer to a separately reviewed feature | OPEN |
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
-| R13 | Resolution correction after payout | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
-| R14 | Push blocked | Low | Med | **Read access verified; write access NOT verified; a historical 403 push failure is on record (see §1.3).** Write is never tested by pushing; nothing pushed | VERIFIED (read) / NOT VERIFIED (write) |
+| R13 | Resolution correction after internal settlement | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
+| R14 | Push blocked | Low | Med | **Read access verified; write access verified** (review branch `review/m0-documents-2026-11-16` published; latest recorded publication commit `67251ad`); a **historical** 403 failure is on record, dated and superseded (see §1.3). `origin/main` unchanged; nothing merged | VERIFIED (read + write) |
 | R15 | Correction creates a hidden deficit | Low | High | `PendingCorrectionClaim` excluded from C1; no negative balances | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal in the same transaction; C1b asserted each commit | PROPOSED |
 | R17 | Cross-domain journal accidentally mixes units | Low | High | model + DB `CHECK` reject mixed-domain journals | PROPOSED |
@@ -427,7 +557,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 10. Owner decision register (Revision 11)
+## 10. Owner decision register (Revision 12.6)
 
 ### 10.1 Architecture / product
 
@@ -448,7 +578,7 @@ No PR is created, merged, or deployed in this milestone.
 | AR13 | Correction funding policy (Policy A vs Policy B) | Policy B | OWNER DECISION |
 | AR14 | `CHECK (balance >= 0)` on every account balance | adopt | RECOMMENDED |
 | AR15 | Correction-payable representation: Option A vs Option B | Option B | OWNER DECISION |
-| AR16 | Delayed correction payout as a separate transaction | supported | OWNER DECISION |
+| AR16 | Delayed correction internal virtual-credit settlement as a separate transaction | supported | OWNER DECISION |
 | AR17 | Receivable lifecycle: recognize → collect → realize as separate events | adopt | RECOMMENDED |
 | AR18 | Write-off account `CorrectionWriteOffLoss:{m}` (debit-normal) and approval gate | adopt | RECOMMENDED |
 | **AR19** | **Issuance group atomicity (E6+E4+E7) and cancellation target (receivable vs loss)** | adopt: atomic; cancellation target is F28 (NOT APPROVED) | **OWNER DECISION** |
@@ -470,7 +600,7 @@ noted as an open documentation gap rather than fabricated.
 | ID | Decision | Status |
 | - | - | - |
 | **F30** | **Correction-level and entitlement-level identifier model.** Multiple corrections on one market and multiple beneficiaries require immutable per-correction and per-entitlement identifiers, and a rule reconciling market-level aggregate accounts to individual correction records and user entitlements. **The design is not selected.** | **NOT APPROVED** |
-| **F31** | **Whole-Kyat / unit-divisibility rule.** The issuance amount `x` must relate to the payout-per-share `P` such that reopened units `x/P` are whole; the divisibility rule and the rejection behaviour when `P ∤ x` are **not yet defined**. **No policy is chosen.** | **NOT APPROVED** |
+| **F31** | **Whole-Kyat / unit-divisibility rule.** The issuance amount `x` must relate to the per-unit constant `P` (`payout_per_share`) such that reopened units `x/P` are whole; the divisibility rule and the rejection behaviour when `P ∤ x` are **not yet defined**. **No policy is chosen.** | **NOT APPROVED** |
 
 Neither F30 nor F31 selects an implementation; both are recorded so the gaps are visible in the
 register. See spec Part 10a for the full statements.
@@ -481,7 +611,7 @@ register. See spec Part 10a for the full statements.
 
 | ID | Question | Needs |
 | - | - | - |
-| T1 | Exact integer price grid? | OWNER DECISION |
+| T1 | Exact integer price grid / tick size? (the `BETWEEN 1 AND 99` bound is a proposed range only; **no tick increment is selected**) | **OPEN — OWNER DECISION** |
 | T2 | MVP without cross-outcome matching, or with it? | OWNER DECISION |
 | T3 | Market-order partial-fill policy: fill-available vs FOK? | OWNER DECISION |
 | T4 | Slippage unit (relative % vs points) and default value? | OWNER DECISION |
@@ -492,7 +622,7 @@ register. See spec Part 10a for the full statements.
 | T9 | Production DB hosting + backup/restore procedure? | OPEN |
 | T10 | Seed "market-maker" fixtures so the dev book is not empty? | OPEN |
 | T11 | Brand assets: does a logo exist, or should one be proposed? | OPEN |
-| T12 | Settlement batch size / concurrency limit for the payout phase? | OPEN |
+| T12 | Settlement batch size / concurrency limit for the internal virtual-credit settlement phase? | OPEN |
 | T13 | `CorrectionReceivable` recovery: automatic netting vs manual review? | OWNER DECISION |
 | T14 | Must `SettlementCorrection` close at zero? | OWNER DECISION |
 | T15 | Does C1 count an uncollected receivable as backing (F17)? | OWNER DECISION |
@@ -500,7 +630,7 @@ register. See spec Part 10a for the full statements.
 | T17 | Fallback if issuance is not approved (F19)? | OWNER DECISION |
 | T18 | Which correction-payable design (Option A or B, F20)? | OWNER DECISION |
 | T19 | Are partial funding and partial claim-unit reopening permitted (F21)? | OWNER DECISION |
-| T20 | Is delayed correction payout supported (F22)? | OWNER DECISION |
+| T20 | Is delayed correction internal virtual-credit settlement supported (F22)? | OWNER DECISION |
 | T21 | When is the receivable recognized (F23)? | OWNER DECISION |
 | T22 | Is the collect→realize→reopen group atomic (F24)? | OWNER DECISION |
 | T23 | Write-off mechanics and `PendingCorrectionClaim` clearing (F25)? | OWNER DECISION |
@@ -510,11 +640,11 @@ register. See spec Part 10a for the full statements.
 | **T27** | **How is a partially written-off claim handled when issuance funds the remainder?** | **OPEN** |
 | **T28** | **What immutable per-correction and per-entitlement identifier model is used, so several corrections on one market and several beneficiaries can be represented distinctly (F30)?** | **OWNER DECISION** |
 | **T29** | **How are the market-level aggregate correction accounts reconciled to individual correction records and per-user entitlements — i.e. what accounting granularity is authoritative (F30)?** | **OWNER DECISION** |
-| **T30** | **Must an issuance amount `x` be a whole multiple of the payout-per-share `P`, and what is the rejection/handling rule for a fractional `x/P` (F31)?** | **OWNER DECISION** |
+| **T30** | **Must an issuance amount `x` be a whole multiple of the per-unit constant `P` (`payout_per_share`), and what is the rejection/handling rule for a fractional `x/P` (F31)?** | **OWNER DECISION** |
 
 ---
 
-## 12. Change list (Revision 8 → 9, 9 → 10, then 10 → 11)
+## 12. Change list (Revision 8 → 9, 9 → 10, 10 → 11, 11 → 12, 12 → 12.2, 12.2 → 12.3, 12.3 → 12.4, 12.4 → 12.5, then 12.5 → 12.6)
 
 1. **E7 issuance defect corrected.** Issuance is now the atomic group **E6 (issue) + E4 (realize) +
    E7 (reopen)**: it creates funding, cancels the outstanding claim, realizes funding, and reopens the
@@ -540,7 +670,7 @@ register. See spec Part 10a for the full statements.
    is described as application-level financial validation.
 9. **Unresolved limitations disclosed** (financial spec Part 12): no real-PostgreSQL multi-session
    verification; concurrent corrections; partial write-off/collection combinations; per-user allocation
-   and multi-user payout; Option A demonstrated for the supplied scenario only.
+   and multi-user internal virtual-credit settlement; Option A demonstrated for the supplied scenario only.
 10. **Revision history corrected** to include `b300f1a` (Rev 8) and this revision's commit.
 
 ### 12.1 Change list — Revision 9 → Revision 10 (final-review corrections, documentation only)
@@ -587,17 +717,143 @@ register. See spec Part 10a for the full statements.
     intermediate states, correction-lifecycle boundaries) and include a **regression guard**
     (`S4-02e`/`S4-02f`) proving the old formula returns `false` where the corrected one returns `true`.
     Scratch totals: **136 test cases, 253 invariant assertions** (was 105/220).
-23. **D12 — page-inventory milestone tags corrected.** §3.1 now tags auth pages **M3** and
-    discovery/detail pages **M4**, consistent with the **§3.3 roadmap** and the **§8 PR sequence**;
-    a note states the milestone column is **PROPOSED** and not a delivery commitment.
-24. **D13 — trading milestone reference corrected.** The financial spec Part 11 no longer says trading
-    ships in "Milestone 4"; it now states **Milestone 7+ (gated)**, labelled **PROPOSED** and subject to
-    owner approval.
+23. **D12 — page-inventory milestone tags corrected (Revision 11; superseded by Revision 12).** In
+    Revision 11 §3.1 tagged auth pages **M3** and discovery/detail pages **M4**. Under the restored
+    owner-approved roadmap (§12.3) those pages are now **M2** (auth/settings) and **M3**
+    (discovery/detail); §3.1 is consistent with the **§3.3 roadmap** and the **§8 PR sequence**.
+24. **D13 — trading milestone reference corrected (Revision 11; superseded by Revision 12).** The
+    financial spec Part 11 no longer says trading ships in "Milestone 4"; in Revision 11 it stated
+    **Milestone 7+ (gated)**. That M7+ label was part of the **unapproved** Revision 10/11 sequence and
+    is **superseded in Revision 12** by the owner-approved **M4** (see §12.3).
 25. **D14 — F30/F31 added to the stop-condition list.** §13 now lists **F14, F16–F31** (naming F30 and
     F31) as awaiting owner decisions, all **NOT APPROVED**.
 26. **D15 — open questions T28–T30 added.** §11 now covers the **F30** identifier model, the
     **F30** aggregate-to-detail reconciliation/accounting granularity, and the **F31** whole-Kyat
     divisibility rule — recorded, **not selected**.
+
+### 12.3 Change list — Revision 11 → Revision 12 (owner-approved roadmap restoration)
+
+27. **Owner-approved M0–M6 roadmap restored.** §3.3 now uses the canonical owner-approved sequence
+    (M0 Discovery & architecture · M1 Application foundation · M2 Authentication & sessions · M3 Market
+    experience · M4 Financial specification & trading · M5 Portfolio & account · M6 Security & release
+    readiness). The unapproved Revision 10/11 sequence (which had split the roadmap into M1–M7+ and had
+    **dropped the release-readiness milestone**) is **superseded**. **No milestone is renumbered;
+    M7+ is removed.**
+28. **Database foundation folded into M1.** Drizzle config, connection, migration runner, and migration
+    0001 (non-financial tables) move from the old "M2 Database foundation" into **M1**, matching the
+    owner roadmap.
+29. **Development fixtures folded into M2.** Deterministic, idempotent, labelled-SIMULATED fixtures move
+    from the old "M5 Dev fixtures" into **M2 Authentication & sessions**.
+30. **Ledger and trading placed inside M4, gated.** The three-domain ledger (old "M6 Ledger core") and
+    trading/settlement (old "M7+ Trading & settlement") are both inside **M4**, strictly behind
+    **financial-specification approval**; F30/F31 remain required before ledger tables. **No trading is
+    implemented.**
+31. **M6 restored as Security & release readiness.** Security, responsive testing, accessibility, DB
+    integrity, **financial invariants, real-PostgreSQL concurrency**, regression, E2E, and a
+    release-readiness report are an explicit final milestone again. **No testing/security/concurrency/
+    accessibility requirement was removed** (they remain in §6, §7 and §9).
+32. **Milestone labels made consistent.** §3.1 page inventory, §8 PR sequence, and the financial spec
+    (Part 0, Part 10a, Part 11, Appendix B) now use the same M0–M6 labels. **All obsolete M7+ references
+    are removed or explicitly marked as superseded.**
+33. **No financial decision changed.** F14 and F16–F31 remain **NOT APPROVED**; F28, F30 and F31 remain
+    undecided. **No financial policy was selected, no ledger/trading/schema/migration code was written,
+    and C2/S1 verification corrections are not financial approval.**
+
+### 12.4 Change list — Revision 12 → Revision 12.2 (independent-review corrections, documentation + evidence only)
+
+34. **Verification evidence made available on the review branch.** `docs/verification/rev9/` (README,
+    `rev9.mjs`, `rev9.expected.out`, `rev9-pglite.mjs`, `rev9-pglite.expected.out`) is published on
+    `review/m0-documents-2026-11-16` **byte-identical** to the working branch (same blob SHAs), with
+    provenance (`a8bbb06` → `bb498b3`) recorded in §6.1. Reproduction re-run: `136/136` tests, `253`
+    assertions, `>>> ALL CHECKS PASSED (scratch)`, empty diff. **No reported result changed.** The
+    three levels (scratch / PGlite / real-PostgreSQL-not-performed) stay distinct.
+35. **Git status corrected (§1).** Now distinguishes the **historical HTTP 403** (dated, branch-scoped,
+    labelled historical and superseded), the **successful publication** of
+    `review/m0-documents-2026-11-16` (`a6bf123`), **verified write access** for the credentials in use,
+    **`origin/main` unchanged** (`f6c7567`), and the **separate** working branch vs review branch.
+36. **README branch-scope clarified.** README now states the review branch is a **documentation-only
+    snapshot** and does **not** contain the Next.js scaffold; §1.2 states the same. No repository
+    content is fabricated.
+37. **Internal payout terminology clarified (spec §6.7 / E8).** E8's "payout" is **internal
+    virtual-credit settlement/distribution only** and is explicitly **not** cash payment, withdrawal,
+    redemption, external transfer, or real-money payout. **No journal, account, or policy changed.**
+38. **Price-grid clarification (§5, §11 T1; spec Appendix B).** `CHECK (price BETWEEN 1 AND 99)` is a
+    **proposed range bound only**, implying **no tick increment**; the exact integer price grid is
+    **T1, still OPEN**. **No price grid is selected or approved.**
+39. **M4 gate sequencing clarified (§3.3).** Five distinct stages — M4 entry · financial-spec/owner
+    prerequisites · ledger-table prerequisites (F30/F31) · implementation verification (incl.
+    real-PostgreSQL concurrency) · M6 release readiness. **No financial safety gate weakened.**
+40. **No financial decision changed (Revision 12.2).** F14, F16–F31 remain **NOT APPROVED**; F28, F30,
+    F31 undecided; AR13, AR15–AR19 unchanged; M0–M6 not renumbered. **No application code, schema, or
+    migration was added.**
+
+### 12.5 Change list — Revision 12.2 → Revision 12.3 (final documentation-consistency corrections)
+
+41. **README scaffold-location contradiction resolved.** The opening status paragraph previously said the
+    repository "contains an unmodified Next.js scaffold", which contradicted the following branch-scope
+    paragraph. README now states plainly that the **scaffold lives only on the working branch
+    `milestone-0-discovery-architecture`**, the **review branch
+    `review/m0-documents-2026-11-16` is a documentation-and-evidence-only snapshot with no scaffold or
+    application code**, and **`main` contains only the initial `README.md`**. No claim that the scaffold
+    exists on the review branch remains.
+42. **Git publication history recorded (§1.3, AGENTS.md).** At Revision 12.3 this distinguished the
+    **initial review publication** `a6bf123`, the **Revision 12.2 publication** `b2437c8`, the
+    **review-branch head at that time `b2437c8`**, and the **original `main` baseline** `f6c7567`.
+    `a6bf123` is explicitly **not** the branch head. (Superseded by later revisions; the historical
+    records themselves are preserved.)
+43. **Review-branch state corrected (Revision 12.3).** §1 and §1.1 showed the review branch at **head
+    `b2437c8`** (**2 commits ahead** of `main`) as a publication-time position, replacing the earlier
+    "1 commit ahead / `a6bf123`" description. (Later superseded.)
+44. **No financial or architectural change (Revision 12.3).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
+
+### 12.6 Change list — Revision 12.3 → Revision 12.4 (synchronize current Git publication references)
+
+45. **Stale current-head references corrected.** §1, §1.1, §1.3, R14, and AGENTS.md recorded the review
+    branch at **`7bca12d`** (**3 commits ahead** of `main`) at the Revision 12.4 publication, replacing the
+    earlier "`b2437c8` / 2 commits ahead" description that Revision 12.3 left stale.
+46. **Revision 12.3 publication recorded.** The publication history listed **initial publication
+    `a6bf123`**, **Revision 12.2 `b2437c8`**, and **Revision 12.3 `7bca12d`**, plus the **`main` baseline
+    `f6c7567`**. Historical records are preserved and clearly labelled; `a6bf123` remains explicitly
+    **not** the branch head.
+47. **No financial or architectural change (Revision 12.4).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
+
+### 12.7 Change list — Revision 12.4 → Revision 12.5 (make Git publication records durable)
+
+48. **Mutable-head language removed.** §1, §1.1, §1.3, R14, and AGENTS.md no longer describe the review
+    branch head as permanently "current". Each position is now stated as a **publication-time snapshot**
+    (e.g. "at the Revision 12.4 publication the branch was **4 commits ahead / 0 behind** the original
+    `main` baseline"), with an explicit note that **the review branch is mutable and its head may advance
+    with later revisions**.
+49. **Revision 12.4 publication commit recorded.** The publication history now lists **initial publication
+    `a6bf123`**, **Revision 12.2 `b2437c8`**, **Revision 12.3 `7bca12d`**, **Revision 12.4 `67251ad`**,
+    and the **original `main` baseline `f6c7567`**. Historical records are preserved and clearly labelled;
+    `a6bf123` is explicitly **not** a claim about the branch head.
+50. **No financial or architectural change (Revision 12.5).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
+
+### 12.8 Change list — Revision 12.5 → Revision 12.6 (payout terminology consistency correction)
+
+51. **Prohibited vs permitted movement distinguished.** §2, AGENTS.md, README.md, and the financial
+    specification now state that **deposits, withdrawals, redemption, cash payouts, real-money payments,
+    and external transfers are prohibited**, while the accounting model **permits only internal transfers
+    of non-redeemable virtual credits between ledger accounts** (the financial specification adds a
+    product-wide **terminology note**).
+52. **Preferred term applied.** The term **"internal virtual-credit settlement"** is preferred over the
+    ambiguous standalone word **"payout"**, applied to §4.6, §4.8, §4.12, the risk register (R13),
+    AR16, F31/T30, T12/T20, the financial specification §2.3, §6.7, Part 5, Part 9, the scenario
+    headings (8.9, 8.13), and F22.
+53. **Identifiers and quoted evidence preserved.** The C1 constant name `PAYOUT_PER_SHARE` /
+    `payout_per_share` and the proposed `settlement_payouts` table are **retained as identifiers** (with
+    clarifying notes); **quoted scratch/PGlite output is unchanged**. **No journal, account, invariant,
+    or policy changed.**
+54. **No financial or architectural change (Revision 12.6).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
 
 ---
 
@@ -611,15 +867,24 @@ register. See spec Part 10a for the full statements.
 - **Multiple concurrent corrections on one market remain unresolved.**
 - **Partial write-off and collection combinations require further verification** (e.g. a partial
   collection *after* a partial write-off, or repeated partial tranches).
-- **Per-user correction allocation and multi-user payout handling require further specification** (the
-  worked examples use a single beneficiary).
+- **Per-user correction allocation and multi-user internal virtual-credit settlement handling require
+  further specification** (the worked examples use a single beneficiary).
 - **Option A is demonstrated for the supplied scenario only**, not established as production-complete.
 
-Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
-implemented auth/trading/ledger/settlement, created schemas or migrations, or pushed/merged/deployed.
-**No financial rule, account, journal, or decision was changed**; the only code change is the
-**C2 verification-model correction** in `docs/verification/rev9/rev9.mjs` (a scratch verification
-script, not application or financial logic). **No financial specification approval is assumed.** I
+This revision **stops at the Milestone 0 documentation boundary**. **No financial rule, account,
+journal, or decision was changed.** (Milestone 1 was subsequently authorized by the owner and is in
+progress on branch `milestone-1-foundation`, which adds presentation, preferences, and a
+**non-financial** schema/migration foundation only.) Revision 12.6 is a
+**documentation-only** terminology-consistency correction: it separates the **prohibited** real-money
+flows (deposits, withdrawals, redemption, cash payouts, real-money payments, external transfers) from
+the **permitted internal virtual-credit settlement** between ledger accounts, and prefers the term
+**"internal virtual-credit settlement"** over the ambiguous standalone word **"payout"** — while
+preserving the E1–E9 model, the journals, the account definitions, the invariants, and every
+owner-decision status. Revision 12.5 made the Git publication records durable (recording the
+**Revision 12.4 publication commit `67251ad`**). Revision 12.2 published the
+existing `docs/verification/rev9/` evidence to the review branch (**byte-identical**, no reported result
+changed). The **only code change** on the working branch remains the Revision 11 **C2 verification-model
+correction** in `docs/verification/rev9/rev9.mjs`. **No financial specification approval is assumed.** I
 await your independent review and explicit decisions on **F14, F16–F31** (including **F30**
 correction/entitlement identifier model and **F31** whole-Kyat divisibility), **AR13, AR15–AR19**. All
 remain **NOT APPROVED**.

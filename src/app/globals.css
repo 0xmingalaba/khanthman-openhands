@@ -1,26 +1,219 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Khant Hman design tokens.
+ * Original identity: jade primary (Myanmar jade), gold accent, cool neutral greys.
+ * Themes are driven by [data-theme="dark"]; no reliance on prefers-color-scheme so the
+ * user's explicit choice always wins.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --kh-bg: #f6f8fb;
+  --kh-surface: #ffffff;
+  --kh-surface-2: #eef2f7;
+  --kh-surface-3: #e4eaf2;
+  --kh-border: #dde4ee;
+  --kh-border-strong: #c3cddc;
+
+  --kh-fg: #0e1726;
+  --kh-fg-muted: #55637a;
+  --kh-fg-subtle: #7a879c;
+
+  --kh-primary: #0f7a6b;
+  --kh-primary-hover: #0c6459;
+  --kh-primary-active: #0a5148;
+  --kh-primary-fg: #ffffff;
+  --kh-primary-soft: #dcf1ec;
+
+  --kh-accent: #b8860b;
+  --kh-accent-fg: #1c1503;
+  --kh-accent-soft: #f6ecd2;
+
+  --kh-success: #1f8a4c;
+  --kh-success-soft: #dcf3e4;
+  --kh-warning: #b46a06;
+  --kh-warning-soft: #fbe9cf;
+  --kh-danger: #c02b3a;
+  --kh-danger-soft: #fadddf;
+  --kh-info: #1f6fb2;
+  --kh-info-soft: #dbeafb;
+
+  --kh-focus: #1f6fb2;
+  --kh-overlay: rgba(14, 23, 38, 0.45);
+
+  --kh-shadow-1: 0 1px 2px rgba(16, 27, 44, 0.06);
+  --kh-shadow-2: 0 2px 6px rgba(16, 27, 44, 0.08);
+  --kh-shadow-3: 0 8px 20px rgba(16, 27, 44, 0.1);
+  --kh-shadow-4: 0 16px 40px rgba(16, 27, 44, 0.16);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --kh-bg: #0a0f16;
+  --kh-surface: #111a25;
+  --kh-surface-2: #16212e;
+  --kh-surface-3: #1d2b3b;
+  --kh-border: #243344;
+  --kh-border-strong: #34485e;
+
+  --kh-fg: #e8eef7;
+  --kh-fg-muted: #9dabc0;
+  --kh-fg-subtle: #74849a;
+
+  --kh-primary: #2ec3a8;
+  --kh-primary-hover: #46d2b8;
+  --kh-primary-active: #6adcc7;
+  --kh-primary-fg: #04211c;
+  --kh-primary-soft: #103a34;
+
+  --kh-accent: #e0b24a;
+  --kh-accent-fg: #1c1503;
+  --kh-accent-soft: #3a2f14;
+
+  --kh-success: #3ec072;
+  --kh-success-soft: #12321f;
+  --kh-warning: #e0a63a;
+  --kh-warning-soft: #3a2c12;
+  --kh-danger: #f0727f;
+  --kh-danger-soft: #3a161b;
+  --kh-info: #63a6e6;
+  --kh-info-soft: #12283d;
+
+  --kh-focus: #63a6e6;
+  --kh-overlay: rgba(3, 6, 10, 0.6);
+
+  --kh-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --kh-shadow-2: 0 2px 8px rgba(0, 0, 0, 0.55);
+  --kh-shadow-3: 0 10px 26px rgba(0, 0, 0, 0.6);
+  --kh-shadow-4: 0 20px 48px rgba(0, 0, 0, 0.65);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--kh-bg);
+  --color-surface: var(--kh-surface);
+  --color-surface-2: var(--kh-surface-2);
+  --color-surface-3: var(--kh-surface-3);
+  --color-border: var(--kh-border);
+  --color-border-strong: var(--kh-border-strong);
+
+  --color-fg: var(--kh-fg);
+  --color-fg-muted: var(--kh-fg-muted);
+  --color-fg-subtle: var(--kh-fg-subtle);
+
+  --color-primary: var(--kh-primary);
+  --color-primary-hover: var(--kh-primary-hover);
+  --color-primary-active: var(--kh-primary-active);
+  --color-primary-fg: var(--kh-primary-fg);
+  --color-primary-soft: var(--kh-primary-soft);
+
+  --color-accent: var(--kh-accent);
+  --color-accent-fg: var(--kh-accent-fg);
+  --color-accent-soft: var(--kh-accent-soft);
+
+  --color-success: var(--kh-success);
+  --color-success-soft: var(--kh-success-soft);
+  --color-warning: var(--kh-warning);
+  --color-warning-soft: var(--kh-warning-soft);
+  --color-danger: var(--kh-danger);
+  --color-danger-soft: var(--kh-danger-soft);
+  --color-info: var(--kh-info);
+  --color-info-soft: var(--kh-info-soft);
+
+  --color-focus: var(--kh-focus);
+  --color-overlay: var(--kh-overlay);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-myanmar: var(--font-myanmar-sans), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-mono-code), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 9999px;
+
+  --shadow-e1: var(--kh-shadow-1);
+  --shadow-e2: var(--kh-shadow-2);
+  --shadow-e3: var(--kh-shadow-3);
+  --shadow-e4: var(--kh-shadow-4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--kh-border);
+  }
+
+  html {
+    background-color: var(--kh-bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--kh-bg);
+    color: var(--kh-fg);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  :lang(my),
+  [lang="my"] {
+    font-family: var(--font-myanmar);
+    line-height: 1.85;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--kh-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background-color: var(--kh-primary-soft);
+    color: var(--kh-fg);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .kh-container {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .kh-container {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kh-container {
+      padding-inline: 2rem;
+    }
+  }
+
+  .kh-my {
+    font-family: var(--font-myanmar);
+    line-height: 1.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

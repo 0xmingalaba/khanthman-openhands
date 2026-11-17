@@ -1,12 +1,19 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 11) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 10 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 11)
-**Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
-ledger, matching, settlement, schema, migration, or auth code exists.**
-**Revision 11 corrects the C2 verification-model defect (Part 4a) and the trading-milestone reference
-(Part 11); it resolves the S1 discrepancy by derivation.** **No financial policy, account, journal, or
+**Status:** DRAFT (Revision 12.6) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 12.5 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.6)
+**Milestone:** Milestone 0 planning baseline **accepted**; **Milestone 1 (application foundation) is IN
+PROGRESS** on branch `milestone-1-foundation`. **No trading, ledger, matching, or settlement code
+ exists.** M1 adds presentation, preferences, and a **non-financial** schema/migration foundation only;
+ all trading code remains gated on approval of this document.
+**Revision 12.6 is a documentation-consistency release only:** it corrects the product-wide
+payout/withdrawal/deposit/redemption terminology so that **prohibited real-money flows** are clearly
+separated from the **permitted internal virtual-credit settlement** between ledger accounts, and
+prefers the term **"internal virtual-credit settlement"** over the ambiguous standalone word
+**"payout"** (see the terminology note above and §6.7). It carries **no financial change** — the
+payout-terminology clarification (§6.7 / E8) and the price-grid clarification (Appendix B topic 16;
+**T1 stays OPEN**) from Revision 12.2 stand unchanged. **No financial policy, account, journal, or
 decision was changed and no alternative was selected.**
 
 ### Verification labels
@@ -29,9 +36,25 @@ decision was changed and no alternative was selected.**
 > **Nothing in this document is approved.** **A passing scratch model does not establish that this
 > specification is correct** — see Part 12 (Assumptions and limitations).
 
+> **Terminology — prohibited vs permitted movement (product-wide).** This document uses two strictly
+> separate vocabularies:
+>
+> - **Prohibited (real money).** Deposits, withdrawals, redemption, cash payouts, real-money payments,
+>   and external transfers are **not** part of this product and **no such mechanism is defined
+>   anywhere** in it. Credits are virtual and non-redeemable (see Part 2.1: there is **no** `Cash`
+>   asset).
+> - **Permitted (internal only).** The accounting model moves **non-redeemable virtual credits
+>   between ledger accounts**. This movement is called **internal virtual-credit settlement**. Where
+>   older wording says "payout", it means **internal virtual-credit settlement only** — never a cash
+>   disbursement.
+>
+> The term **"internal virtual-credit settlement"** is preferred over the ambiguous standalone word
+> **"payout"**. This note changes **no journal, account, invariant, or financial policy** — it fixes
+> wording only. (E8's own clarification is in §6.7.)
+
 ---
 
-## Part 0 — Change history (Revision 9, Revision 10 and Revision 11)
+## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12, Revision 12.2, Revision 12.3, Revision 12.4, Revision 12.5 and Revision 12.6)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -42,7 +65,7 @@ Revision 8 had a **blocking accounting defect in the E7 additional-credit issuan
    correction was represented in both `PendingCorrectionClaim` (200) and `SettlementCorrection`
    (200) — a **400 obligation for a 200 correction**.
 3. **Incomplete lifecycle.** The path from uncollectible receivable through write-off, issuance,
-   reopening, and payout was never demonstrated end-to-end.
+   reopening, and internal virtual-credit settlement was never demonstrated end-to-end.
 
 Revision 9 corrects all three.
 
@@ -70,7 +93,7 @@ Revision 9 corrects all three.
   was claimed but not tested.
 - **Explicit unresolved limitations added** (Part 12): no real-PostgreSQL multi-session verification;
   concurrent corrections; partial write-off/collection combinations; per-user allocation and
-  multi-user payout; Option A demonstrated only for the supplied scenario.
+  multi-user internal virtual-credit settlement; Option A demonstrated only for the supplied scenario.
 - Option A is shown to be **complete for the supplied scenario** (6.6).
 
 ### Revision 10 — final-review corrections (documentation only)
@@ -100,9 +123,85 @@ Revision 9 corrects all three.
   non-zero** outstanding balances, with a **regression guard** for the old formula. Scratch totals:
   **136 test cases, 253 invariant assertions** (was 105/220).
 - **Trading milestone reference corrected** (Part 11): "Milestone 4" → **Milestone 7+ (gated)**,
-  labelled **PROPOSED** and subject to owner approval.
+  labelled **PROPOSED** and subject to owner approval. *(The M7+ label was part of the unapproved
+  Revision 10/11 sequence; it is superseded by Revision 12 — see below.)*
 - **F30/F31 surfaced in the outstanding lists:** the architecture report now lists **F14, F16–F31** in
   its stop condition (§13) and adds open questions **T28–T30** (§11). **Both remain NOT APPROVED.**
+
+### Revision 12 — owner-approved roadmap restoration (documentation only)
+
+- **The owner-approved M0–M6 roadmap is restored** and used consistently. The unapproved Revision
+  10/11 sequence is superseded; **no milestone is renumbered and M7+ is removed.** Trading and the
+  ledger now sit inside **M4**, strictly behind financial-specification approval.
+- **Milestone references updated** here: Part 10a now gates F30/F31 before the **M4** ledger/trading
+  work; Part 11 assigns executable trading to **M4 (gated)**; Appendix B topic 20 defers order types /
+  matching / partial fills to **M4**.
+- **No financial decision changed.** F14 and F16–F31 remain **NOT APPROVED**; F28, F30 and F31 remain
+  undecided. **No policy was selected and no ledger/trading/schema/migration code was written.**
+  **C2/S1 verification corrections are not financial approval.** See the architecture report §12.3.
+
+### Revision 12.2 — independent-review corrections (documentation + evidence only)
+
+- **Internal payout terminology clarified (§6.7 / E8).** E8's "payout" is **internal virtual-credit
+  settlement/distribution** only — it is **not** a cash payment, withdrawal, redemption, external
+  transfer, or real-money payout. **No journal, account, or policy changed.**
+- **Price grid clarified (Appendix B topic 16).** `CHECK (price BETWEEN 1 AND 99)` is a **proposed
+  integer range bound only** and implies **no tick increment**; the exact integer price grid remains
+  **T1, still OPEN**. **No price grid is selected or approved.**
+- **Verification evidence published.** `docs/verification/rev9/` is published on the review branch
+  `review/m0-documents-2026-11-16` (**byte-identical**, no reported result changed); see the architecture
+  report §6.1. **No reported test result changed.**
+- **No financial decision changed (Revision 12.2).** F14, F16–F31 remain **NOT APPROVED**; F28, F30,
+  F31 undecided; no policy selected. See the architecture report §12.4.
+
+### Revision 12.3 — documentation-consistency corrections (documentation only, no financial change)
+
+- **README scaffold-location contradiction resolved** (in `README.md`) and the **Git publication history**
+  recorded as of Revision 12.3 (initial review publication `a6bf123`, Revision 12.2 publication
+  `b2437c8`, review-branch head at that time `b2437c8`, `main` baseline `f6c7567`); see the architecture
+  report §1.3 and §12.5. (The branch-position reference was later superseded.)
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
+
+### Revision 12.4 — synchronize current Git publication references (documentation only, no financial change)
+
+- **Branch-position references synchronized.** The Git publication history recorded the **Revision 12.3
+  publication `7bca12d`** and the branch position at that time (**3 commits ahead** of `main`),
+  preserving the labelled historical records (initial publication `a6bf123`, Revision 12.2 `b2437c8`,
+  `main` baseline `f6c7567`); see the architecture report §1.3 and §12.6.
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
+
+### Revision 12.5 — make Git publication records durable (documentation only, no financial change)
+
+- **Publication records made durable.** The Git publication history now records the **Revision 12.4
+  publication commit `67251ad`** (at which the branch was **4 commits ahead / 0 behind** the original
+  `main` baseline `f6c7567`) and states each branch position as a **publication-time snapshot** rather
+  than a live-head claim, preserving the labelled historical records (initial publication `a6bf123`,
+  Revision 12.2 `b2437c8`, Revision 12.3 `7bca12d`); see the architecture report §1.3 and §12.7.
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
+
+### Revision 12.6 — payout terminology consistency correction (documentation only, no financial change)
+
+- **Prohibited vs permitted movement distinguished product-wide.** A **terminology note** now states
+  that **deposits, withdrawals, redemption, cash payouts, real-money payments, and external transfers
+  are prohibited** (no such mechanism is defined), while the accounting model **permits only internal
+  transfers of non-redeemable virtual credits between ledger accounts**.
+- **Preferred term.** The term **"internal virtual-credit settlement"** is preferred over the
+  ambiguous standalone word **"payout"**; where older wording says "payout", it now reads as internal
+  virtual-credit settlement only (E8 event name, §6.7, the claim-unit ledger, the settlement lifecycle,
+  the atomicity/idempotency tables, scenario titles, and F22/F31 wording).
+- **Identifiers and quoted evidence preserved.** The C1 constant name `PAYOUT_PER_SHARE` /
+  `payout_per_share` and the proposed `settlement_payouts` table are **retained as identifiers**, with a
+  clarifying note; **quoted scratch/PGlite output is left byte-for-byte unchanged**. **No journal,
+  account, invariant, or policy changed.**
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
 
 ---
 
@@ -145,7 +244,7 @@ account, so there is **no double count**.
 
 ### 2.3 Claim-unit control ledger
 
-`ClaimUnitsRemaining:{m}` (D), `UnitsControl:{m}` (C). Opens at 0; split +n; merge −n; payout −k;
+`ClaimUnitsRemaining:{m}` (D), `UnitsControl:{m}` (C). Opens at 0; split +n; merge −n; settlement −k;
 returns to 0 at completion; **never negative**; always `ClaimUnitsRemaining = UnitsControl` (C1b).
 
 ---
@@ -171,6 +270,9 @@ side. M1 is a statement of **accounting conservation**, not of economic backing.
 > **C1b:** `ClaimUnitsRemaining:{m} = UnitsControl:{m}`
 
 **`PendingCorrectionClaim` and `CorrectionReceivable` are never counted as funded collateral.**
+**`PAYOUT_PER_SHARE` is the fixed per-unit entitlement constant used by C1** — the constant name is
+retained as an identifier; the E8 movement it backs is **internal virtual-credit settlement**, never a
+cash payout (see the terminology note above and §6.7).
 **VERIFIED (scratch):** `R9-01b` (C1 holds after issuance), `R9-18` (unfunded reopen rejected),
 `R9-12c` (realization without reopening rejected).
 
@@ -243,8 +345,8 @@ approval.**
 
 ## Part 5 — Settlement lifecycle and atomicity (unchanged)
 
-Twelve steps; atomic per-user payout; no reliance on a progress flag. **VERIFIED (PGlite):** unique
-payout keys reject duplicates and credit exactly once.
+Twelve steps; atomic per-user internal virtual-credit settlement; no reliance on a progress flag.
+**VERIFIED (PGlite):** unique settlement keys reject duplicates and credit exactly once.
 
 ---
 
@@ -261,7 +363,7 @@ payout keys reject duplicates and credit exactly once.
 | **E5** | Owner-approved write-off | `CorrectionWriteOffLoss:M D x / CorrectionReceivable:Bob C x` | MMK |
 | **E6** | Owner-approved issuance | `CreditsIssued D x / (CorrectionReceivable:Bob C a + CorrectionWriteOffLoss:M C b)`, `a+b=x` — **how `x` is split between `a` and `b` is F28, NOT APPROVED** (see 6.4a) | MMK |
 | **E7** | Funded claim-unit reopening | `ClaimUnitsRemaining:M D x/P / UnitsControl:M C x/P` | UNIT |
-| **E8** | Payout of the corrected entitlement | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
+| **E8** | Internal virtual-credit settlement of the corrected entitlement (**internal only** — see 6.7; not a cash payout) | `SettlementCorrection:M D x / UserAvailable:Alice C x` (Option B) | MMK |
 | **E9** | Claim-unit retirement | `UnitsControl:M D u / ClaimUnitsRemaining:M C u` | UNIT |
 
 ### 6.2 E2 — recognition
@@ -353,7 +455,7 @@ and `E7` (reopen `x/P` units) are identical in both alternatives.
 
 **Per-state journals and balances:**
 
-- **State 1 — (200, 0), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionReceivable:Bob C 200`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (only a receivable exists). *Meaning:* Bob's whole debt is extinguished; the funded units back the payout.
+- **State 1 — (200, 0), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionReceivable:Bob C 200`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (only a receivable exists). *Meaning:* Bob's whole debt is extinguished; the funded units back the internal virtual-credit settlement.
 - **State 2 — (0, 200), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionWriteOffLoss:M C 200`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (only a loss exists). *Meaning:* the recorded loss is reversed (reclassified to issuance cost).
 - **State 3 — (100, 100), x = 200.** Both alternatives: `CreditsIssued D 200 / CorrectionReceivable:Bob C 100 / CorrectionWriteOffLoss:M C 100`. After: recv 0, loss 0, pending 0, corr 200, units 2. **Alternatives agree** (issuance covers the whole claim). *Meaning:* both the residual debt and the residual loss are cleared.
 - **State 3b — (100, 100), x = 100 (the only divergent state).**
@@ -418,7 +520,7 @@ positive for the same entitlement**:
   x`, `units = x/P` → C1 backed by `CorrectionPayableMarket`. The two accounts move in **opposite
   directions by the same amount**, so `SettlementCorrection + CorrectionPayableMarket = x` throughout
   (**never `2x`**). **VERIFIED (scratch R9-35: sum = 200, not 400).**
-- At **payout**, `CorrectionPayableMarket` is debited to 0 and the units retire together.
+- At **settlement**, `CorrectionPayableMarket` is debited to 0 and the units retire together.
 - A **second recognition** is **rejected** (`SettlementCorrection` is 0, so the debit would go
   negative). **VERIFIED (scratch R9-38).**
 - The **subledger** is a *detail* of `CorrectionPayableMarket`, never added to it, so there is **no
@@ -429,11 +531,27 @@ cannot double-count the same entitlement. This is **not** a claim of production-
 concurrency, multi-user allocation, and crash/retry for Option A are **not verified** (Part 12).
 Whether to adopt Option A remains **OWNER DECISION F20 / AR15** (recommendation: Option B).
 
-### 6.7 E8/E9 — payout and retirement
+### 6.7 E8/E9 — internal virtual-credit settlement and retirement
 
-`E8` (MMK) moves realized funding to Alice; `E9` (UNIT) retires the units. **Payout and retirement
-must be atomic**, and the payout may not exceed the funded `SettlementCorrection`. **VERIFIED
+`E8` (MMK) moves realized funding to Alice; `E9` (UNIT) retires the units. **Settlement and retirement
+must be atomic**, and the settlement may not exceed the funded `SettlementCorrection`. **VERIFIED
 (scratch R9-09, R8-15).**
+
+> **Terminology — the movement here is INTERNAL only.** Throughout this document, older wording
+> "payout" means the **internal virtual-credit settlement** of an entitlement between ledger accounts
+> (`SettlementCorrection:M` → `UserAvailable:Alice`); the preferred term is **"internal virtual-credit
+> settlement"**. It is **explicitly NOT** any of the following, and this document defines no such
+> mechanism:
+>
+> - **cash payment / cash payout** (no money is paid);
+> - **withdrawal** (credits can never be withdrawn);
+> - **redemption** (credits are non-redeemable; there is **no** `Cash` asset — see Part 2.1);
+> - **external transfer** (no transfer leaves the system);
+> - **real-money payout** (credits have **no** monetary value).
+>
+> The **virtual-credit-only** product rule is **unchanged**: credits are internal, non-redeemable
+> units. This clarification changes **no journal, account, or financial policy** — it only fixes
+> wording so "payout" is never read as a cash disbursement.
 
 ---
 
@@ -457,9 +575,10 @@ while it is pending.
 
 ## Part 8 — Worked scenarios
 
-Example: payout/share **100 MMK**; correction **200 MMK**; **2 claim units**; initial erroneous
-payout 200 MMK. Option B unless stated. Transaction boundaries and idempotency keys are given per
-scenario; M1/C1/C1b are asserted after **every** committed group.
+Example: `payout_per_share` = **100 MMK** (the C1 per-unit constant); correction **200 MMK**;
+**2 claim units**; initial erroneous internal settlement 200 MMK. Option B unless stated. Transaction
+boundaries and idempotency keys are given per scenario; M1/C1/C1b are asserted after **every**
+committed group.
 
 ### 8.1 Path A vs Path B (comparison)
 
@@ -511,9 +630,9 @@ E2 → {E3 100 + E4 100 + E7 1}. Post-commit: `recv 100, pending 100, corr 100, 
 
 As 8.7; the unfunded unit stays pending; reopening it is **rejected**. **VERIFIED (scratch R8-03c).**
 
-### 8.9 Delayed payout after reopening
+### 8.9 Delayed internal settlement after reopening
 
-Funding tx commits; payout tx commits later. Between them: `corr 200, units 2` → C1 ✅. **VERIFIED
+Funding tx commits; settlement tx commits later. Between them: `corr 200, units 2` → C1 ✅. **VERIFIED
 (scratch R8-14, R9-09).**
 
 ### 8.10 Complete correction and final reconciliation
@@ -531,10 +650,10 @@ Bob has 50; collecting 200 is **rejected** (would drive `UserAvailable:Bob` nega
 Second issuance is **rejected** (nothing left to cancel) and idempotency key returns the original
 result. **VERIFIED (scratch R9-10, R9-15; PGlite P6).**
 
-### 8.13 Duplicate payout request
+### 8.13 Duplicate internal settlement request
 
-Second payout is **rejected** (`SettlementCorrection` exhausted) / unique key. **VERIFIED (scratch
-R9-13; PGlite P7).**
+A second settlement is **rejected** (`SettlementCorrection` exhausted) / unique key. **VERIFIED
+(scratch R9-13; PGlite P7).**
 
 ### 8.14 Crash after one transaction commits, before the next starts
 
@@ -558,24 +677,24 @@ Issuance **rejected**; correction stays **permanently pending** (`pending 200, c
 | - | - |
 | Funding + reopening atomic | `E4` realize + `E7` reopen commit in **one** transaction (C1 requires it). |
 | Reopening + UnitsControl atomic | `E7` writes `ClaimUnitsRemaining` and `UnitsControl` in **one** UNIT journal. |
-| Payout + retirement atomic | `E8` (MMK) + `E9` (UNIT) commit in **one** transaction. |
+| Settlement + retirement atomic | `E8` (MMK) + `E9` (UNIT) commit in **one** transaction. |
 | Collection/funding separation | `E3` collect may precede `E4`+`E7` **only** if the intermediate state is reconciled (it is: see 6.3) and resumable. |
 | Retries | Never duplicate economic effects (idempotency keys). |
 
 **Unique idempotency keys:** recognition `(market, resolution_version, user)`; collection
 `(market, user, collection_seq)` + request key; write-off `(market, resolution_version, writeoff_seq)`;
 issuance `(market, resolution_version, issuance_seq)` + request key; reopening
-`(market, resolution_version, reopen_seq)`; payout `(market, resolution_version, user)`; retirement
+`(market, resolution_version, reopen_seq)`; settlement `(market, resolution_version, user)`; retirement
 `(market, resolution_version, user, retire_seq)`.
 
 **Crash behaviour:** before commit → no effect; immediately after commit → restart sees the committed
 state; between collection and funding → the reconciled intermediate state resumes; between funding
-and payout → funding is preserved and payout resumes; during retry → idempotent no-op.
+and settlement → funding is preserved and settlement resumes; during retry → idempotent no-op.
 **VERIFIED (scratch R9-14/R9-15; PGlite P2).**
 
 ---
 
-## Part 10 — Financial decision register (Revision 11)
+## Part 10 — Financial decision register (Revision 12.5)
 
 All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
 **F1–F13 and F15 are not defined in this document** (see the note after the table).
@@ -589,7 +708,7 @@ All decisions in this register remain **unresolved / NOT APPROVED**. The registe
 | F19 | Fallback if additional issuance is not approved? | pending correction | **NOT APPROVED** |
 | F20 | CorrectionPayable representation: Option A vs Option B | Option B | **NOT APPROVED** |
 | F21 | Partial funding vs all-or-nothing correction | funded-tranche | **NOT APPROVED** |
-| F22 | Is delayed correction payout supported? | yes | **NOT APPROVED** |
+| F22 | Is delayed correction settlement (internal virtual-credit settlement) supported? | yes | **NOT APPROVED** |
 | F23 | When is the receivable recognized? | at correction record (E2) | **NOT APPROVED** |
 | F24 | Is the collect→realize→reopen group required to be atomic? | yes | **NOT APPROVED** |
 | F25 | Write-off mechanics and `PendingCorrectionClaim` clearing | write off to `CorrectionWriteOffLoss`; clear pending claim via realization | **NOT APPROVED** |
@@ -633,10 +752,11 @@ so the gaps are visible. **Neither selects an implementation or a financial poli
 | ID | Decision | Why it matters | Status |
 | - | - | - | - |
 | **F30** | **Correction-level and entitlement-level identifier model.** Multiple corrections on one market, multiple beneficiaries within one correction, and multiple corrections for one user require **immutable per-correction and per-entitlement identifiers**, plus an explicit rule reconciling the market-level aggregate accounts (`PendingCorrectionClaim:{m}`, `SettlementCorrection:{m}`) to individual correction records and individual user entitlements. Today the model uses **market-scoped aggregates only** and a **single beneficiary (Alice)**, so it cannot represent two corrections on one market distinctly. | Without it, C1 can hold at the aggregate level while individual corrections are misallocated; the correction lifecycle is **not safe for multi-user/multi-correction** use. | **NOT APPROVED** |
-| **F31** | **Whole-Kyat / unit-divisibility rule.** E7 reopens `x/P` claim units for issuance `x` at payout-per-share `P`. The specification does **not** state whether `x` must be a multiple of `P`, nor the **rejection behaviour** when `P ∤ x` (e.g. issuance 150 with `P = 100` → `1.5` units). | Integer/whole-Kyat correctness; an undefined rule can create fractional or unbacked units. | **NOT APPROVED** |
+| **F31** | **Whole-Kyat / unit-divisibility rule.** E7 reopens `x/P` claim units for issuance `x` at the per-unit constant `P` (`payout_per_share`). The specification does **not** state whether `x` must be a multiple of `P`, nor the **rejection behaviour** when `P ∤ x` (e.g. issuance 150 with `P = 100` → `1.5` units). | Integer/whole-Kyat correctness; an undefined rule can create fractional or unbacked units. | **NOT APPROVED** |
 
 **What these decisions block:** F30 and F31 must be resolved **before the ledger schema and the
-correction/trading implementation** (Milestone 6/7+). They do **not** block Milestone 1 (foundation).
+correction/trading implementation** (**Milestone 4**, gated on financial-specification approval). They
+do **not** block Milestone 1 (application foundation).
 
 **What remains deliberately unselected here:** the identifier design (F30) and the divisibility policy
 (F31). This document **records the need**; it does **not** choose a design or a policy.
@@ -647,10 +767,10 @@ correction/trading implementation** (Milestone 6/7+). They do **not** block Mile
 ## Part 11 — Approval
 
 **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.** Approving this document is required
-before any executable trading is implemented. Per the architecture report's **proposed** roadmap
-(§3.3), executable trading is assigned to **Milestone 7+ (gated)** — **not** Milestone 4, which is
-read-only discovery and detail. That milestone assignment is **PROPOSED and subject to owner
-approval**; it is not a delivery commitment. **Nothing here is implemented.**
+before any executable trading is implemented. Per the architecture report's **owner-approved** roadmap
+(§3.3), executable trading is assigned to **Milestone 4 (gated)** — "Financial specification &
+trading": the financial specification must be **approved first**, and only then may trading
+implementation begin. **Nothing here is implemented.**
 
 - ☐ **Approved as written**
 - ☐ **Approved with changes:** ______________________________
@@ -674,7 +794,8 @@ Product owner signature / date: ______________________________
      atomic issuance group. They **cannot** reproduce multi-session contention.
   3. **Real PostgreSQL multi-session tests** — **NONE PERFORMED.** **Real PostgreSQL multi-session
      concurrency remains unverified.**
-- **Assumptions:** payout/share fixed at 100; a correction maps to one market and resolution version;
+- **Assumptions:** the C1 per-unit constant `payout_per_share` is fixed at 100; a correction maps to
+  one market and resolution version;
   the owner authorizes issuance/write-off out of band; the model's `noDoubleCount` check uses the
   scenario total (200).
 - **Explicit unresolved limitations (disclosed, not resolved):**
@@ -686,9 +807,10 @@ Product owner signature / date: ______________________________
   - **Partial write-off and collection combinations require further verification** — State 4 (partly
     collected + partly written off) is derived and asserted, but richer interleavings (e.g. partial
     collection *after* a partial write-off, or repeated partial tranches) are not exhaustively covered.
-  - **Per-user correction allocation and multi-user payout handling require further specification** —
-    the worked examples use a single beneficiary (Alice); how a correction is allocated across several
-    affected users, and how multi-user payout is scheduled, is not yet specified.
+  - **Per-user correction allocation and multi-user settlement handling require further
+    specification** — the worked examples use a single beneficiary (Alice); how a correction is
+    allocated across several affected users, and how multi-user internal virtual-credit settlement is
+    scheduled, is not yet specified.
   - **Option A is demonstrated for the supplied scenario only** — 6.6 shows one issuance-funded
     scenario; it is **not** established as production-complete (concurrency, multi-user allocation, and
     crash/retry for Option A are not verified).
@@ -828,11 +950,11 @@ required · **D** = deferred to a later milestone.
 | 13 | Correction state model | S | Part 7 |
 | 14 | Worked scenarios | S | Part 8 |
 | 15 | Atomicity / idempotency / recovery | P | Part 9; concurrency unproven |
-| 16 | **Price grid / integer price tick** | **M** | Not defined (T1); only UX reference |
+| 16 | **Price grid / integer price tick** | **M** | **T1 OPEN** — not defined; `BETWEEN 1 AND 99` is a proposed range only, no tick selected |
 | 17 | **Minimum order size / notional** | **M** | Not defined |
 | 18 | **Fees** | **M** | Not defined; only Polymarket UX formula quoted |
 | 19 | **Slippage tolerance unit/default** | **M** | Not defined (T4/R12) |
-| 20 | **Order types / matching / partial fills** | **M** | Deferred to M7+; not specified |
+| 20 | **Order types / matching / partial fills** | **M** | Deferred to M4 (gated); not specified |
 | 21 | **Split/merge/redeem rules** | **M** | Named only |
 | 22 | **Market resolution rules / dispute window** | **M** | Not defined (T5) |
 | 23 | **Correction/entitlement identifier model** | **M / O** | **F30 (NOT APPROVED)** |
@@ -845,6 +967,11 @@ required · **D** = deferred to a later milestone.
 (#16), the **minimum order size / notional** (#17), the **fee rule** (#18), and the **slippage unit and
 default** (#19) are **not specified** in this document and are **owner decisions** (T1, T4, R12).
 **No values or policies are chosen here.**
+
+**Price-grid scope note (T1 stays OPEN):** the integrity bound `CHECK (price BETWEEN 1 AND 99)` proposed
+in the architecture report **§5** is a **validity range only** — it is **not** a price grid and implies
+**no tick increment**. The **exact integer price grid / tick size is undecided** and remains **owner
+decision T1**. This document **selects and approves no price grid**.
 
 **Conclusion:** the specification is **substantially specified for the accounting/correction model** but
 **materially incomplete for pricing, trading mechanics, and multi-user correction handling**. The
