@@ -128,6 +128,10 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - **`origin/main` — unchanged** (`f6c7567`); nothing merged; the working branch
   `milestone-0-discovery-architecture` is **separate** from the review branch and does **not** exist
   remotely.
+- **Milestone 1 publication (verified against the live remote on 2026-11-16):** branch
+  **`milestone-1-foundation`** published at **`791013927d287707b7d2f3f49c4f2aebfa84cb3e`**
+  (`7910139`), tree `e33340d0`. Independently re-fetched; the remote tree is **byte-identical** to the
+  local tree. `main` remained at `f6c7567`.
 - **Historical report (dated 2026-11-16, working-branch context; NOT current, superseded):** an earlier
   session reported `git push` failing with **HTTP 403** ("Permission ... denied"), with the credential
   helper and `$GITHUB_TOKEN` resolving to a **read-only** GitHub App / integration token. Retained
