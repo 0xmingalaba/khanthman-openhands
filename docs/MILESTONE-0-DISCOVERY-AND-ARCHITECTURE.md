@@ -1,18 +1,18 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 12.2)
+# Milestone 0 — Discovery & Architecture Report (Revision 12.3)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 12.2) — **delivered, awaiting explicit product-owner approval. NO APPROVAL
+**Status:** DRAFT (Revision 12.3) — **delivered, awaiting explicit product-owner approval. NO APPROVAL
 HAS BEEN GRANTED.** (Delivery is **not** owner acceptance.)
-**Supersedes:** Revision 12 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 12.2)
+**Supersedes:** Revision 12.2 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 12.3)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
 features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
-**Revision 12.2 applies independent-review corrections** (documentation + verification evidence only):
-it publishes the `docs/verification/rev9/` evidence to the review branch, corrects the Git-status
-record, clarifies README branch scope, clarifies internal payout terminology, clarifies the price grid
-(T1 stays OPEN), and separates the M4 gate stages. **No financial policy, account, journal, architecture
-direction, or owner decision was changed.**
+**Revision 12.3 applies final documentation-consistency corrections** (documentation only): it resolves a
+README scaffold-location contradiction and records the full Git publication history (initial review
+publication `a6bf123`, Revision 12.2 publication `b2437c8`, current review-branch head `b2437c8`, `main`
+baseline `f6c7567`). **No financial policy, account, journal, architecture direction, or owner decision
+was changed.**
 
 ### Verification labels
 
@@ -56,7 +56,7 @@ branch they remain uncommitted.
 | Working branch | `milestone-0-discovery-architecture` — HEAD `bb498b30a8bf169a4d281adc9fd6626375dc8faa` (`bb498b3`); Revision 12 docs **uncommitted**; working tree **NOT clean** (four modified `.md`) |
 | Working-branch commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → `9f1304d` → `bb498b3` (**HEAD**) |
 | Working branch vs `main` | **16 ahead / 0 behind** `origin/main` |
-| Review branch | `review/m0-documents-2026-11-16` — **published**; commit `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`); a **documentation-only snapshot based on `origin/main`** (`a6bf123^` = `f6c7567`); **1 commit ahead / 0 behind** `origin/main` |
+| Review branch | `review/m0-documents-2026-11-16` — **published**; **current head `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`)**, a **documentation-and-evidence snapshot based on `origin/main`**; publication history: initial publication `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`, Revision 12) → `b2437c8` (Revision 12.2); **2 commits ahead / 0 behind** `origin/main` |
 | Branches (remote) | exactly `main` and `review/m0-documents-2026-11-16` (the working branch does **not** exist remotely) |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
@@ -84,8 +84,9 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | `9f1304d` | Milestone 0 revision 10 (final-review corrections) | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/README.md` |
 | `bb498b3` | Milestone 0 revision 11 (C2 verification + consistency) | both `docs/*.md`, `AGENTS.md`, `docs/verification/rev9/*` |
 | *(uncommitted)* | Milestone 0 revision 12 (roadmap restoration) — **not yet committed on the working branch** | both `docs/*.md`, `README.md`, `AGENTS.md` |
-| *(review branch)* | **Milestone 0 revision 12 documents published for review** (`review/m0-documents-2026-11-16`, commit `a6bf123`) | `AGENTS.md`, `README.md`, both `docs/*.md` |
-| *(review branch, this revision)* | Milestone 0 revision 12.2 (independent-review corrections) — **documentation + verification evidence** | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/*` |
+| `a6bf123` | **Initial review publication** — Milestone 0 revision 12 documents published for review (`review/m0-documents-2026-11-16`) | `AGENTS.md`, `README.md`, both `docs/*.md` |
+| `b2437c8` | Milestone 0 revision 12.2 (independent-review corrections) — **documentation + verification evidence** | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/*` |
+| *(this revision)* | Milestone 0 revision 12.3 (final documentation-consistency corrections) — **documentation only** | `AGENTS.md`, `README.md`, `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` |
 
 **Shallow-clone limitation:** the clone is **shallow**, so historical file-change verification is
 limited to the commits present locally (all committed rows above are present). **Revision 12 is
@@ -127,29 +128,43 @@ been pushed** — `origin/main` was `f6c7567` and the working branch did **not**
 historical snapshot is retained here **only because it is labelled with its date and branch context**;
 it is **superseded** by the publication below.
 
-**Publication (verified):** the documentation review branch **was successfully published** to the
-canonical repository. `git ls-remote --heads origin` shows exactly two remote heads:
-`f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9 refs/heads/main` and
-`a6bf123e2cd6f71ce6626a47c920c84f2fc770aa refs/heads/review/m0-documents-2026-11-16`. `origin/main`
+**Publication (verified against the live remote on 2026-11-16):** the documentation review branch
+**was successfully published** to the canonical repository. `git ls-remote --heads origin` shows exactly
+two remote heads: `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9 refs/heads/main` and
+`b2437c8459380353d67b394d4bf8f0905f976c57 refs/heads/review/m0-documents-2026-11-16`. `origin/main`
 **remained unchanged** (`f6c7567`) throughout; nothing was merged and nothing was pushed to `main`.
+
+**Review-branch publication history (do not conflate these commits):**
+
+| Stage | Commit | Meaning |
+| - | - | - |
+| Initial review publication | `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`) | Revision 12 documents published for independent review |
+| Revision 12.2 publication | `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`) | Independent-review corrections (documentation + verification evidence) |
+| **Current review-branch head** | **`b2437c8`** | 2 commits ahead of `main`; **this is the current head** |
+| Original `main` baseline | `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`) | Unchanged; nothing merged |
+
+**`a6bf123` is the initial publication only — it is NOT the current branch head.** The current head is
+**`b2437c8`**.
 
 **Git access evidence (precise):**
 
 - **Read access — VERIFIED.** `git ls-remote --heads origin` returns the remote heads above. Remote
   URL: `https://github.com/0xmingalaba/khanthman-openhands.git` (no embedded credentials).
-- **Write access — VERIFIED for the credentials in use.** The review-branch publication succeeded: a
-  single focused commit (`a6bf123`) was pushed as a **new, non-`main` branch**, and the remote branch
-  was independently re-fetched and confirmed to match the local commit. Write access is established by
-  this **successful, non-destructive publication** — **not** by force-pushing or by writing to `main`.
+- **Write access — VERIFIED for the credentials in use.** The review-branch publications succeeded:
+  the initial publication (`a6bf123`) and the Revision 12.2 commit (`b2437c8`) were pushed to a
+  **new, non-`main` branch**, and the remote branch was independently re-fetched and confirmed to match
+  the local commits. Write access is established by these **successful, non-destructive publications** —
+  **not** by force-pushing or by writing to `main`.
 - **Historical report (labelled historical — prior session, date not re-established, working branch
   context; NOT re-tested here):** an earlier session reported `git push` failing with **HTTP 403**
   ("Permission … denied"), with both the git credential helper and `$GITHUB_TOKEN` resolving to a
   GitHub App / integration token with **read-only** access, and API writes returning
   `Resource not accessible by integration`. This is a **historical observation only** and is **no longer
-  the current state** — it is superseded by the verified publication above.
-- **Net current state:** read = verified; write = **verified** (review branch published); `origin/main`
-  = **unchanged**; the historical 403 is retained **only** as a dated, branch-scoped historical record.
-  Policy is unchanged: **never push to `main`; use a feature/review branch.**
+  the current state** — it is superseded by the verified publications above.
+- **Net current state:** read = verified; write = **verified** (review branch published through
+  `b2437c8`); `origin/main` = **unchanged**; the historical 403 is retained **only** as a dated,
+  branch-scoped historical record. Policy is unchanged: **never push to `main`; use a feature/review
+  branch.**
 
 ---
 
@@ -487,7 +502,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 12.2)
+## 9. Risk register (Revision 12.3)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -504,7 +519,7 @@ No PR is created, merged, or deployed in this milestone.
 | R11 | Cross-outcome matching complexity | Med | Med | defer to a separately reviewed feature | OPEN |
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
 | R13 | Resolution correction after payout | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
-| R14 | Push blocked | Low | Med | **Read access verified; write access verified** (review branch `review/m0-documents-2026-11-16` published, commit `a6bf123`); a **historical** 403 failure is on record, dated and superseded (see §1.3). `origin/main` unchanged; nothing merged | VERIFIED (read + write) |
+| R14 | Push blocked | Low | Med | **Read access verified; write access verified** (review branch `review/m0-documents-2026-11-16` published; current head `b2437c8`); a **historical** 403 failure is on record, dated and superseded (see §1.3). `origin/main` unchanged; nothing merged | VERIFIED (read + write) |
 | R15 | Correction creates a hidden deficit | Low | High | `PendingCorrectionClaim` excluded from C1; no negative balances | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal in the same transaction; C1b asserted each commit | PROPOSED |
 | R17 | Cross-domain journal accidentally mixes units | Low | High | model + DB `CHECK` reject mixed-domain journals | PROPOSED |
@@ -526,7 +541,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 10. Owner decision register (Revision 12.2)
+## 10. Owner decision register (Revision 12.3)
 
 ### 10.1 Architecture / product
 
@@ -613,7 +628,7 @@ register. See spec Part 10a for the full statements.
 
 ---
 
-## 12. Change list (Revision 8 → 9, 9 → 10, 10 → 11, 11 → 12, then 12 → 12.2)
+## 12. Change list (Revision 8 → 9, 9 → 10, 10 → 11, 11 → 12, 12 → 12.2, then 12.2 → 12.3)
 
 1. **E7 issuance defect corrected.** Issuance is now the atomic group **E6 (issue) + E4 (realize) +
    E7 (reopen)**: it creates funding, cancels the outstanding claim, realizes funding, and reopens the
@@ -756,6 +771,25 @@ register. See spec Part 10a for the full statements.
     F31 undecided; AR13, AR15–AR19 unchanged; M0–M6 not renumbered. **No application code, schema, or
     migration was added.**
 
+### 12.5 Change list — Revision 12.2 → Revision 12.3 (final documentation-consistency corrections)
+
+41. **README scaffold-location contradiction resolved.** The opening status paragraph previously said the
+    repository "contains an unmodified Next.js scaffold", which contradicted the following branch-scope
+    paragraph. README now states plainly that the **scaffold lives only on the working branch
+    `milestone-0-discovery-architecture`**, the **review branch
+    `review/m0-documents-2026-11-16` is a documentation-and-evidence-only snapshot with no scaffold or
+    application code**, and **`main` contains only the initial `README.md`**. No claim that the scaffold
+    exists on the review branch remains.
+42. **Git publication history recorded (§1.3, AGENTS.md).** Now distinguishes the **initial review
+    publication** `a6bf123`, the **Revision 12.2 publication** `b2437c8`, the **current review-branch
+    head `b2437c8`**, and the **original `main` baseline** `f6c7567`. `a6bf123` is explicitly **not**
+    the current head. Historical observations remain dated and branch-scoped.
+43. **Review-branch state corrected.** §1 and §1.1 now show the review branch at **head `b2437c8`**
+    (**2 commits ahead** of `main`), replacing the earlier "1 commit ahead / `a6bf123`" description.
+44. **No financial or architectural change (Revision 12.3).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
+
 ---
 
 ## 13. Unresolved limitations and stop condition
@@ -774,12 +808,13 @@ register. See spec Part 10a for the full statements.
 
 Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
 implemented auth/trading/ledger/settlement, created schemas or migrations, merged, deployed, or pushed
-to `main`. **No financial rule, account, journal, or decision was changed.** Revision 12.2 is a
-**documentation-and-evidence-only** correction: it publishes the existing `docs/verification/rev9/`
-evidence to the review branch (**byte-identical**, no reported result changed), corrects the Git-status
-record, clarifies README branch scope, clarifies internal payout terminology, clarifies the price grid
-(**T1 stays OPEN**), and separates the M4 gate stages. The **only code change** on the working branch
-remains the Revision 11 **C2 verification-model correction** in `docs/verification/rev9/rev9.mjs`.
-**No financial specification approval is assumed.** I await your independent review and explicit
-decisions on **F14, F16–F31** (including **F30** correction/entitlement identifier model and **F31**
-whole-Kyat divisibility), **AR13, AR15–AR19**. All remain **NOT APPROVED**.
+to `main`. **No financial rule, account, journal, or decision was changed.** Revision 12.3 is a
+**documentation-only** correction: it resolves a README scaffold-location contradiction and records the
+full Git publication history (initial review publication `a6bf123`, Revision 12.2 publication `b2437c8`,
+current review-branch head `b2437c8`, `main` baseline `f6c7567`). Revision 12.2 published the existing
+`docs/verification/rev9/` evidence to the review branch (**byte-identical**, no reported result
+changed). The **only code change** on the working branch remains the Revision 11 **C2 verification-model
+correction** in `docs/verification/rev9/rev9.mjs`. **No financial specification approval is assumed.** I
+await your independent review and explicit decisions on **F14, F16–F31** (including **F30**
+correction/entitlement identifier model and **F31** whole-Kyat divisibility), **AR13, AR15–AR19**. All
+remain **NOT APPROVED**.

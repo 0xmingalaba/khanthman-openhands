@@ -6,15 +6,18 @@ A prediction market for Myanmar, where users express predictions about real-worl
 trading **virtual YES/NO shares**, in the spirit of the Polymarket user experience but with
 original Khant Hman branding.
 
-> **Status: Milestone 0 — Discovery & Architecture.** No product features are implemented
-> yet. This repository currently contains an unmodified Next.js scaffold (used only to verify
-> the recommended stack builds) plus planning documentation awaiting product-owner approval.
+> **Status: Milestone 0 — Discovery & Architecture.** No product features are implemented yet. The
+> Next.js scaffold, the planning documents, and the verification evidence live on **different
+> branches**; the scaffold is **not** on the review branch:
 >
-> **Branch scope.** The **`main` branch does not contain the documents below.** The published review
-> branch **`review/m0-documents-2026-11-16`** is a **documentation-and-evidence-only snapshot**: it
-> contains the four Milestone 0 Markdown documents plus the `docs/verification/rev9/` evidence, and it
-> does **not** contain the Next.js scaffold or any application code. The scaffold lives on the
-> **working branch `milestone-0-discovery-architecture`**, not on the review branch.
+> - **Working branch `milestone-0-discovery-architecture`** — holds the **unmodified Next.js
+>   scaffold** (used only to verify the recommended stack builds) plus the Milestone 0 planning
+>   documents. The scaffold exists **only** here.
+> - **Documentation review branch `review/m0-documents-2026-11-16`** — a **documentation-and-evidence-only
+>   snapshot**: the four Milestone 0 Markdown documents plus the `docs/verification/rev9/` evidence.
+>   It does **not** contain the Next.js scaffold or any application code.
+> - **`main`** — contains **only** the initial `README.md`; it does **not** contain the planning
+>   documents, the scaffold, or any application code.
 >
 > **Virtual credits only.** Credits are virtual and can never be deposited, withdrawn, or
 > redeemed. There is no real money, no payment processing, and no monetary value.
@@ -77,10 +80,11 @@ Next.js (App Router) · React · strict TypeScript · Tailwind CSS · PostgreSQL
 Drizzle ORM with versioned migrations · Zod · Vitest + Playwright · key-based `en`/`my` i18n.
 
 Verified in this environment: the Next.js **scaffold builds** (`npm run build`, `tsc --noEmit`,
-`eslint`). Separately, a **scratch** run (outside this repository) confirmed that PGlite runs a real
-PostgreSQL 18.6 engine with working transactions and constraints. **PGlite is not installed in this
-repository** — it is a proposed dependency. See the financial spec **Appendix A** for the exact
-verification evidence and its limits.
+`eslint`) **on the working branch** `milestone-0-discovery-architecture` (the scaffold is not present
+on this documentation review branch). Separately, a **scratch** run (outside this repository) confirmed
+that PGlite runs a real PostgreSQL 18.6 engine with working transactions and constraints. **PGlite is
+not installed in this repository** — it is a proposed dependency. See the financial spec **Appendix A**
+for the exact verification evidence and its limits.
 
 ---
 

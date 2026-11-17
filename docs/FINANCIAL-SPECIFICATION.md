@@ -1,14 +1,15 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 12.2) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 12 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.2)
+**Status:** DRAFT (Revision 12.3) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 12.2 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.3)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
-**Revision 12.2 applies independent-review corrections** (documentation only): it clarifies **internal
-payout terminology** (§6.7 / E8) and the **price grid** (Appendix B topic 16; **T1 stays OPEN**), and
-publishes the `docs/verification/rev9/` evidence to the review branch. **No financial policy, account,
-journal, or decision was changed and no alternative was selected.**
+**Revision 12.3 is a documentation-consistency release only:** it tracks the architecture report's
+Revision 12.3 corrections (README scaffold-location clarification and the Git publication history) and
+carries **no financial change** — the payout-terminology clarification (§6.7 / E8) and the price-grid
+clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. **No financial
+policy, account, journal, or decision was changed and no alternative was selected.**
 
 ### Verification labels
 
@@ -32,7 +33,7 @@ journal, or decision was changed and no alternative was selected.**
 
 ---
 
-## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12 and Revision 12.2)
+## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12, Revision 12.2 and Revision 12.3)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -131,6 +132,15 @@ Revision 9 corrects all three.
   report §6.1. **No reported test result changed.**
 - **No financial decision changed (Revision 12.2).** F14, F16–F31 remain **NOT APPROVED**; F28, F30,
   F31 undecided; no policy selected. See the architecture report §12.4.
+
+### Revision 12.3 — documentation-consistency corrections (documentation only, no financial change)
+
+- **README scaffold-location contradiction resolved** (in `README.md`) and the **full Git publication
+  history** recorded (initial review publication `a6bf123`, Revision 12.2 publication `b2437c8`, current
+  review-branch head `b2437c8`, `main` baseline `f6c7567`); see the architecture report §1.3 and §12.5.
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
 
 ---
 
@@ -618,7 +628,7 @@ and payout → funding is preserved and payout resumes; during retry → idempot
 
 ---
 
-## Part 10 — Financial decision register (Revision 12.2)
+## Part 10 — Financial decision register (Revision 12.3)
 
 All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
 **F1–F13 and F15 are not defined in this document** (see the note after the table).

@@ -15,10 +15,13 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 12.2** documentation **delivered in `docs/`, awaiting
-  explicit owner approval** (delivery is **not** owner acceptance). Revision 12.2 applies
+- Milestone 0 (Discovery & Architecture) **Revision 12.3** documentation **delivered in `docs/`, awaiting
+  explicit owner approval** (delivery is **not** owner acceptance). Revision 12.3 applies **final
+  documentation-consistency corrections** (documentation only): it resolves a README scaffold-location
+  contradiction and records the full Git publication history (initial review publication `a6bf123`,
+  Revision 12.2 publication `b2437c8`, current review-branch head `b2437c8`). Revision 12.2 applied
   **independent-review corrections** (documentation + verification evidence only); Revision 12
-  **restores the owner-approved M0–M6 roadmap**; Revision 11 corrected the **C2 verification-model
+  **restored the owner-approved M0–M6 roadmap**; Revision 11 corrected the **C2 verification-model
   defect** and resolved four documentation inconsistencies (D12–D15). **No financial policy, account,
   journal, architecture direction, or owner decision changed.** The only code change is the scratch
   verification script `docs/verification/rev9/rev9.mjs` (C2 sign fix + Section 4 share tests).
@@ -81,9 +84,16 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
 - Repo: https://github.com/0xmingalaba/khanthman-openhands (default branch `main`, shallow clone).
 - **Read access — verified** (`git ls-remote` works; remote refs visible).
 - **Write access — verified for the credentials in use.** The documentation review branch
-  **`review/m0-documents-2026-11-16`** was **successfully published** (commit `a6bf123`), pushed as a
-  **new, non-`main` branch** and independently re-fetched to confirm it matches. Write access is
-  established by this **non-destructive publication** — **never** by writing to `main` or force-pushing.
+  **`review/m0-documents-2026-11-16`** was **successfully published** as a **new, non-`main` branch** and
+  independently re-fetched to confirm it matches. Write access is established by this **non-destructive
+  publication** — **never** by writing to `main` or force-pushing.
+- **Review-branch publication history (verified against the live remote on 2026-11-16):**
+  - **Initial review publication:** `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`) — Revision 12
+    documents published for independent review.
+  - **Revision 12.2 publication:** `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`).
+  - **Current review-branch head:** **`b2437c8`** (2 commits ahead of `main`).
+  - **Original `main` baseline:** `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`) — unchanged.
+  - `a6bf123` is the **initial publication only**; it is **not** the current branch head.
 - **`origin/main` — unchanged** (`f6c7567`); nothing merged; the working branch
   `milestone-0-discovery-architecture` is **separate** from the review branch and does **not** exist
   remotely.
@@ -93,7 +103,7 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
   **only** as a dated, branch-scoped historical record; it no longer describes the current state.
 - Policy: **do not push to `main`**; use a feature/review branch.
 
-### Dependency status (Revision 12.2 — do not overstate)
+### Dependency status (Revision 12.3 — do not overstate)
 - **Declared in `package.json`:** `next`, `react`, `react-dom` (deps); `@tailwindcss/turbopack`,
   `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`,
   `typescript` (devDeps). **Nothing else.**
