@@ -1,15 +1,15 @@
 # Financial Specification — Khant Hman Prediction Market
 
-**Status:** DRAFT (Revision 12.3) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
-**Supersedes:** Revision 12.2 (2026-11-16)
-**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.3)
+**Status:** DRAFT (Revision 12.4) — **NO FINANCIAL SPECIFICATION APPROVAL HAS BEEN GRANTED.**
+**Supersedes:** Revision 12.3 (2026-11-16)
+**Companion:** `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md` (Revision 12.4)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No trading,
 ledger, matching, settlement, schema, migration, or auth code exists.**
-**Revision 12.3 is a documentation-consistency release only:** it tracks the architecture report's
-Revision 12.3 corrections (README scaffold-location clarification and the Git publication history) and
-carries **no financial change** — the payout-terminology clarification (§6.7 / E8) and the price-grid
-clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. **No financial
-policy, account, journal, or decision was changed and no alternative was selected.**
+**Revision 12.4 is a documentation-consistency release only:** it tracks the architecture report's
+Revision 12.4 synchronization of the current Git publication references and carries **no financial
+change** — the payout-terminology clarification (§6.7 / E8) and the price-grid clarification (Appendix B
+topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. **No financial policy, account, journal,
+or decision was changed and no alternative was selected.**
 
 ### Verification labels
 
@@ -33,7 +33,7 @@ policy, account, journal, or decision was changed and no alternative was selecte
 
 ---
 
-## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12, Revision 12.2 and Revision 12.3)
+## Part 0 — Change history (Revision 9, Revision 10, Revision 11, Revision 12, Revision 12.2, Revision 12.3 and Revision 12.4)
 
 Revision 8 had a **blocking accounting defect in the E7 additional-credit issuance lifecycle**:
 
@@ -135,9 +135,20 @@ Revision 9 corrects all three.
 
 ### Revision 12.3 — documentation-consistency corrections (documentation only, no financial change)
 
-- **README scaffold-location contradiction resolved** (in `README.md`) and the **full Git publication
-  history** recorded (initial review publication `a6bf123`, Revision 12.2 publication `b2437c8`, current
-  review-branch head `b2437c8`, `main` baseline `f6c7567`); see the architecture report §1.3 and §12.5.
+- **README scaffold-location contradiction resolved** (in `README.md`) and the **Git publication history**
+  recorded as of Revision 12.3 (initial review publication `a6bf123`, Revision 12.2 publication
+  `b2437c8`, review-branch head at that time `b2437c8`, `main` baseline `f6c7567`); see the architecture
+  report §1.3 and §12.5. (The current-head reference is updated in Revision 12.4.)
+- **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
+  clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
+  F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
+
+### Revision 12.4 — synchronize current Git publication references (documentation only, no financial change)
+
+- **Current-head references synchronized.** The Git publication history now records the **Revision 12.3
+  publication `7bca12d`** and the **current review-branch head `7bca12d`** (**3 commits ahead** of
+  `main`), preserving the labelled historical records (initial publication `a6bf123`, Revision 12.2
+  `b2437c8`, `main` baseline `f6c7567`); see the architecture report §1.3 and §12.6.
 - **No financial change.** The payout-terminology clarification (§6.7 / E8) and the price-grid
   clarification (Appendix B topic 16; **T1 stays OPEN**) from Revision 12.2 stand unchanged. F14,
   F16–F31 remain **NOT APPROVED**; F28, F30, F31 undecided; **no journal, account, or policy changed.**
@@ -628,7 +639,7 @@ and payout → funding is preserved and payout resumes; during retry → idempot
 
 ---
 
-## Part 10 — Financial decision register (Revision 12.3)
+## Part 10 — Financial decision register (Revision 12.4)
 
 All decisions in this register remain **unresolved / NOT APPROVED**. The register begins at **F14**;
 **F1–F13 and F15 are not defined in this document** (see the note after the table).
