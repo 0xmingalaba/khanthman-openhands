@@ -15,11 +15,12 @@ only** (no deposits/withdrawals/payments/payouts). No fabricated data — dev fi
 labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX reference only).
 
 ### Build status
-- Milestone 0 (Discovery & Architecture) **Revision 12.4** documentation **delivered in `docs/`, awaiting
-  explicit owner approval** (delivery is **not** owner acceptance). Revision 12.4 **synchronizes the
-  current Git publication references** (documentation only): it records the Revision 12.3 publication
-  (`7bca12d`) and the current review-branch head (`7bca12d`, **3 commits ahead** of `main`) while
-  preserving the labelled historical records (initial publication `a6bf123`, Revision 12.2 `b2437c8`).
+- Milestone 0 (Discovery & Architecture) **Revision 12.5** documentation **delivered in `docs/`, awaiting
+  explicit owner approval** (delivery is **not** owner acceptance). Revision 12.5 **makes the Git
+  publication records durable** (documentation only): it records the **Revision 12.4 publication commit
+  `67251ad`** and states each branch position as a **publication-time snapshot** rather than a live-head
+  claim, preserving the labelled historical records (initial publication `a6bf123`, Revision 12.2
+  `b2437c8`, Revision 12.3 `7bca12d`). Revision 12.4 synchronized the Git publication references;
   Revision 12.3 applied **final documentation-consistency corrections**; Revision 12.2 applied
   **independent-review corrections** (documentation + verification evidence only); Revision 12
   **restored the owner-approved M0–M6 roadmap**; Revision 11 corrected the **C2 verification-model
@@ -88,14 +89,17 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
   **`review/m0-documents-2026-11-16`** was **successfully published** as a **new, non-`main` branch** and
   independently re-fetched to confirm it matches. Write access is established by this **non-destructive
   publication** — **never** by writing to `main` or force-pushing.
-- **Review-branch publication history (verified against the live remote on 2026-11-16):**
+- **Review-branch publication history (verified against the live remote on 2026-11-16; publication-time
+  snapshots — the review branch is mutable and its head may advance with later revisions):**
   - **Initial review publication:** `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`) — Revision 12
     documents published for independent review.
   - **Revision 12.2 publication:** `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`).
   - **Revision 12.3 publication:** `7bca12dbbb5dc355a54fe2cc0dcb976e3eb56a47` (`7bca12d`).
-  - **Current review-branch head:** **`7bca12d`** (3 commits ahead of `main`).
+  - **Revision 12.4 publication:** `67251addbab0c3bf19ac553b585b086a117ac893` (`67251ad`) — at this
+    publication the branch was **4 commits ahead / 0 behind** the original `main` baseline.
   - **Original `main` baseline:** `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`) — unchanged.
-  - `a6bf123` is the **initial publication only**; it is **not** the current branch head.
+  - `a6bf123` is the **initial publication only**; it is **not** a claim about the live branch head.
+    All rows above are **publication-time snapshots**; the review branch head is mutable and may advance.
 - **`origin/main` — unchanged** (`f6c7567`); nothing merged; the working branch
   `milestone-0-discovery-architecture` is **separate** from the review branch and does **not** exist
   remotely.
@@ -105,7 +109,7 @@ labelled SIMULATED. No admin dashboard. Original branding (Polymarket is a UX re
   **only** as a dated, branch-scoped historical record; it no longer describes the current state.
 - Policy: **do not push to `main`**; use a feature/review branch.
 
-### Dependency status (Revision 12.4 — do not overstate)
+### Dependency status (Revision 12.5 — do not overstate)
 - **Declared in `package.json`:** `next`, `react`, `react-dom` (deps); `@tailwindcss/turbopack`,
   `@types/node`, `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `tailwindcss`,
   `typescript` (devDeps). **Nothing else.**

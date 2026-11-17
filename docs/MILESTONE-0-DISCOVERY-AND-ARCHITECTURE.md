@@ -1,17 +1,18 @@
-# Milestone 0 — Discovery & Architecture Report (Revision 12.4)
+# Milestone 0 — Discovery & Architecture Report (Revision 12.5)
 
 **Project:** Khant Hman Prediction Market (ခန့်မှန်း ဈေးကွက်)
 **Repository:** https://github.com/0xmingalaba/khanthman-openhands
-**Status:** DRAFT (Revision 12.4) — **delivered, awaiting explicit product-owner approval. NO APPROVAL
+**Status:** DRAFT (Revision 12.5) — **delivered, awaiting explicit product-owner approval. NO APPROVAL
 HAS BEEN GRANTED.** (Delivery is **not** owner acceptance.)
-**Supersedes:** Revision 12.3 (2026-11-16)
-**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 12.4)
+**Supersedes:** Revision 12.4 (2026-11-16)
+**Companion:** `docs/FINANCIAL-SPECIFICATION.md` (Revision 12.5)
 **Milestone:** still Milestone 0 — planning only. **Milestone 1 has NOT started.** **No product
 features, auth, trading, ledger, matching, settlement, schema, or migrations have been implemented.**
-**Revision 12.4 synchronizes the current Git publication references** (documentation only): it records the
-Revision 12.3 publication (`7bca12d`) and the current review-branch head (`7bca12d`, **3 commits ahead**
-of `main`) while preserving the labelled historical records (initial publication `a6bf123`, Revision 12.2
-`b2437c8`). **No financial policy, account, journal, architecture direction, or owner decision was
+**Revision 12.5 makes the Git publication records durable** (documentation only): it records the
+**Revision 12.4 publication commit `67251ad`** and states each branch position as a **publication-time
+snapshot** rather than a live-head claim. Historical records are preserved and labelled (initial
+publication `a6bf123`, Revision 12.2 `b2437c8`, Revision 12.3 `7bca12d`, original `main` baseline
+`f6c7567`). **No financial policy, account, journal, architecture direction, or owner decision was
 changed.**
 
 ### Verification labels
@@ -56,7 +57,7 @@ branch they remain uncommitted.
 | Working branch | `milestone-0-discovery-architecture` — HEAD `bb498b30a8bf169a4d281adc9fd6626375dc8faa` (`bb498b3`); Revision 12 docs **uncommitted**; working tree **NOT clean** (four modified `.md`) |
 | Working-branch commit sequence (oldest → newest) | `f6c7567` → `1b185f4` → `babc731` → `30cfa08` → `8eef5e4` → `1d408bf` → `502fda3` → `c2ea388` → `61a3f99` → `f1557dcac345eb4700138ddc0ee580da1a0511c3` → `5fb6e14e74b281980c43ccb36d003aac0ac0175e` → `b300f1aa5b72b5e02a59723df51e8eb8d022cc9c` → `8b6e3ea` → `a8bbb06` → `ec59879` → `9f1304d` → `bb498b3` (**HEAD**) |
 | Working branch vs `main` | **16 ahead / 0 behind** `origin/main` |
-| Review branch | `review/m0-documents-2026-11-16` — **published**; **current head `7bca12dbbb5dc355a54fe2cc0dcb976e3eb56a47` (`7bca12d`)**, a **documentation-and-evidence snapshot based on `origin/main`**; publication history: initial publication `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`, Revision 12) → `b2437c8` (Revision 12.2) → `7bca12d` (Revision 12.3); **3 commits ahead / 0 behind** `origin/main` |
+| Review branch | `review/m0-documents-2026-11-16` — **published**; **at the Revision 12.4 publication the branch was 4 commits ahead / 0 behind** `origin/main` (head at that time `67251addbab0c3bf19ac553b585b086a117ac893` — a **publication-time snapshot, not a claim about the live branch head**), a **documentation-and-evidence snapshot based on `origin/main`**; publication history: initial publication `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`, Revision 12) → `b2437c8` (Revision 12.2) → `7bca12d` (Revision 12.3) → `67251ad` (Revision 12.4) |
 | Branches (remote) | exactly `main` and `review/m0-documents-2026-11-16` (the working branch does **not** exist remotely) |
 | Stashes / tags | none |
 | Clone depth | **shallow** (`git rev-parse --is-shallow-repository` → `true`) |
@@ -87,7 +88,8 @@ Verified with `git show --stat`. **Revisions 6–8 file lists corrected.**
 | `a6bf123` | **Initial review publication** — Milestone 0 revision 12 documents published for review (`review/m0-documents-2026-11-16`) | `AGENTS.md`, `README.md`, both `docs/*.md` |
 | `b2437c8` | Milestone 0 revision 12.2 (independent-review corrections) — **documentation + verification evidence** | `AGENTS.md`, `README.md`, both `docs/*.md`, `docs/verification/rev9/*` |
 | `7bca12d` | Milestone 0 revision 12.3 (final documentation-consistency corrections) — **documentation only** | `AGENTS.md`, `README.md`, both `docs/*.md` |
-| *(this revision)* | Milestone 0 revision 12.4 (synchronize current Git publication references) — **documentation only** | `AGENTS.md`, `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md`, `docs/FINANCIAL-SPECIFICATION.md` |
+| `67251ad` | Milestone 0 revision 12.4 (synchronize current Git publication references) — **documentation only** | `AGENTS.md`, `docs/MILESTONE-0-DISCOVERY-AND-ARCHITECTURE.md`, `docs/FINANCIAL-SPECIFICATION.md` |
+| *(this revision)* | Milestone 0 revision 12.5 (make Git publication records durable) — **documentation only** | `AGENTS.md`, both `docs/*.md` |
 
 **Shallow-clone limitation:** the clone is **shallow**, so historical file-change verification is
 limited to the commits present locally (all committed rows above are present). **Revision 12 is
@@ -129,11 +131,14 @@ been pushed** — `origin/main` was `f6c7567` and the working branch did **not**
 historical snapshot is retained here **only because it is labelled with its date and branch context**;
 it is **superseded** by the publication below.
 
-**Publication (verified against the live remote on 2026-11-16):** the documentation review branch
-**was successfully published** to the canonical repository. `git ls-remote --heads origin` shows exactly
-two remote heads: `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9 refs/heads/main` and
-`7bca12dbbb5dc355a54fe2cc0dcb976e3eb56a47 refs/heads/review/m0-documents-2026-11-16`. `origin/main`
+**Publication (verified against the live remote on 2026-11-16; publication-time snapshot):** the
+documentation review branch **was successfully published** to the canonical repository. At the
+**Revision 12.4 publication** the branch head was
+`67251addbab0c3bf19ac553b585b086a117ac893` (`67251ad`) and the branch was **4 commits ahead / 0 behind**
+the original `main` baseline `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`). `origin/main`
 **remained unchanged** (`f6c7567`) throughout; nothing was merged and nothing was pushed to `main`.
+**This is a publication-time snapshot, not a claim about the live branch head** — the review branch is
+mutable and its head may advance with later revisions.
 
 **Review-branch publication history (do not conflate these commits):**
 
@@ -142,31 +147,33 @@ two remote heads: `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9 refs/heads/main` and
 | Initial review publication | `a6bf123e2cd6f71ce6626a47c920c84f2fc770aa` (`a6bf123`) | Revision 12 documents published for independent review |
 | Revision 12.2 publication | `b2437c8459380353d67b394d4bf8f0905f976c57` (`b2437c8`) | Independent-review corrections (documentation + verification evidence) |
 | Revision 12.3 publication | `7bca12dbbb5dc355a54fe2cc0dcb976e3eb56a47` (`7bca12d`) | Final documentation-consistency corrections (documentation only) |
-| **Current review-branch head** | **`7bca12d`** | 3 commits ahead of `main`; **this is the current head** |
+| **Revision 12.4 publication** | **`67251addbab0c3bf19ac553b585b086a117ac893` (`67251ad`)** | Synchronize current Git publication references (documentation only); at this publication the branch was **4 commits ahead / 0 behind** the original `main` baseline |
 | Original `main` baseline | `f6c756701a49e2bd6c2574ae2d2bd498c22b3fc9` (`f6c7567`) | Unchanged; nothing merged |
 
-**`a6bf123` is the initial publication only — it is NOT the current branch head.** The current head is
-**`7bca12d`**.
+**`a6bf123` is the initial publication only — it is NOT a claim about the live branch head.** Each row
+above is a **publication-time snapshot**; the review branch head is mutable and may advance with later
+revisions.
 
 **Git access evidence (precise):**
 
 - **Read access — VERIFIED.** `git ls-remote --heads origin` returns the remote heads above. Remote
   URL: `https://github.com/0xmingalaba/khanthman-openhands.git` (no embedded credentials).
 - **Write access — VERIFIED for the credentials in use.** The review-branch publications succeeded:
-  the initial publication (`a6bf123`), the Revision 12.2 commit (`b2437c8`), and the Revision 12.3
-  commit (`7bca12d`) were pushed to a **new, non-`main` branch**, and the remote branch was
-  independently re-fetched and confirmed to match the local commits. Write access is established by
-  these **successful, non-destructive publications** — **not** by force-pushing or by writing to `main`.
+  the initial publication (`a6bf123`), the Revision 12.2 commit (`b2437c8`), the Revision 12.3 commit
+  (`7bca12d`), and the Revision 12.4 commit (`67251ad`) were pushed to a **new, non-`main` branch**, and
+  the remote branch was independently re-fetched and confirmed to match the local commits. Write access
+  is established by these **successful, non-destructive publications** — **not** by force-pushing or by
+  writing to `main`.
 - **Historical report (labelled historical — prior session, date not re-established, working branch
   context; NOT re-tested here):** an earlier session reported `git push` failing with **HTTP 403**
   ("Permission … denied"), with both the git credential helper and `$GITHUB_TOKEN` resolving to a
   GitHub App / integration token with **read-only** access, and API writes returning
   `Resource not accessible by integration`. This is a **historical observation only** and is **no longer
   the current state** — it is superseded by the verified publications above.
-- **Net current state:** read = verified; write = **verified** (review branch published through
-  `7bca12d`); `origin/main` = **unchanged**; the historical 403 is retained **only** as a dated,
-  branch-scoped historical record. Policy is unchanged: **never push to `main`; use a feature/review
-  branch.**
+- **Net current state:** read = verified; write = **verified** (review branch published through the
+  Revision 12.4 commit `67251ad`); `origin/main` = **unchanged**; the historical 403 is retained **only**
+  as a dated, branch-scoped historical record. Policy is unchanged: **never push to `main`; use a
+  feature/review branch.**
 
 ---
 
@@ -504,7 +511,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 9. Risk register (Revision 12.4)
+## 9. Risk register (Revision 12.5)
 
 | # | Risk | Likelihood | Impact | Mitigation | Tag |
 | - | - | - | - | - | - |
@@ -521,7 +528,7 @@ No PR is created, merged, or deployed in this milestone.
 | R11 | Cross-outcome matching complexity | Med | Med | defer to a separately reviewed feature | OPEN |
 | R12 | Slippage tolerance blocks legitimate fills | Med | Med | define unit; raise default; per-order control; show estimate | OWNER DECISION |
 | R13 | Resolution correction after payout | Low | High | atomic correction + entitlement snapshot + funding policy + audit | PROPOSED |
-| R14 | Push blocked | Low | Med | **Read access verified; write access verified** (review branch `review/m0-documents-2026-11-16` published; current head `7bca12d`); a **historical** 403 failure is on record, dated and superseded (see §1.3). `origin/main` unchanged; nothing merged | VERIFIED (read + write) |
+| R14 | Push blocked | Low | Med | **Read access verified; write access verified** (review branch `review/m0-documents-2026-11-16` published; latest recorded publication commit `67251ad`); a **historical** 403 failure is on record, dated and superseded (see §1.3). `origin/main` unchanged; nothing merged | VERIFIED (read + write) |
 | R15 | Correction creates a hidden deficit | Low | High | `PendingCorrectionClaim` excluded from C1; no negative balances | PROPOSED |
 | R16 | Claim-unit drift between MMK and unit journals | Low | Critical | unit journal in the same transaction; C1b asserted each commit | PROPOSED |
 | R17 | Cross-domain journal accidentally mixes units | Low | High | model + DB `CHECK` reject mixed-domain journals | PROPOSED |
@@ -543,7 +550,7 @@ No PR is created, merged, or deployed in this milestone.
 
 ---
 
-## 10. Owner decision register (Revision 12.4)
+## 10. Owner decision register (Revision 12.5)
 
 ### 10.1 Architecture / product
 
@@ -630,7 +637,7 @@ register. See spec Part 10a for the full statements.
 
 ---
 
-## 12. Change list (Revision 8 → 9, 9 → 10, 10 → 11, 11 → 12, 12 → 12.2, 12.2 → 12.3, then 12.3 → 12.4)
+## 12. Change list (Revision 8 → 9, 9 → 10, 10 → 11, 11 → 12, 12 → 12.2, 12.2 → 12.3, 12.3 → 12.4, then 12.4 → 12.5)
 
 1. **E7 issuance defect corrected.** Issuance is now the atomic group **E6 (issue) + E4 (realize) +
    E7 (reopen)**: it creates funding, cancels the outstanding claim, realizes funding, and reopens the
@@ -785,25 +792,40 @@ register. See spec Part 10a for the full statements.
 42. **Git publication history recorded (§1.3, AGENTS.md).** At Revision 12.3 this distinguished the
     **initial review publication** `a6bf123`, the **Revision 12.2 publication** `b2437c8`, the
     **review-branch head at that time `b2437c8`**, and the **original `main` baseline** `f6c7567`.
-    `a6bf123` is explicitly **not** the current head. (Superseded by Revision 12.4, which updates the
-    current head to `7bca12d`; the historical records themselves are preserved.)
+    `a6bf123` is explicitly **not** the branch head. (Superseded by later revisions; the historical
+    records themselves are preserved.)
 43. **Review-branch state corrected (Revision 12.3).** §1 and §1.1 showed the review branch at **head
-    `b2437c8`** (**2 commits ahead** of `main`), replacing the earlier "1 commit ahead / `a6bf123`"
-    description. (Updated again in Revision 12.4 to head `7bca12d`, 3 commits ahead.)
+    `b2437c8`** (**2 commits ahead** of `main`) as a publication-time position, replacing the earlier
+    "1 commit ahead / `a6bf123`" description. (Later superseded.)
 44. **No financial or architectural change (Revision 12.3).** F14, F16–F31 remain **NOT APPROVED**; F28,
     F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
     **No application code, schema, migration, or verification-script change was made.**
 
 ### 12.6 Change list — Revision 12.3 → Revision 12.4 (synchronize current Git publication references)
 
-45. **Stale current-head references corrected.** §1, §1.1, §1.3, R14, and AGENTS.md now show the review
-    branch at **current head `7bca12d`** (**3 commits ahead** of `main`), replacing the earlier
-    "current head `b2437c8` / 2 commits ahead" description that Revision 12.3 left stale.
-46. **Revision 12.3 publication recorded.** The publication history now lists **initial publication
-    `a6bf123`**, **Revision 12.2 `b2437c8`**, and **Revision 12.3 `7bca12d`**, then the **current
-    review-branch head `7bca12d`** and the **original `main` baseline `f6c7567`**. Historical records are
-    preserved and clearly labelled; `a6bf123` remains explicitly **not** the current head.
+45. **Stale current-head references corrected.** §1, §1.1, §1.3, R14, and AGENTS.md recorded the review
+    branch at **`7bca12d`** (**3 commits ahead** of `main`) at the Revision 12.4 publication, replacing the
+    earlier "`b2437c8` / 2 commits ahead" description that Revision 12.3 left stale.
+46. **Revision 12.3 publication recorded.** The publication history listed **initial publication
+    `a6bf123`**, **Revision 12.2 `b2437c8`**, and **Revision 12.3 `7bca12d`**, plus the **`main` baseline
+    `f6c7567`**. Historical records are preserved and clearly labelled; `a6bf123` remains explicitly
+    **not** the branch head.
 47. **No financial or architectural change (Revision 12.4).** F14, F16–F31 remain **NOT APPROVED**; F28,
+    F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
+    **No application code, schema, migration, or verification-script change was made.**
+
+### 12.7 Change list — Revision 12.4 → Revision 12.5 (make Git publication records durable)
+
+48. **Mutable-head language removed.** §1, §1.1, §1.3, R14, and AGENTS.md no longer describe the review
+    branch head as permanently "current". Each position is now stated as a **publication-time snapshot**
+    (e.g. "at the Revision 12.4 publication the branch was **4 commits ahead / 0 behind** the original
+    `main` baseline"), with an explicit note that **the review branch is mutable and its head may advance
+    with later revisions**.
+49. **Revision 12.4 publication commit recorded.** The publication history now lists **initial publication
+    `a6bf123`**, **Revision 12.2 `b2437c8`**, **Revision 12.3 `7bca12d`**, **Revision 12.4 `67251ad`**,
+    and the **original `main` baseline `f6c7567`**. Historical records are preserved and clearly labelled;
+    `a6bf123` is explicitly **not** a claim about the branch head.
+50. **No financial or architectural change (Revision 12.5).** F14, F16–F31 remain **NOT APPROVED**; F28,
     F30, F31 undecided; the E1–E9 journal model, AR13, AR15–AR19, and the M0–M6 roadmap are unchanged.
     **No application code, schema, migration, or verification-script change was made.**
 
@@ -825,12 +847,13 @@ register. See spec Part 10a for the full statements.
 
 Per instruction, this revision **stops here**. I have **not** started Milestone 1, added features,
 implemented auth/trading/ledger/settlement, created schemas or migrations, merged, deployed, or pushed
-to `main`. **No financial rule, account, journal, or decision was changed.** Revision 12.4 is a
-**documentation-only** correction: it synchronizes the current Git publication references, recording the
-Revision 12.3 publication (`7bca12d`) and the **current review-branch head `7bca12d`** (**3 commits
-ahead** of `main`) while preserving the labelled historical records (initial publication `a6bf123`,
-Revision 12.2 `b2437c8`, `main` baseline `f6c7567`). Revision 12.2 published the existing
-`docs/verification/rev9/` evidence to the review branch (**byte-identical**, no reported result
+to `main`. **No financial rule, account, journal, or decision was changed.** Revision 12.5 is a
+**documentation-only** correction: it makes the Git publication records durable, recording the
+**Revision 12.4 publication commit `67251ad`** (at which the branch was **4 commits ahead / 0 behind**
+the original `main` baseline `f6c7567`) and stating each branch position as a **publication-time
+snapshot** rather than a live-head claim, while preserving the labelled historical records (initial
+publication `a6bf123`, Revision 12.2 `b2437c8`, Revision 12.3 `7bca12d`). Revision 12.2 published the
+existing `docs/verification/rev9/` evidence to the review branch (**byte-identical**, no reported result
 changed). The **only code change** on the working branch remains the Revision 11 **C2 verification-model
 correction** in `docs/verification/rev9/rev9.mjs`. **No financial specification approval is assumed.** I
 await your independent review and explicit decisions on **F14, F16–F31** (including **F30**
